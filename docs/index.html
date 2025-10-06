@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+    <!-- npm run docs:dev -->
+<head>
+    <link rel="icon" href="/icon32.png" type="image/png">
+    <script>
+        const supportlangs = ['zh', 'en', 'ja', 'cht']
+        function browserlang() {
+            let l = navigator.language
+            let ls = l.split('-')
+            if (ls.length) l = ls[0]
+            if (l == 'zh' && ls.length == 2 && (ls[1] == 'HK' || ls[1] == 'TW')) return 'cht'
+            if (supportlangs.includes(l)) return l
+            return 'en'
+        }
+        let lang = window.localStorage.currentlang ? window.localStorage.currentlang : browserlang()
+        window.location.pathname = `/${lang}/`
+    </script>
+</head>
+
+</html>
