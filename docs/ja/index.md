@@ -7,7 +7,7 @@ hero:
   text: "ウェブサイトで学ぶ、あらゆる言語"
   # tagline: 💡 Lingqにインスパイアされたハイライトと翻訳、さらにAI解析、PDF、EPUB、Youtube対応 ·····
   image:
-    src: /ja/init/Lingkuma/assets/1758916888941.png
+    src: /hero.png
     alt: Lingkuma
   actions:
     - theme: brand

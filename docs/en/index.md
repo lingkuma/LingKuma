@@ -7,7 +7,7 @@ hero:
   text: "Learning any language on the web"
   # tagline: 💡 Inspired by Lingq highlighting, translation but: AI parsing, PDF, EPUB, Youtube ·····
   image:
-    src: /en/init/Lingkuma/assets/1758916888941.png
+    src: /hero.png
     alt: Lingkuma
   actions:
     - theme: brand
