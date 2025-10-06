@@ -1,6 +1,7 @@
 # Dependencies
 docs/node_modules/
 node_modules/
+docs/.obsidian
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

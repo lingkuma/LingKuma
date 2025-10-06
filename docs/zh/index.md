@@ -7,7 +7,7 @@ hero:
   text: "在网页学习任何语言"
   # tagline: 💡 启发于 Lingq 高亮，翻译 但：AI解析，PDF，EPUB，Youtueb ·····
   image:
-    src: ./init/Lingkuma/assets/1758916888941.png
+    src: /zh/init/Lingkuma/assets/1758916888941.png
     alt: Lingkuma
   actions:
     - theme: brand
