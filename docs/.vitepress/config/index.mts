@@ -7,6 +7,7 @@ import { tabsMarkdownPlugin } from 'vitepress-plugin-tabs'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
+  base: '/LingKuma/',
   title: "LingKuma",
   head: [
     ['link', { rel: 'icon', href: '/icon32.png' }],
