@@ -10,6 +10,9 @@ export default defineConfig({
   base: '/',
   title: "LingKuma",
   description: "Learn any language on the web - Better web compatibility, AI parsing, PDF, EPUB, Youtube support",
+  sitemap: {
+    hostname: 'https://docs.lingkuma.org'
+  },
   head: [
     ['link', { rel: 'icon', href: '/icon32.png' }],
     ['meta', { name: 'description', content: 'Learn any language on the web with LingKuma - Multi-platform support, AI parsing, PDF, EPUB, Youtube and more' }],
