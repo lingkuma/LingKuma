@@ -73,8 +73,8 @@ export const cht = defineConfig({
             }
         },
         nav: [
-            { text: "影片教學", link: "https://www.bilibili.com/video/BV1RGZ8YbEGh/" },
-            { text: "tg", link: "https://tg.lingkuma.org/" },
+            { text: "影片教學", link: "https://www.youtube.com/watch?v=RHh3Upabtfk" },
+            { text: "Tg", link: "https://tg.lingkuma.org/" },
             { text: "Discord", link: "https://dc.lingkuma.org/" },
 
             { text: "支持作者", link: "/cht/support" },

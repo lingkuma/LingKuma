@@ -73,8 +73,8 @@ export const en = defineConfig({
             }
         },
         nav: [
-            { text: "Video Tutorial", link: "https://www.bilibili.com/video/BV1RGZ8YbEGh/" },
-            { text: "tg", link: "https://tg.lingkuma.org/" },
+            { text: "Video Tutorial", link: "https://www.youtube.com/watch?v=RHh3Upabtfk" },
+            { text: "Tg", link: "https://tg.lingkuma.org/" },
             { text: "Discord", link: "https://dc.lingkuma.org/" },
 
             { text: "Support the Author", link: "/en/support" },
