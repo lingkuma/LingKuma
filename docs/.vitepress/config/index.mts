@@ -38,22 +38,22 @@ export default defineConfig({
     head.push(['link', { rel: 'canonical', href: canonicalUrl }])
 
     // 动态设置 og:image
-    // 优先级: frontmatter.ogImage > 动态生成 > 默认图片
+    // 优先级: frontmatter.ogImage > 动态生成
     let ogImageUrl: string
 
     if (pageData.frontmatter.ogImage) {
       // 如果页面指定了自定义图片
       ogImageUrl = pageData.frontmatter.ogImage
     } else {
-      // 使用 Vercel OG Image 服务自动生成
+      // 使用 og-image-craigary.vercel.app 服务自动生成
       // 参数说明:
       // - theme=dark: 深色主题
       // - md=1: 启用 Markdown 渲染
-      // - fontSize=100px: 字体大小
-      // - images: Logo 图片 URL
+      // - fontSize=125px: 字体大小
+      // - images: Logo 图片 URL (需要 URL encode)
       const encodedTitle = encodeURIComponent(ogTitle)
-      const logoUrl = encodeURIComponent('https://docs.lingkuma.org/icon32.png')
-      ogImageUrl = `https://og-image.vercel.app/${encodedTitle}.png?theme=dark&md=1&fontSize=100px&images=${logoUrl}`
+      const logoUrl = 'https%3A%2F%2Fdocs.lingkuma.org%2Ficon32.png'
+      ogImageUrl = `https://og-image-craigary.vercel.app/${encodedTitle}.png?theme=dark&md=1&fontSize=125px&images=${logoUrl}`
     }
 
     head.push(['meta', { property: 'og:image', content: ogImageUrl }])
