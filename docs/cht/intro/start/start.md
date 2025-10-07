@@ -1,51 +1,121 @@
-# 初始化
+# 上手指南
 
-## 為什麼頁面上單詞都是藍色的？
+
+<br>
+
+>示例高亮文本
+::: tabs
+== English
+Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, "and what is the use of a book," thought Alice "without pictures or conversations?"
+*— Alice in Wonderland*
+== Japanese
+土手で姉の傍らに座り、何もしないことに、アリスはもううんざりし始めていた。姉の読んでいる本をちらちらと二、三度見てみたものの、絵も会話もなく、「絵も会話もない本なんて、一体何の価値があるのかしら?」とアリスは心の中で思った。
+*— Alice in Wonderland*
+
+== ZH-CN
+爱丽丝坐在河岸上姐姐的身旁,无所事事,开始感到厌倦了。她偶尔瞥一眼姐姐正在读的书,但书里既没有图画也没有对话。"一本书,"爱丽丝想,"既没有图画又没有对话,有什么用呢?"
+*— 爱丽丝梦游仙境*
+
+== ZH-HK
+愛麗絲坐在河岸上姊姊的身旁,無所事事,開始感到厭倦了。她偶爾瞥一眼姊姊正在讀的書,但書裡既沒有圖畫也沒有對話。「一本書,」愛麗絲想,「既沒有圖畫又沒有對話,有什麼用呢?」
+*— 愛麗絲夢遊仙境*
+
+== Korean
+앨리스는 강둑에서 언니 옆에 앉아 할 일이 없어 매우 지루해지기 시작했습니다. 한두 번 언니가 읽고 있는 책을 들여다보았지만, 그 책에는 그림도 대화도 없었습니다. "그림도 대화도 없는 책이," 앨리스는 생각했습니다, "무슨 소용이 있을까?"
+*— 이상한 나라의 앨리스*
+
+== German
+Alice wurde allmählich sehr müde davon, neben ihrer Schwester am Ufer zu sitzen und nichts zu tun zu haben. Ein- oder zweimal hatte sie in das Buch hineingeschaut, das ihre Schwester las, aber es hatte weder Bilder noch Gespräche darin. "Und was nützt ein Buch", dachte Alice, "ohne Bilder oder Gespräche?"
+*— Alice im Wunderland*
+
+== Spanish
+Alicia comenzaba a cansarse mucho de estar sentada junto a su hermana en la orilla del río sin tener nada que hacer. Una o dos veces había echado un vistazo al libro que estaba leyendo su hermana, pero no tenía dibujos ni conversaciones. "¿Y de qué sirve un libro", pensó Alicia, "sin dibujos ni conversaciones?"
+*— Alicia en el País de las Maravillas*
+
+== French
+Alice commençait à se lasser beaucoup d'être assise à côté de sa sœur sur la berge et de n'avoir rien à faire. Une ou deux fois, elle avait jeté un coup d'œil au livre que lisait sa sœur, mais il n'y avait ni images ni conversations dedans. "Et à quoi sert un livre", pensa Alice, "sans images ni conversations ?"
+*— Alice au Pays des Merveilles*
+
+== Italian
+Alice iniziava a stancarsi molto di stare seduta accanto a sua sorella sulla riva e di non avere nulla da fare. Una o due volte aveva sbirciato nel libro che stava leggendo sua sorella, ma non aveva né figure né conversazioni. "E a che serve un libro", pensò Alice, "senza figure o conversazioni?"
+*— Alice nel Paese delle Meraviglie*
+
+== Russian
+Алиса начинала очень уставать от того, что сидела рядом с сестрой на берегу и ей нечего было делать. Раз или два она заглядывала в книгу, которую читала сестра, но в ней не было ни картинок, ни разговоров. "И какая польза от книги", подумала Алиса, "без картинок и разговоров?"
+*— Алиса в Стране чудес*
+
+
+:::
+
+
+
+## 為什麼上面單詞都是藍色的？
 ::: tip
-因為這些單詞你都不認識。
+因為這些單詞你都不認識，你可以點擊查詢，然後單詞就變成了黃色。 如果你認識這個單詞，可以將狀態改成「對號✅」，這樣單詞就不會高亮。
 :::
 
 ::: warning
-我認識這些單詞，怎麼辦？
+我不是**初學者**，我已經認識**很多**這些單詞，比如CET-4。可以批量操作嗎？
 :::
 
 ::: tip
-那麼你就這樣導入你認識的單詞
+可以，像下面這樣操作就行了
+:::
+### 導入已知詞庫
+::: tabs
+== 1. 下載或者製作已知詞庫
+如果你在其他地方有已知單詞的數據，可以整理成如下文本，每個單詞一行
+``` txt
+apple
+banana
+orange
+pear
+```
+> 示例 english.txt
+
+如果也可在下面下載英語四級詞庫
+
+[英語四六級詞庫文件下載](https://www.notion.so/1b899894aa16801fa623f91527e590f3?pvs=21)
+
+== 2. 導入詞庫
+
+可以分批按照不同的單詞狀態進行導入，單詞狀態有 0 1 2 3 4 5 種類別
+
+![../start/assets/1758997229239.png](../start/assets/1758997229239.png)
+
+
 :::
 
-1. #### 下載或者製作已知詞庫
-    ``` txt
-    apple
-    banana
-    orange
-    pear
-    ```
-    > 示例 english.txts
 
-    [英語四六級詞庫文件下載](https://www.notion.so/1b899894aa16801fa623f91527e590f3?pvs=21)
-  
-1. #### 導入詞庫
-    可以分批按照不同的單詞狀態進行導入，單詞狀態有 0 1 2 3 4 5 種類別
-
-    ![../start/assets/1758997229239.png](../start/assets/1758997229239.png)
+## 為什麼AI翻譯失敗，或者為空？
+    內置的免費API失效了，你需要獲取自己的API
 
 
 ## 為什麼AI翻譯不準？
-::: tip
-因為默認AI是智譜的免費AI，所以很傻。請你換成Gemini-2.5-flash 或者DeepSeek-v3 以上等級的大模型API。
-:::
 
-## 我怎麼去找這個API(接口)？
+
+因為默認AI是智譜的免費AI，所以很傻。請你換成Gemini-2.5-flash 或者DeepSeek-v3 以上等級的大模型API。
+
+
+知乎野榜：[大語言模型-邏輯能力橫評](https://zhuanlan.zhihu.com/p/1954578674109096588)
+AI排行榜：[LMArena（需要科學上網）](https://lmarena.ai/)
+## 我如何獲取API(接口)？
 
 ::: tabs
 ==  使用 Ohmygpt
+ohmygpt內有Chatgpt, Gemini, Claude, DeepSeek 等幾乎所有API。
+插件內粘貼授權碼登錄後，可直接使用。
+
 <iframe width="560" height="315" src="https://www.youtube.com/embed/RHh3Upabtfk?si=mt_hZksXLw26XpKb&amp;start=296" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 
 ==  DeepSeek
 
-<iframe src="//player.bilibili.com/player.html?bvid=BV1xJtgztEHE" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" width="560" height="315"></iframe>
+<iframe src="//player.bilibili.com/player.html?bvid=BV1RGZ8YbEGh&t=294" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" width="560" height="315"></iframe>
 
+
+== 其他
+您可以去Chatgpt，Gemini，Claude，Qwen，DeepSeek 自行申請大模型API，和Deepseek裡的視頻教程一樣配置好後即可使用。
 
 :::
 
