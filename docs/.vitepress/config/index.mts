@@ -9,8 +9,12 @@ import { tabsMarkdownPlugin } from 'vitepress-plugin-tabs'
 export default defineConfig({
   base: '/',
   title: "LingKuma",
+  description: "Learn any language on the web - Better web compatibility, AI parsing, PDF, EPUB, Youtube support",
   head: [
     ['link', { rel: 'icon', href: '/icon32.png' }],
+    ['meta', { name: 'description', content: 'Learn any language on the web with LingKuma - Multi-platform support, AI parsing, PDF, EPUB, Youtube and more' }],
+    ['meta', { property: 'og:title', content: 'LingKuma - Learn any language on the web' }],
+    ['meta', { property: 'og:description', content: 'Multi-platform language learning tool with AI parsing, PDF, EPUB, Youtube support' }],
   ],
   rewrites: {
     //  'zh/:rest*': ':rest*'

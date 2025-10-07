@@ -43,6 +43,8 @@ export const jaSearch = {
     }
 }
 export const ja = defineConfig({
+    description: "ウェブサイトで学ぶ、あらゆる言語 - マルチプラットフォーム対応、AI解析、PDF、EPUB、Youtube",
+    titleTemplate: ":title - LingKuma",
     themeConfig: {
         outline: {
             level: [2, 3],

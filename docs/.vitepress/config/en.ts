@@ -44,6 +44,8 @@ export const enSearch = {
     }
 }
 export const en = defineConfig({
+    description: "Learn any language on the web - Multi-platform support, AI parsing, PDF, EPUB, Youtube",
+    titleTemplate: ":title - LingKuma",
     themeConfig: {
         outline: {
             level: [2, 3],

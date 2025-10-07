@@ -44,6 +44,8 @@ export const zhSearch = {
     }
 }
 export const zh = defineConfig({
+    description: "在网页学习任何语言 - 多平台支持，AI解析，PDF，EPUB，Youtube",
+    titleTemplate: ":title - LingKuma",
     themeConfig: {
         outline: {
             level: [2, 3],

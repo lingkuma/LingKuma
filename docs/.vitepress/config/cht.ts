@@ -44,6 +44,8 @@ export const chtSearch = {
     }
 }
 export const cht = defineConfig({
+    description: "在網頁學習任何語言 - 多平台支持，AI解析，PDF，EPUB，Youtube",
+    titleTemplate: ":title - LingKuma",
     themeConfig: {
         outline: {
             level: [2, 3],

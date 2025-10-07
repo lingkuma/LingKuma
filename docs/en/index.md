@@ -4,7 +4,7 @@ layout: home
 
 hero:
   name: "Lingkuma"
-  text: "Learning any language on the web"
+  text: "- Learning any language on the web"
   # tagline: 💡 Inspired by Lingq highlighting, translation but: AI parsing, PDF, EPUB, Youtube ·····
   image:
     src: /hero.png
