@@ -53,7 +53,7 @@ export default defineConfig({
       // - layoutMode=ab-image: 布局模式
       // - images: Logo 图片 URL (需要 URL encode)
       const encodedTitle = encodeURIComponent(ogTitle)
-      const obImageUrl = 'https%3A%2F%2Fdocs.lingkuma.org%2Fob.png'
+      const obImageUrl = 'https%3A%2F%2Fdocs.lingkuma.org%2Fob1.png'
       const iconUrl = 'https%3A%2F%2Fdocs.lingkuma.org%2Ficon32.png'
       ogImageUrl = `https://og-image-one.vercel.app/${encodedTitle}.png?theme=light&md=1&fontSize=100px&layoutMode=ab-image&images=${obImageUrl}&images=${iconUrl}`
     }
