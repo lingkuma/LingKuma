@@ -84,30 +84,30 @@ export const cht = defineConfig({
             {
                 text: '介紹',
                 items: [
-                    { text: '介紹', link: '/cht/init/Lingkuma/Lingkuma' },
-                    { text: '最新更新介紹', link: '/cht/init/new/new' },
+                    { text: 'Lingkuma 中文介紹', link: '/cht/init/Lingkuma/Lingkuma' },
+                    { text: '新功能介紹', link: '/cht/init/new/new' },
                 ]
             },
 
             {
                 text: '入門必看',
                 items: [
-                    { text: '上手指南', link: '/cht/intro/start/start' },
-                    { text: '電子書', link: '/cht/intro/ebook/ebook' },
-                    { text: '軟體推薦', link: '/cht/intro/supportList/supportList' },
+                    { text: '入門指南', link: '/cht/intro/start/start' },
+                    { text: '電子書使用教學', link: '/cht/intro/ebook/ebook' },
+                    { text: '特別支援的第三方外掛或網站', link: '/cht/intro/supportList/supportList' },
 
 
                 ]
             },
             {
-                text: '詳細的',
+                text: '進階功能',
                 items: [
                     {
-                        text: '多平台', link: '/cht/more/platform/platform',
+                        text: '跨平台使用教學', link: '/cht/more/platform/platform',
 
                     },
                     {
-                        text: '實時字幕', link: '/cht/more/WindowsCaptions/WindowsCaptions'
+                        text: 'WindowsCaptions', link: '/cht/more/WindowsCaptions/WindowsCaptions'
 
                     },
 
@@ -115,10 +115,10 @@ export const cht = defineConfig({
                 ]
             },
             {
-                text: '告示',
+                text: '其他',
                 items: [
 
-                    { text: '日誌詳情', link: '/cht/server/log/log' },
+                    { text: '更新日誌', link: '/cht/server/log/log' },
 
                     { text: '服務條款', link: '/cht/server/service' },
                     { text: '隱私政策', link: '/cht/server/privacy' }
