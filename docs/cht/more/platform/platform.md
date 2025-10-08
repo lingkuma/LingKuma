@@ -1,59 +1,57 @@
+# 跨平台使用教學
 
-
-# 多平台使用教程
-
-## 蘋果 Ios 系統 （Iphone & Ipad ）
+## Apple iOS 系統（iPhone 和 iPad）
 
 1. ### Orion 瀏覽器
 
-    [Orion broswer](https://apps.apple.com/app/id1484498200) 支持部分 Chrome 插件。安裝 Orion 後，可直接通過 Chrome 網上應用店安裝 LingKuma。
+    [Orion browser](https://apps.apple.com/app/id1484498200) 支援部分 Chrome 擴充功能。安裝 Orion 後，可直接透過 Chrome 線上應用程式商店安裝 LingKuma。
 
-1. ### Microsoft Edge TestFlight
+2. ### Microsoft Edge TestFlight
 
-    Edge 內測已支持 CRX 插件側載，處於內測階段，可能存在問題。
+    Edge 測試版已支援 CRX 擴充功能側載，目前處於測試階段，可能存在問題。
 
-    #### Edge安裝與使用步驟
+    #### Edge 安裝與使用步驟
 
-    1.  使用美區 Apple ID，點擊下方鏈接加入 Edge TestFlight：
-        
+    1.  使用美區 Apple ID，點擊下方連結加入 Edge TestFlight：
+      
         [https://testflight.apple.com/join/JkU2rh21?form=MA13FJ](https://testflight.apple.com/join/JkU2rh21?form=MA13FJ)
-        
+      
 
-    2.  下載想要安裝的擴展 CRX 文件：
-        
+    2.  下載欲安裝的擴充功能 CRX 檔案：
+      
         [https://www.crx4chrome.com/crx-downloader/](https://www.crx4chrome.com/crx-downloader/)
-        
+      
 
-    3.  打開 Edge 的「插件」頁面，點擊右上角齒輪圖標
+    3.  開啟 Edge 的「擴充功能」頁面，點擊右上角的齒輪圖示
 
     4.  啟用「CRX 側載」功能
 
-    5.  選擇剛下載的 CRX 文件完成安裝
+    5.  選擇剛下載的 CRX 檔案以完成安裝
 
-### ⚠️ TTS（語音朗讀）需要手動設置
- 如果在 Orion 中無法發聲，請確認已在插件彈窗中開啟「Orion TTS」
+### ⚠️ TTS（語音朗讀）需要手動設定
+ 如果在 Orion 中無法發出聲音，請確認已在擴充功能的彈出視窗中開啟「Orion TTS」。
 
-   1.  打開 LingKuma 彈窗設置（點擊圖標）
+   1.  開啟 LingKuma 彈出視窗設定（點擊圖示）
 
-   2.  下滑找到打開「Orion TTS」開關
+   2.  向下滑動並開啟「Orion TTS」開關
    ![](<./assets/1758997367474.png>)
 
 
 ---
-## 安卓
+## Android
 
 1. ### Kiwi 瀏覽器
 
     [https://github.com/kiwibrowser/src.next/releases](https://github.com/kiwibrowser/src.next/releases)
 
 
-    **[直鏈，點擊即可下載 Kiwi apk](https://github.com/kiwibrowser/src.next/releases/download/14310011181/com.kiwibrowser.browser-arm64-14310011181-github.apk)**
+    **[直接下載連結，點擊即可下載 Kiwi APK](https://github.com/kiwibrowser/src.next/releases/download/14310011181/com.kiwibrowser.browser-arm64-14310011181-github.apk)**
 
-    或者請選擇帶 arm64 的進行下載安裝
+    或者請選擇 arm64 的版本下載並安裝。
 
-1. ### Edge 瀏覽器
+2. ### Edge 瀏覽器
 
-1. ### 其他
+3. ### 其他
 
     [Lemur Browser - Extensions – Apps bei Google Play](https://play.google.com/store/apps/details?id=com.lemurbrowser.exts)
 
@@ -62,20 +60,18 @@
 
 ---
 ## Firefox
-| 最低 firefox 版本要求：140
+| 最低 Firefox 版本要求：140
 
-[Lingkuma插件安裝](https://addons.mozilla.org/en-US/firefox/addon/lingkuma-language-learning/)
+[LingKuma 擴充功能安裝](https://addons.mozilla.org/en-US/firefox/addon/lingkuma-language-learning/)
 
-### 不兼容的功能：
+### 不相容的功能：
 
 #### **液態玻璃**
 
-請手動切換液態主題到正常主題
+請手動將液態主題切換為一般主題。
 
 ![](<./assets/1758997367084.png>)
 
-#### 側欄
+#### 側邊欄
 
-不支持，無法兼容
-
-
+目前不支援此功能。

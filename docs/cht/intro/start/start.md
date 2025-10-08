@@ -1,9 +1,9 @@
-# 上手指南
+# 入門指南
 
 
 <br>
 
->示例高亮文本
+>範例高亮文字
 ::: tabs
 == English
 Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, "and what is the use of a book," thought Alice "without pictures or conversations?"
@@ -49,37 +49,37 @@ Alice iniziava a stancarsi molto di stare seduta accanto a sua sorella sulla riv
 
 
 
-## 為什麼上面單詞都是藍色的？
+## 為什麼上面單字都是藍色的？
 ::: tip
-因為這些單詞你都不認識，你可以點擊查詢，然後單詞就變成了黃色。 如果你認識這個單詞，可以將狀態改成「對號✅」，這樣單詞就不會高亮。
+因為這些單字您都不認識，您可以點擊查询，然後單字就變成了黃色。 如果您認識這個單字，可以將狀態改成「打勾✅」，這樣單字就不會高亮。
 :::
 
 ::: warning
-我不是**初學者**，我已經認識**很多**這些單詞，比如CET-4。可以批次操作嗎？
+我不是**初學者**，我已經認識**很多**這些單字，比如 CET-4。可以批次操作嗎？
 :::
 
 ::: tip
-可以，像下面這樣操作就行了
+可以，像下面這樣操作即可。
 :::
-### 匯入已知詞庫
+### 匯入已知字庫
 ::: tabs
-== 1. 下載或者製作已知詞庫
-如果你在其他地方有已知單詞的資料，可以整理成如下文字，每個單詞一行
+== 1. 下載或製作已知字庫
+如果您在其他地方有已知單字的資料，可以整理成如下文字，每個單字一行：
 ``` txt
 apple
 banana
 orange
 pear
 ```
-> 示例 english.txt
+> 範例 english.txt
 
-如果也可在下面下載英語四級詞庫
+也可以在下面下載英語四級字庫：
 
-[英語四六級詞庫檔案下載](https://www.notion.so/1b899894aa16801fa623f91527e590f3?pvs=21)
+[英語四六級字庫檔案下載](https://www.notion.so/1b899894aa16801fa623f91527e590f3?pvs=21)
 
-== 2. 匯入詞庫
+== 2. 匯入字庫
 
-可以分批按照不同的單詞狀態進行匯入，單詞狀態有 0 1 2 3 4 5 種類別
+可以分批按照不同的單字狀態進行匯入，單字狀態有 0 1 2 3 4 5 種類別。
 
 ![../start/assets/1758997229239.png](../start/assets/1758997229239.png)
 
@@ -87,24 +87,24 @@ pear
 :::
 
 
-## 為什麼AI翻譯失敗，或者為空？
-    內建的免費API失效了，你需要取得自己的API
+## 為什麼 AI 翻譯失敗，或是空的？
+    內建的免費 API 失效了，您需要取得自己的 API。
 
 
-## 為什麼AI翻譯不準？
+## 為什麼 AI 翻譯不準？
 
 
-因為預設AI是智譜的免費AI，所以很傻。請你換成Gemini-2.5-flash 或者DeepSeek-v3 以上等級的大模型API。
+因為預設 AI 是智譜的免費 AI，所以效果有限。請您換成 Gemini-2.5-flash 或 DeepSeek-v3 以上等級的大型語言模型 API。
 
 
-知乎野榜：[大語言模型-邏輯能力橫評](https://zhuanlan.zhihu.com/p/1954578674109096588)
-AI排行榜：[LMArena（需要科學上網）](https://lmarena.ai/)
-## 我如何取得API(介面)？
+知乎野榜：[大語言模型-邏輯能力橫向評比](https://zhuanlan.zhihu.com/p/1954578674109096588)
+AI 排行榜：[LMArena（需要使用 VPN）](https://lmarena.ai/)
+## 我如何取得 API (應用程式介面)？
 
 ::: tabs
 ==  使用 Ohmygpt
-ohmygpt內有Chatgpt, Gemini, Claude, DeepSeek 等幾乎所有API。
-擴充功能內貼上授權碼登入後，可直接使用。
+Ohmygpt 內有 Chatgpt、Gemini、Claude、DeepSeek 等幾乎所有 API。
+在擴充功能內貼上授權碼登入後，即可直接使用。
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/RHh3Upabtfk?si=mt_hZksXLw26XpKb&amp;start=296" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
@@ -115,31 +115,31 @@ ohmygpt內有Chatgpt, Gemini, Claude, DeepSeek 等幾乎所有API。
 
 
 == 其他
-您可以去Chatgpt，Gemini，Claude，Qwen，DeepSeek 自行申請大模型API，和Deepseek裡的影片教學一樣設定好後即可使用。
+您可以至 Chatgpt、Gemini、Claude、Qwen、DeepSeek 自行申請大型語言模型 API，和 Deepseek 裡的影片教學一樣設定好後即可使用。
 
 :::
 
-## 如何用外部查詞？
+## 如何使用外部查詢？
 
 ![](<./assets/pill.png>)
 點擊圖中 4 號紅點位置，觸發膠囊功能。
-同時也可以在開關設定內預設展開膠囊
+同時也可以在開關設定內預設展開膠囊。
 
 膠囊自訂：
-設定-彈窗設定-膠囊設定
-這裡可以新增多層膠囊，多種查看方式，自訂任意第三方詞典等網站，
+設定 - 彈出視窗設定 - 膠囊設定
+這裡可以新增多層膠囊、多種查看方式，並自訂任意第三方詞典等網站。
 
-## 日語分詞太碎，不準。
+## 日語斷詞太碎，不準確。
 
-如上圖 3 號紅點位置，滑鼠拖曳選取文字後，點擊彈出的"create" 按鈕建立自訂高亮。
+如上圖 3 號紅點位置，用滑鼠拖曳選取文字後，點擊彈出的 "create" 按鈕建立自訂高亮。
 
 
 
 
 ## 如何更改翻譯風格？
 
-設定-API 設定 裡面的Prompt咒語，改成你想要的風格，以及你想要的翻譯方式。
-開關設定內可以開啟兩個AI提示框，你可以一個用來翻譯，一個用來解析語法
+在「設定 - API 設定」中的 Prompt (提示詞)，改成您想要的風格以及翻譯方式。
+在開關設定內可以開啟兩個 AI 提示詞輸入框，您可以一個用來翻譯，一個用來解析語法。
 
 
 
@@ -147,23 +147,23 @@ ohmygpt內有Chatgpt, Gemini, Claude, DeepSeek 等幾乎所有API。
 
 
 
-## 例句，Tag 內容有錯，翻譯如何重置？
+## 例句、Tag 內容有錯，翻譯如何重設？
 
-刪除例句，tag，並重新點擊單詞即可。
+刪除例句、Tag，並重新點擊單字即可。
 
 
 
 ![](<./assets/1758997344983.png>)
 
-## 如何開啟關閉某語言的高亮？
+## 如何開啟或關閉特定語言的高亮？
 這裡：
 ![](<./assets/1758997345364.png>)
 
 
 
-## 彈窗和單詞有間隙
+## 彈出視窗和單字有間距
 
-開關設定處可以更改gap 值，目的用於防止擋住下一行句子
+在開關設定處可以更改間距值，目的在於防止擋住下一行的句子。
 
 
 
@@ -173,7 +173,7 @@ ohmygpt內有Chatgpt, Gemini, Claude, DeepSeek 等幾乎所有API。
 
 ## Mini 視窗的按鈕呢？
 
-所有按鈕都是懸浮顯示；位置可能會更改；
+所有按鈕皆為懸浮顯示，位置可能會變動。
 
 按鈕 1：已知狀態切換
 
@@ -209,7 +209,7 @@ ohmygpt內有Chatgpt, Gemini, Claude, DeepSeek 等幾乎所有API。
 
 ## 如何縮放視窗？
 
-縮放算法是這裡的值 `1 / (頁面DPR/Custom DPR)` 2K 屏幕的頁面 DPR 是 2 ； Iphone 的 DPR 是 3；某些手機是 2 或者 1.8；所以可以用來調節視窗異常，以及可以用來手動放大縮小。
+縮放演算法是這裡的值 `1 / (頁面 DPR / Custom DPR)`。2K 螢幕的頁面 DPR 是 2；iPhone 的 DPR 是 3；某些手機是 2 或 1.8。所以可以用來調整視窗異常，以及手動放大縮小。
 
 
 
@@ -217,20 +217,18 @@ ohmygpt內有Chatgpt, Gemini, Claude, DeepSeek 等幾乎所有API。
 
 
 
-## 如何更換彈窗背景？
+## 如何更換彈出視窗背景？
 
-若自訂背景，請根據圖片顏色固定為黑主題或者白主題，否則對比度不夠，影響閱讀。
-支援svg,png,gif,mp4等
+若自訂背景，請根據圖片顏色固定為深色主題或淺色主題，否則對比度不足會影響閱讀。
+支援 svg、png、gif、mp4 等格式。
 
 
 ![](<./assets/1758997348025.png>)
-> 此圖為關閉
+> 此圖為關閉狀態
 
 
-## 如何滑鼠即時懸浮顯示小窗？
+## 如何讓滑鼠懸浮時立即顯示小視窗？
 
-關閉僅點擊模式打開滑鼠離開小窗自動關閉建議配合 Mini 視窗使用
+請關閉「僅點擊模式」，並開啟「滑鼠離開時自動關閉」，建議與 Mini 視窗搭配使用。
 
 ![](<./assets/1758997348395.png>)
-
-
