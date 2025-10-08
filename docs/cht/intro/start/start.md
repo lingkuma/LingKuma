@@ -171,7 +171,7 @@ ohmygpt內有Chatgpt, Gemini, Claude, DeepSeek 等幾乎所有API。
 
 
 
-## Mini 窗口的按鈕呢？
+## Mini 視窗的按鈕呢？
 
 所有按鈕都是懸浮顯示；位置可能會更改；
 
@@ -199,7 +199,7 @@ ohmygpt內有Chatgpt, Gemini, Claude, DeepSeek 等幾乎所有API。
 
 
 
-按鈕 4: 放大窗口
+按鈕 4: 放大視窗
 
 
 
@@ -207,9 +207,9 @@ ohmygpt內有Chatgpt, Gemini, Claude, DeepSeek 等幾乎所有API。
 
 
 
-## 如何縮放窗口？
+## 如何縮放視窗？
 
-縮放算法是這裡的值 `1 / (頁面DPR/Custom DPR)` 2K 屏幕的頁面 DPR 是 2 ； Iphone 的 DPR 是 3；某些手機是 2 或者 1.8；所以可以用來調節窗口異常，以及可以用來手動放大縮小。
+縮放算法是這裡的值 `1 / (頁面DPR/Custom DPR)` 2K 屏幕的頁面 DPR 是 2 ； Iphone 的 DPR 是 3；某些手機是 2 或者 1.8；所以可以用來調節視窗異常，以及可以用來手動放大縮小。
 
 
 
