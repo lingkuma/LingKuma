@@ -55,16 +55,16 @@ Alice iniziava a stancarsi molto di stare seduta accanto a sua sorella sulla riv
 :::
 
 ::: warning
-我不是**初學者**，我已經認識**很多**這些單詞，比如CET-4。可以批量操作嗎？
+我不是**初學者**，我已經認識**很多**這些單詞，比如CET-4。可以批次操作嗎？
 :::
 
 ::: tip
 可以，像下面這樣操作就行了
 :::
-### 導入已知詞庫
+### 匯入已知詞庫
 ::: tabs
 == 1. 下載或者製作已知詞庫
-如果你在其他地方有已知單詞的數據，可以整理成如下文本，每個單詞一行
+如果你在其他地方有已知單詞的資料，可以整理成如下文字，每個單詞一行
 ``` txt
 apple
 banana
@@ -75,11 +75,11 @@ pear
 
 如果也可在下面下載英語四級詞庫
 
-[英語四六級詞庫文件下載](https://www.notion.so/1b899894aa16801fa623f91527e590f3?pvs=21)
+[英語四六級詞庫檔案下載](https://www.notion.so/1b899894aa16801fa623f91527e590f3?pvs=21)
 
-== 2. 導入詞庫
+== 2. 匯入詞庫
 
-可以分批按照不同的單詞狀態進行導入，單詞狀態有 0 1 2 3 4 5 種類別
+可以分批按照不同的單詞狀態進行匯入，單詞狀態有 0 1 2 3 4 5 種類別
 
 ![../start/assets/1758997229239.png](../start/assets/1758997229239.png)
 
@@ -88,23 +88,23 @@ pear
 
 
 ## 為什麼AI翻譯失敗，或者為空？
-    內置的免費API失效了，你需要獲取自己的API
+    內建的免費API失效了，你需要取得自己的API
 
 
 ## 為什麼AI翻譯不準？
 
 
-因為默認AI是智譜的免費AI，所以很傻。請你換成Gemini-2.5-flash 或者DeepSeek-v3 以上等級的大模型API。
+因為預設AI是智譜的免費AI，所以很傻。請你換成Gemini-2.5-flash 或者DeepSeek-v3 以上等級的大模型API。
 
 
 知乎野榜：[大語言模型-邏輯能力橫評](https://zhuanlan.zhihu.com/p/1954578674109096588)
 AI排行榜：[LMArena（需要科學上網）](https://lmarena.ai/)
-## 我如何獲取API(接口)？
+## 我如何取得API(介面)？
 
 ::: tabs
 ==  使用 Ohmygpt
 ohmygpt內有Chatgpt, Gemini, Claude, DeepSeek 等幾乎所有API。
-插件內粘貼授權碼登錄後，可直接使用。
+擴充功能內貼上授權碼登入後，可直接使用。
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/RHh3Upabtfk?si=mt_hZksXLw26XpKb&amp;start=296" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
@@ -115,31 +115,31 @@ ohmygpt內有Chatgpt, Gemini, Claude, DeepSeek 等幾乎所有API。
 
 
 == 其他
-您可以去Chatgpt，Gemini，Claude，Qwen，DeepSeek 自行申請大模型API，和Deepseek裡的視頻教程一樣配置好後即可使用。
+您可以去Chatgpt，Gemini，Claude，Qwen，DeepSeek 自行申請大模型API，和Deepseek裡的影片教學一樣設定好後即可使用。
 
 :::
 
 ## 如何用外部查詞？
 
 ![](<./assets/pill.png>)
-點擊圖中 4 號紅點位置，觸發膠囊功能。  
-同時也可以在開關設置內默認展開膠囊
+點擊圖中 4 號紅點位置，觸發膠囊功能。
+同時也可以在開關設定內預設展開膠囊
 
-膠囊自定義：  
-設置-彈窗設置-膠囊設置  
-這裡可以添加多層膠囊，多種查看方式，自定義任意第三方詞典等網站，
+膠囊自訂：
+設定-彈窗設定-膠囊設定
+這裡可以新增多層膠囊，多種查看方式，自訂任意第三方詞典等網站，
 
 ## 日語分詞太碎，不準。
 
-如上圖 3 號紅點位置，鼠標拖選文本後，點擊彈出的"create" 按鈕創建自定義高亮。
+如上圖 3 號紅點位置，滑鼠拖曳選取文字後，點擊彈出的"create" 按鈕建立自訂高亮。
 
 
 
 
 ## 如何更改翻譯風格？
 
-設置-API 配置 裡面的Prompt咒語，改成你想要的風格，以及你想要的翻譯方式。  
-開關設置內可以開啟兩個AI提示框，你可以一個用來翻譯，一個用來解析語法
+設定-API 設定 裡面的Prompt咒語，改成你想要的風格，以及你想要的翻譯方式。
+開關設定內可以開啟兩個AI提示框，你可以一個用來翻譯，一個用來解析語法
 
 
 
@@ -163,7 +163,7 @@ ohmygpt內有Chatgpt, Gemini, Claude, DeepSeek 等幾乎所有API。
 
 ## 彈窗和單詞有間隙
 
-開關設置處可以更改gap 值，目的用於防止擋住下一行句子
+開關設定處可以更改gap 值，目的用於防止擋住下一行句子
 
 
 
@@ -219,17 +219,17 @@ ohmygpt內有Chatgpt, Gemini, Claude, DeepSeek 等幾乎所有API。
 
 ## 如何更換彈窗背景？
 
-若自定義背景，請根據圖片顏色固定為黑主題或者白主題，否則對比度不夠，影響閱讀。
-支持svg,png,gif,mp4等
+若自訂背景，請根據圖片顏色固定為黑主題或者白主題，否則對比度不夠，影響閱讀。
+支援svg,png,gif,mp4等
 
 
 ![](<./assets/1758997348025.png>)
 > 此圖為關閉
 
 
-## 如何鼠標實時懸浮顯示小窗？
+## 如何滑鼠即時懸浮顯示小窗？
 
-關閉僅點擊模式打開鼠標離開小窗自動關閉建議配合 Mini 窗口使用
+關閉僅點擊模式打開滑鼠離開小窗自動關閉建議配合 Mini 視窗使用
 
 ![](<./assets/1758997348395.png>)
 
