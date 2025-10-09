@@ -74,9 +74,6 @@ export const cht = defineConfig({
         },
         nav: [
             { text: "影片教學", link: "https://www.youtube.com/watch?v=RHh3Upabtfk" },
-            { text: "Tg", link: "https://tg.lingkuma.org/" },
-            { text: "Discord", link: "https://dc.lingkuma.org/" },
-
             { text: "支持作者", link: "/cht/support" },
         ],
         sidebar: [

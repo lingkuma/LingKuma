@@ -72,9 +72,6 @@ export const ja = defineConfig({
         },
         nav: [
             { text: "ビデオチュートリアル", link: "https://www.youtube.com/watch?v=RHh3Upabtfk" },
-            { text: "Tg", link: "https://tg.lingkuma.org/" },
-            { text: "Discord", link: "https://dc.lingkuma.org/" },
-
             { text: "作者を支援する", link: "/ja/support" },
         ],
         sidebar: [

@@ -74,9 +74,6 @@ export const zh = defineConfig({
         },
         nav: [
             { text: "视频教程", link: "https://www.bilibili.com/video/BV1RGZ8YbEGh/" },
-            { text: "Tg", link: "https://tg.lingkuma.org/" },
-            { text: "Discord", link: "https://dc.lingkuma.org/" },
-
             { text: "支持作者", link: "/zh/support" },
         ],
         sidebar: [
