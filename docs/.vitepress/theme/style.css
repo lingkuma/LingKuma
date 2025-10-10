@@ -2,6 +2,18 @@
 :root {
     --vp-home-hero-name-color: transparent;
     --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #bd34fe, #41d1ff);
+
+    /* 自定义浅色主题背景色 */
+    --vp-c-bg: rgb(251, 250, 245);
+    --vp-c-bg-alt: rgb(251, 250, 245);
+    --vp-c-bg-elv: rgb(251, 250, 245);
+}
+
+/* 自定义暗色主题背景色 */
+.dark {
+    --vp-c-bg: rgb(26, 26, 26);
+    --vp-c-bg-alt: rgb(26, 26, 26);
+    --vp-c-bg-elv: rgb(26, 26, 26);
 }
 
 .VPImage.image-src {
