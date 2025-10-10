@@ -4,6 +4,14 @@ import { watch, h, onMounted } from "vue"
 import './style.css';
 import './components/download.css'
 import { enhanceAppWithTabs } from 'vitepress-plugin-tabs/client'
+import {
+  NolebaseEnhancedReadabilitiesMenu,
+  NolebaseEnhancedReadabilitiesScreenMenu,
+  InjectionKey,
+  SpotlightStyle
+} from '@nolebase/vitepress-plugin-enhanced-readabilities/client'
+import type { Options } from '@nolebase/vitepress-plugin-enhanced-readabilities/client'
+import '@nolebase/vitepress-plugin-enhanced-readabilities/client/style.css'
 import giscus from './giscus.vue'
 import notfound from './notfound.vue';
 import DownloadLink from './components/DownloadLink.vue' // 路径根据你的结构调整
@@ -14,12 +22,22 @@ export default {
         return h(DefaultTheme.Layout, null, {
             'not-found': () => h(notfound),
             // 'doc-after': () => h(giscus)
+            'nav-bar-content-after': () => h(NolebaseEnhancedReadabilitiesMenu),
+            'nav-screen-content-after': () => h(NolebaseEnhancedReadabilitiesScreenMenu),
         })
     },
     enhanceApp({ app }) {
         enhanceAppWithTabs(app)
         app.component('DownloadLink', DownloadLink)
         app.component('downloadbtn', downloadbtn)
+
+        // 配置阅读增强插件
+        app.provide(InjectionKey, {
+            spotlight: {
+                defaultToggle: true, // 默认开启 spotlight
+                defaultStyle: SpotlightStyle.Aside // 默认使用 Aside 高亮样式
+            }
+        } as Options)
     },
     setup() {
         const handleRouteChange = () => {
