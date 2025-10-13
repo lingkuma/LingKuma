@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.9.972
+1. ### Custom Phrase Highlighting
+    - Manually drag to select phrases and create highlights
+    - Japanese custom word segmentation, English phrases, all can be highlighted
+2. ### External Dictionary Lookup Capsule
+    - Don't like AI? Traditional website queries with one-click access
+    - Add any custom websites
+3. ### Dual AI Recommendations
+	1.  - Translation and parsing, better viewed separately
+4. ### More Liquid Glass Styles
+5. ### More Background Patterns and Images
+
+
 ## 0.9.954
 
 Fix Quora forum highlight bug.
