@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "zh/apiservice.md",
+                "file": "zh/server/log/log.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "apiservice"
+              "title": "log"
             }
           }
         ]
@@ -171,6 +171,16 @@
   },
   "active": "9476f159d1fb8d61",
   "lastOpenFiles": [
+    "zh/init/new/new.md",
+    "zh/init/new/assets/Pasted image 20251013195057.png",
+    "zh/init/new/assets/Pasted image 20251013195031.png",
+    "zh/init/new/assets/Pasted image 20251013200552.png",
+    "zh/init/new/assets/Pasted image 20251013200429.png",
+    "zh/init/new/assets/Pasted image 20251013200245.png",
+    "zh/init/new/assets/Pasted image 20251013195114.png",
+    "zh/init/new/assets",
+    "Pasted image 20251013194726.png",
+    "Pasted image 20251013194833.png",
     "zh/qa2.md",
     "zh/README.md"
   ]
