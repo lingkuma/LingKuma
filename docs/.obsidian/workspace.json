@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "zh/server/log/log.md",
+                "file": "zh/init/new/new.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "log"
+              "title": "new"
             }
           }
         ]
@@ -171,6 +171,9 @@
   },
   "active": "9476f159d1fb8d61",
   "lastOpenFiles": [
+    "zh/init/new/assets/Pasted image 20251013214612.png",
+    "zh/init/new/assets/Pasted image 20251013214233.png",
+    "zh/server/log/log.md",
     "cht/init/new/assets/Pasted image 20251013195057.png",
     "cht/init/new/assets/Pasted image 20251013195031.png",
     "ja/init/new/assets/Pasted image 20251013195057.png",
@@ -184,8 +187,6 @@
     "zh/init/new/assets/Pasted image 20251013195057.png",
     "zh/init/new/assets/Pasted image 20251013195031.png",
     "zh/init/new/assets/Pasted image 20251013200552.png",
-    "zh/init/new/assets/Pasted image 20251013200429.png",
-    "zh/init/new/assets/Pasted image 20251013200245.png",
     "zh/init/new/assets",
     "zh/qa2.md",
     "zh/README.md"

@@ -11,5 +11,7 @@
 	1.  - Translation and parsing, better viewed separately
 4. ## More Liquid Glass Styles
 	1. ![](<./assets/Pasted image 20251013195057.png>)
+		1. ![](assets/Pasted%20image%2020251013214233.png)
 5. ## More Background Patterns and Images
 	1. ![](<./assets/Pasted image 20251013195031.png>)
+		1. ![](assets/Pasted%20image%2020251013214612.png)

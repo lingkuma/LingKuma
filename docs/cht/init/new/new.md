@@ -11,5 +11,7 @@
 	1.  - 翻譯與解析，分開檢視效果更佳
 4. ## 更多液態玻璃樣式
 	1. ![](<./assets/Pasted image 20251013195057.png>)
+		1. ![](assets/Pasted%20image%2020251013214233.png)
 5. ## 更多背景圖案與背景圖片
 	1. ![](<./assets/Pasted image 20251013195031.png>)
+		1. ![](assets/Pasted%20image%2020251013214612.png)
