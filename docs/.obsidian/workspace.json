@@ -20,8 +20,21 @@
               "icon": "lucide-file",
               "title": "new"
             }
+          },
+          {
+            "id": "b90d1cb8d6339031",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.9.14"
+              },
+              "icon": "lucide-book-up",
+              "title": "版本说明 1.9.14"
+            }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -169,7 +182,7 @@
       "bases:创建新数据库": false
     }
   },
-  "active": "9476f159d1fb8d61",
+  "active": "b90d1cb8d6339031",
   "lastOpenFiles": [
     "zh/init/new/assets/Pasted image 20251013214612.png",
     "zh/init/new/assets/Pasted image 20251013214233.png",

@@ -6,7 +6,7 @@
 >範例高亮文字
 ::: tabs
 == English
-Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, "and what is the use of a book," thought Alice "without pictures or conversations?"
+Alice was beginning to get very tired of sitting by her sister on the bank. She had nothing to do. Once or twice she had peeped into the book her sister was reading. But it had no pictures or conversations in it. "And what is the use of a book," thought Alice, "without pictures or conversations?"
 *— Alice in Wonderland*
 == Japanese
 土手で姉の傍らに座り、何もしないことに、アリスはもううんざりし始めていた。姉の読んでいる本をちらちらと二、三度見てみたものの、絵も会話もなく、「絵も会話もない本なんて、一体何の価値があるのかしら?」とアリスは心の中で思った。
