@@ -88,14 +88,11 @@ pear
 
 
 ## 為什麼 AI 翻譯失敗，或是空的？
-    內建的免費 API 失效了，您需要取得自己的 API。
-
+內建的免費 API 失效了，您需要取得自己的 API。
 
 ## 為什麼 AI 翻譯不準？
 
-
 因為預設 AI 是智譜的免費 AI，所以效果有限。請您換成 Gemini-2.5-flash 或 DeepSeek-v3 以上等級的大型語言模型 API。
-
 
 知乎野榜：[大語言模型-邏輯能力橫向評比](https://zhuanlan.zhihu.com/p/1954578674109096588)
 AI 排行榜：[LMArena（需要使用 VPN）](https://lmarena.ai/)
@@ -106,12 +103,12 @@ AI 排行榜：[LMArena（需要使用 VPN）](https://lmarena.ai/)
 Ohmygpt 內有 Chatgpt、Gemini、Claude、DeepSeek 等幾乎所有 API。
 在擴充功能內貼上授權碼登入後，即可直接使用。
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/RHh3Upabtfk?si=mt_hZksXLw26XpKb&amp;start=296" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="100%" height="315" style="max-width: 100%;" src="https://www.youtube.com/embed/RHh3Upabtfk?si=mt_hZksXLw26XpKb&start=296" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 
 ==  DeepSeek
 
-<iframe src="//player.bilibili.com/player.html?bvid=BV1RGZ8YbEGh&t=294" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" width="560" height="315"></iframe>
+<iframe src="//player.bilibili.com/player.html?bvid=BV1RGZ8YbEGh&t=294" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" width="100%" height="315" style="max-width: 100%;"></iframe>
 
 
 == 其他

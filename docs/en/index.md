@@ -34,9 +34,9 @@ features:
     link: ./more/WindowsCaptions/WindowsCaptions
 ---
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+<div style="display: flex; flex-wrap: wrap; gap: 20px; margin: 20px 0;">
 
-<div>
+<div style="flex: 1 1 320px; min-width: 280px;">
 
 ::: tabs
 == Chrome
@@ -57,18 +57,18 @@ features:
 ::: tabs
 == Youtube
 
-<iframe width="500" height="315" src="https://www.youtube.com/embed/RHh3Upabtfk?si=NI2Bquz66PzQZe2H" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="100%" height="315" style="max-width: 100%;" src="https://www.youtube.com/embed/RHh3Upabtfk?si=NI2Bquz66PzQZe2H" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 == bilibili
 
-<iframe src="//player.bilibili.com/player.html?bvid=BV1RGZ8YbEGh" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" width="500" height="315" ></iframe>
+<iframe src="//player.bilibili.com/player.html?bvid=BV1RGZ8YbEGh" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" width="100%" height="315" style="max-width: 100%;"></iframe>
 
 
 :::
 
 </div>
 
-<div>
+<div style="flex: 1 1 320px; min-width: 280px;">
 
 
 

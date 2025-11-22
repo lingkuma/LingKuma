@@ -88,7 +88,7 @@ pear
 
   
 ## 为什么AI翻译失败，或者为空？
-    内置的免费API失效了，你需要获取自己的API
+内置的免费API失效了，你需要获取自己的API
 
 
 ## 为什么AI翻译不准？
@@ -106,12 +106,12 @@ AI排行榜：[LMArena（需要科学上网）](https://lmarena.ai/)
 ohmygpt内有Chatgpt, Gemini, Claude, DeepSeek 等几乎所有API。  
 插件内粘贴授权码登录后，可直接使用。
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/RHh3Upabtfk?si=mt_hZksXLw26XpKb&amp;start=296" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="100%" height="315" style="max-width: 100%;" src="https://www.youtube.com/embed/RHh3Upabtfk?si=mt_hZksXLw26XpKb&start=296" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 
 ==  DeepSeek
 
-<iframe src="//player.bilibili.com/player.html?bvid=BV1RGZ8YbEGh&t=294" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" width="560" height="315"></iframe>
+<iframe src="//player.bilibili.com/player.html?bvid=BV1RGZ8YbEGh&t=294" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" width="100%" height="315" style="max-width: 100%;"></iframe>
 
 
 == 其他

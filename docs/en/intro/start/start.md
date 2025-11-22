@@ -88,7 +88,7 @@ You can import in batches according to different word statuses. Word statuses ha
 
 
 ## Why does AI translation fail or return empty?
-    The built-in free API has expired, you need to get your own API
+The built-in free API has expired, you need to get your own API
 
 
 ## Why is AI translation inaccurate?
@@ -106,12 +106,12 @@ AI Leaderboard: [LMArena (VPN required)](https://lmarena.ai/)
 Ohmygpt has almost all APIs including ChatGPT, Gemini, Claude, DeepSeek, etc.
 After pasting the authorization code to log in within the plugin, you can use it directly.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/RHh3Upabtfk?si=mt_hZksXLw26XpKb&amp;start=296" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="100%" height="315" style="max-width: 100%;" src="https://www.youtube.com/embed/RHh3Upabtfk?si=mt_hZksXLw26XpKb&start=296" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 
 ==  DeepSeek
 
-<iframe src="//player.bilibili.com/player.html?bvid=BV1RGZ8YbEGh&t=294" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" width="560" height="315"></iframe>
+<iframe src="//player.bilibili.com/player.html?bvid=BV1RGZ8YbEGh&t=294" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" width="100%" height="315" style="max-width: 100%;"></iframe>
 
 
 == Others
