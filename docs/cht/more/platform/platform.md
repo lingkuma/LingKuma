@@ -2,11 +2,16 @@
 
 ## Apple iOS 系統（iPhone 和 iPad）
 
-1. ### Orion 瀏覽器
+1. ### Gear 瀏覽器
+    [Gear 瀏覽器](https://apps.apple.com/us/app/gear-ai-web-extension-browser/id1458962238) 是一個基於 Chromium 內核的瀏覽器，支援 Chrome 插件。安裝 Gear 後，可直接透過 Chrome 線上應用程式商店安裝 LingKuma。
 
-    [Orion browser](https://apps.apple.com/app/id1484498200) 支援部分 Chrome 擴充功能。安裝 Orion 後，可直接透過 Chrome 線上應用程式商店安裝 LingKuma。
 
-2. ### Microsoft Edge TestFlight
+1. ### ~~Orion 瀏覽器~~
+    Orion 瀏覽器暫時不推薦，因為有 Bug。
+    
+    ~~[Orion browser](https://apps.apple.com/app/id1484498200) 支援部分 Chrome 擴充功能。安裝 Orion 後，可直接透過 Chrome 線上應用程式商店安裝 LingKuma。~~
+
+1. ### Microsoft Edge TestFlight
 
     Edge 測試版已支援 CRX 擴充功能側載，目前處於測試階段，可能存在問題。
 

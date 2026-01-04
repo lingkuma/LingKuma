@@ -4,9 +4,15 @@
 
 ## 苹果 Ios 系统 （Iphone & Ipad ）
 
-1. ### Orion 浏览器
+1. ### Gear 浏览器
+    [Gear 浏览器](https://apps.apple.com/us/app/gear-ai-web-extension-browser/id1458962238) 是一个基于 Chromium 内核的浏览器，支持 Chrome 插件。安装 Gear 后，可直接通过 Chrome 网上应用店安装 LingKuma。
 
-    [Orion broswer](https://apps.apple.com/app/id1484498200) 支持部分 Chrome 插件。安装 Orion 后，可直接通过 Chrome 网上应用店安装 LingKuma。
+
+1. ### ~~Orion 浏览器~~
+
+    Orion 浏览器暂时不推荐，因为有Bug。
+    
+    ~~[Orion broswer](https://apps.apple.com/app/id1484498200) 支持部分 Chrome 插件。安装 Orion 后，可直接通过 Chrome 网上应用店安装 LingKuma。~~
 
 1. ### Microsoft Edge TestFlight
 

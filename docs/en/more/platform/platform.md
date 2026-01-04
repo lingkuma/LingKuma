@@ -2,9 +2,14 @@
 
 ## Apple iOS System (iPhone & iPad)
 
-1. ### Orion Browser
+1. ### Gear Browser
+    [Gear Browser](https://apps.apple.com/us/app/gear-ai-web-extension-browser/id1458962238) is a Chromium-based browser that supports Chrome extensions. After installing Gear, you can directly install LingKuma from the Chrome Web Store.
 
-    [Orion browser](https://apps.apple.com/app/id1484498200) supports some Chrome extensions. After installing Orion, you can directly install LingKuma from the Chrome Web Store.
+
+1. ### ~~Orion Browser~~
+    Orion Browser is temporarily not recommended due to bugs.
+    
+    ~~[Orion browser](https://apps.apple.com/app/id1484498200) supports some Chrome extensions. After installing Orion, you can directly install LingKuma from the Chrome Web Store.~~
 
 1. ### Microsoft Edge TestFlight
 

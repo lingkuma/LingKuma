@@ -4,9 +4,14 @@
 
 ## Apple iOS システム （iPhone & iPad ）
 
-1. ### Orion ブラウザ
+1. ### Gear ブラウザ
+    [Gear ブラウザ](https://apps.apple.com/us/app/gear-ai-web-extension-browser/id1458962238) は Chromium ベースのブラウザで、Chrome プラグインをサポートしています。Gear をインストール後、Chrome ウェブストアから直接 LingKuma をインストールできます。
 
-    [Orion broswer](https://apps.apple.com/app/id1484498200) 一部のChromeプラグインに対応。Orionをインストール後、Chrome ウェブストアから直接LingKumaをインストールできます。
+
+1. ### ~~Orion ブラウザ~~
+    Orion ブラウザは一時的に推奨しません。バグがあるためです。
+    
+    ~~[Orion broswer](https://apps.apple.com/app/id1484498200) 一部のChromeプラグインに対応。Orionをインストール後、Chrome ウェブストアから直接LingKumaをインストールできます。~~
 
 1. ### Microsoft Edge TestFlight
 
