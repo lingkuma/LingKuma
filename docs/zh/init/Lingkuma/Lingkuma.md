@@ -42,7 +42,7 @@
     { src: './assets/1758916889324.png', caption: 'Bionic ADHD阅读辅助' },
     { src: './assets/1758916889331.png', caption: 'Youtube 字幕高亮' }
   ]"
-  item-width="320px"
+  item-width="600px"
   gap="20px"
 />
 

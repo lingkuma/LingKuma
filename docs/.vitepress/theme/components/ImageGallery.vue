@@ -76,7 +76,7 @@ const props = defineProps({
   },
   itemWidth: {
     type: String,
-    default: '300px'
+    default: '600px'
   },
   gap: {
     type: String,
