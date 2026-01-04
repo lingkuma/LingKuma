@@ -72,14 +72,21 @@ features:
 
 
 
-::: tabs
-== アニメーション表示
-![](./init/Lingkuma/assets/1758916889304.png)
-== Bionic ADHD読書補助
-![](./init/Lingkuma/assets/1758916889324.png)
-== Youtube 字幕ハイライト
-![](./init/Lingkuma/assets/1758916889331.png)
-:::
+<ImageGallery 
+  :images="[
+    { src: './init/Lingkuma/assets/1280x800-1-boom-word-side1.png', caption: '単語爆発' },
+    { src: './init/Lingkuma/assets/1280x800-2-explan.png', caption: 'AI 解析' },
+    { src: './init/Lingkuma/assets/1280x800-4-epub.png', caption: 'EPUB 読書' },
+    { src: './init/Lingkuma/assets/1280-800-3-youtube.png', caption: 'YouTube 字幕' },
+    { src: './init/Lingkuma/assets/1280-800-5-PDF.png', caption: 'PDF 読書' },
+    { src: './init/Lingkuma/assets/1280-800-6-phone.png', caption: 'モバイル対応' },
+    { src: './init/Lingkuma/assets/1758916889304.png', caption: 'アニメーション表示' },
+    { src: './init/Lingkuma/assets/1758916889324.png', caption: 'Bionic ADHD読書補助' },
+    { src: './init/Lingkuma/assets/1758916889331.png', caption: 'Youtube 字幕ハイライト' }
+  ]"
+  item-width="600px"
+  gap="20px"
+/>
 
 </div>
 

@@ -72,14 +72,21 @@ features:
 
 
 
-::: tabs
-== Demo
-![](./init/Lingkuma/assets/1758916889304.png)
-== Bionic
-![](./init/Lingkuma/assets/1758916889324.png)
-== Youtube Subtitle
-![](./init/Lingkuma/assets/1758916889331.png)
-:::
+<ImageGallery 
+  :images="[
+    { src: './init/Lingkuma/assets/1280x800-1-boom-word-side1.png', caption: 'Word Explosion' },
+    { src: './init/Lingkuma/assets/1280x800-2-explan.png', caption: 'AI Analysis' },
+    { src: './init/Lingkuma/assets/1280x800-4-epub.png', caption: 'EPUB Reading' },
+    { src: './init/Lingkuma/assets/1280-800-3-youtube.png', caption: 'YouTube Subtitles' },
+    { src: './init/Lingkuma/assets/1280-800-5-PDF.png', caption: 'PDF Reading' },
+    { src: './init/Lingkuma/assets/1280-800-6-phone.png', caption: 'Mobile Support' },
+    { src: './init/Lingkuma/assets/1758916889304.png', caption: 'Animation Demo' },
+    { src: './init/Lingkuma/assets/1758916889324.png', caption: 'Bionic ADHD Reading Assistant' },
+    { src: './init/Lingkuma/assets/1758916889331.png', caption: 'Youtube Subtitle Highlighting' }
+  ]"
+  item-width="600px"
+  gap="20px"
+/>
 
 </div>
 
