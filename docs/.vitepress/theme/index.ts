@@ -1,6 +1,6 @@
 import DefaultTheme from 'vitepress/theme';
 import { useRouter } from 'vitepress'
-import { watch, h, onMounted } from "vue"
+import { watch, h, onMounted, App } from "vue"
 import './style.css';
 import './components/download.css'
 import { enhanceAppWithTabs } from 'vitepress-plugin-tabs/client'
@@ -16,6 +16,7 @@ import giscus from './giscus.vue'
 import notfound from './notfound.vue';
 import DownloadLink from './components/DownloadLink.vue' // 路径根据你的结构调整
 import downloadbtn from './downloadbtn.vue' // 路径根据你的结构调整
+import ImageGallery from './components/ImageGallery.vue'
 export default {
     ...DefaultTheme,
     Layout() {
@@ -26,10 +27,11 @@ export default {
             'nav-screen-content-after': () => h(NolebaseEnhancedReadabilitiesScreenMenu),
         })
     },
-    enhanceApp({ app }) {
+    enhanceApp({ app }: { app: App }) {
         enhanceAppWithTabs(app)
         app.component('DownloadLink', DownloadLink)
         app.component('downloadbtn', downloadbtn)
+        app.component('ImageGallery', ImageGallery)
 
         // 配置阅读增强插件
         app.provide(InjectionKey, {
@@ -42,11 +44,11 @@ export default {
     setup() {
         const handleRouteChange = () => {
             document.querySelectorAll('.downloadlink').forEach((e) => {
-                e.target = '_blank'
+                (e as HTMLAnchorElement).target = '_blank'
                 e.addEventListener('click', () => {
 
                     function checkIfMobile() {
-                        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+                        const userAgent = navigator.userAgent || (navigator as any).vendor || (window as any).opera;
                         return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
                     }
                     if (checkIfMobile()) return;
@@ -64,8 +66,10 @@ export default {
                     srcs.forEach(
                         (e) => {
                             let att = pre ? 'src' : 'href';
-                            let tgt = e.getAttribute(att).replace(origin, replacetarget)
-                            if (tgt != e.getAttribute(att)) {
+                            let attrValue = e.getAttribute(att);
+                            if (!attrValue) return;
+                            let tgt = attrValue.replace(origin, replacetarget)
+                            if (tgt != attrValue) {
                                 e.setAttribute(att, tgt)
                             }
                         }

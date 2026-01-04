@@ -26,15 +26,28 @@
 [多平台使用教程](../../more/platform/platform)
 == 安卓
 [多平台使用教程](../../more/platform/platform)
-:::
-::: tabs
-== 动图展示
-![](<assets/1758916889304.png>)
-== Bionic ADHD阅读辅助
-![](<assets/1758916889324.png>)
-== Youtube 字幕高亮
-![](<assets/1758916889331.png>)
 ::: 
+
+## 产品展示
+
+<ImageGallery 
+  :images="[
+    { src: './assets/1280x800-1-boom-word-side1.png', caption: '单词爆炸' },
+    { src: './assets/1280x800-2-explan.png', caption: 'AI 解析' },
+    { src: './assets/1280x800-4-epub.png', caption: 'EPUB 阅读' },
+    { src: './assets/1280-800-3-youtube.png', caption: 'YouTube 字幕' },
+    { src: './assets/1280-800-5-PDF.png', caption: 'PDF 阅读' },
+    { src: './assets/1280-800-6-phone.png', caption: '移动端支持' }
+    { src: './assets/1758916889304.png', caption: '动图展示' },
+    { src: './assets/1758916889324.png', caption: 'Bionic ADHD阅读辅助' },
+    { src: './assets/1758916889331.png', caption: 'Youtube 字幕高亮' },
+  ]"
+  item-width="320px"
+  gap="20px"
+/>
+
+
+
 
 
 ## 🌟 核心功能
@@ -85,6 +98,7 @@
 ::: info 彩蛋
 更多小彩蛋等待你的发现 ✨
 :::  
+
 
 
 ## 视频介绍
