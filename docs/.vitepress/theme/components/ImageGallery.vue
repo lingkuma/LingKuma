@@ -55,13 +55,10 @@ const props = defineProps({
 
 const container = ref(null);
 const currentScroll = ref(0);
-const maxScroll = ref(0);
+const maxScroll = ref(-1);
 
 const isAtStart = computed(() => currentScroll.value <= 0);
-const isAtEnd = computed(() => {
-  if (maxScroll.value <= 0) return false;
-  return currentScroll.value >= maxScroll.value - 1;
-});
+const isAtEnd = computed(() => maxScroll.value >= 0 && currentScroll.value >= maxScroll.value - 1);
 
 const updateMaxScroll = () => {
   if (container.value) {
@@ -82,11 +79,8 @@ const scrollLeft = () => {
 const scrollRight = () => {
   if (container.value) {
     const scrollAmount = container.value.clientWidth * 0.8;
-    const targetScroll = currentScroll.value + scrollAmount;
-    const actualScroll = Math.min(targetScroll, maxScroll.value);
-    
-    container.value.scrollTo({
-      left: actualScroll,
+    container.value.scrollBy({
+      left: scrollAmount,
       behavior: 'smooth'
     });
   }
