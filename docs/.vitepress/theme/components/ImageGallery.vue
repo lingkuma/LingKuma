@@ -165,15 +165,50 @@ const handleKeydown = (e: KeyboardEvent) => {
   }
 };
 
+const waitForImagesToLoad = () => {
+  return new Promise<void>((resolve) => {
+    if (!container.value) {
+      resolve();
+      return;
+    }
+
+    const images = container.value.querySelectorAll('img');
+    if (images.length === 0) {
+      resolve();
+      return;
+    }
+
+    let loadedCount = 0;
+    const totalImages = images.length;
+
+    const checkAllLoaded = () => {
+      loadedCount++;
+      if (loadedCount === totalImages) {
+        resolve();
+      }
+    };
+
+    images.forEach((img) => {
+      if (img.complete) {
+        checkAllLoaded();
+      } else {
+        img.addEventListener('load', checkAllLoaded);
+        img.addEventListener('error', checkAllLoaded);
+      }
+    });
+  });
+};
+
 onMounted(() => {
   if (container.value) {
     container.value.addEventListener('scroll', handleScroll);
     window.addEventListener('resize', updateMaxScroll);
     window.addEventListener('keydown', handleKeydown);
-    setTimeout(() => {
+    
+    waitForImagesToLoad().then(() => {
       updateMaxScroll();
       currentScroll.value = container.value.scrollLeft;
-    }, 100);
+    });
   }
 });
 
