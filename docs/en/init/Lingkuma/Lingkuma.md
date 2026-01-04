@@ -6,7 +6,13 @@
 <!-- ![](<assets/1758916888941.png>) -->
 <img src="./assets/1758916888941.png" width="100" alt="Description" style="display: block; margin: 0 auto;">
 
-<marquee behavior="scroll" direction="left" scrollamount="5">LingKuma Learn any language on the web</marquee>
+<marquee behavior="scroll" direction="left" scrollamount="5">LingKuma Learn any language on the web</marquee>
+
+---
+
+::: info Product Highlights
+**Open Source & Free** · **AI-Powered** · **Cross-Platform** · **Custom AI** · **WebDAV Sync**
+:::
 
 ::: tabs
 == Chrome
@@ -31,49 +37,54 @@
 :::
 
 
-## 💡Highlighting and Translation
+## 🌟 Core Features
 
+### 📚 Smart Highlighting & Translation
 
+| Feature | Description |
+| :--- | :--- |
+| **Multi-word Highlighting** | Unfamiliar words in blue, familiar words in yellow, clear at a glance |
+| **Sentence Explosion** | Query multiple new words at once, with full-sentence AI translation |
+| **Word Notes** | Record your own understanding, personalized learning notes |
+| **AI Recommended Notes** | Sentence analysis, precise and easy to understand |
+| **AI Example Analysis** | Continuous questioning, deep understanding of word usage |
+| **Example Records** | Never forget important sentences, review anytime |
+| **Custom External Buttons** | One-click dictionary/encyclopedia search |
 
+---
 
+### 🌍 Cross-Platform Support
 
-Highlighting and Translation
-### 💡 Full Language Support
-        💭 Japanese word segmentation allows manual drag selection of phrases to create highlights     
-### 💡 Highlighting Features
+::: tip Seamless Cross-Platform Experience
+- **Browser Extensions**: Chrome / Edge / Firefox
+- **Mobile**: iOS / Android full coverage
+- **Sync Methods**: WebDAV / Docker free sync
+- **Reader Support**: Readest and other EPUB web readers
+- **PDF Support**: Mozilla PDF reader perfect support
+:::
 
-        💭 Unfamiliar words, blue highlighting.  
-        👾 Familiar words, yellow highlighting.  
-        💭 Known words, no highlighting. 
+---
 
-### 💡 Translation and Example Sentences
+### 🎯 More Practical Features
 
-        💭 Custom note addition  
-        👾 AI recommended translation  
-        💭 Save example sentences from each query  
-        👾 AI sentence analysis  
-        💭 Third-party dictionary website integration  
+#### YouTube Subtitle Enhancement
+- **Subtitle Control**: Flexible control of subtitle display and hiding
+- **AI Repair**: Smart repair of English subtitles without punctuation
+- **Highlight Support**: Compatible with Trancy and other plugins
 
-## 💡 Other Features
+#### Reading Assistance
+- **Bionic Reading**: Improve reading speed and comprehension
+- **SimpRead Mode**: Highlight support, focused reading experience
+- **Liquid Glass Popup**: Elegant interface interaction
 
-### 👾 Both epub / Pdf support highlighting
+#### Text-to-Speech
+- **Custom URL Entry**: Flexible TTS service configuration
+- **Edge TTS**: High-quality voice synthesis
+- **Minimax TTS**: Diverse voice options
 
-### 👾 Youtube Subtitle Control and Correction
-
-        💭 For old subtitles without punctuation, use AI to insert punctuation marks to form complete sentences.
-        >(Automatic subtitles before 2025 had no punctuation)
-
-        💭 For subtitles with punctuation, use ASD to move forward, backward and repeat.
-        >(Automatic subtitles after 2025 have punctuation)
-
-        💭 Use ASD to move forward, backward and repeat.       
-        💭 Support highlighting other subtitle plugins.
-
-### 👾 Clipboard Text Highlighting
-        💭 Compatible with content outside the browser 
-
-### 👾 Multiple TTS Channels
-        💭 Custom URL, Minimax TTS, Local TTS  
+::: info Easter Eggs
+More surprises waiting for you to discover ✨
+:::  
 
 
 ## Video Introduction
