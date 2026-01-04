@@ -27,14 +27,23 @@
 == Android
 [Multi-platform Tutorial](../../more/platform/platform)
 :::
-::: tabs
-== Animation Demo
-![](<assets/1758916889304.png>)
-== Bionic ADHD Reading Assistant
-![](<assets/1758916889324.png>)
-== Youtube Subtitle Highlighting
-![](<assets/1758916889331.png>)
-:::
+## Product Showcase
+
+<ImageGallery 
+  :images="[
+    { src: './assets/1280x800-1-boom-word-side1.png', caption: 'Word Explosion' },
+    { src: './assets/1280x800-2-explan.png', caption: 'AI Analysis' },
+    { src: './assets/1280x800-4-epub.png', caption: 'EPUB Reading' },
+    { src: './assets/1280-800-3-youtube.png', caption: 'YouTube Subtitles' },
+    { src: './assets/1280-800-5-PDF.png', caption: 'PDF Reading' },
+    { src: './assets/1280-800-6-phone.png', caption: 'Mobile Support' },
+    { src: './assets/1758916889304.png', caption: 'Animation Demo' },
+    { src: './assets/1758916889324.png', caption: 'Bionic ADHD Reading Assistant' },
+    { src: './assets/1758916889331.png', caption: 'Youtube Subtitle Highlighting' }
+  ]"
+  item-width="600px"
+  gap="20px"
+/>
 
 
 ## 🌟 Core Features

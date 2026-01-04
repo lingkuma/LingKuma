@@ -27,14 +27,23 @@
 == Android
 [多平台使用教學](../../more/platform/platform)
 :::
-::: tabs
-== 動圖展示
-![](<assets/1758916889304.png>)
-== Bionic ADHD 閱讀輔助
-![](<assets/1758916889324.png>)
-== YouTube 字幕高亮
-![](<assets/1758916889331.png>)
-:::
+## 產品展示
+
+<ImageGallery 
+  :images="[
+    { src: './assets/1280x800-1-boom-word-side1.png', caption: '單字爆炸' },
+    { src: './assets/1280x800-2-explan.png', caption: 'AI 解析' },
+    { src: './assets/1280x800-4-epub.png', caption: 'EPUB 閱讀' },
+    { src: './assets/1280-800-3-youtube.png', caption: 'YouTube 字幕' },
+    { src: './assets/1280-800-5-PDF.png', caption: 'PDF 閱讀' },
+    { src: './assets/1280-800-6-phone.png', caption: '行動端支援' },
+    { src: './assets/1758916889304.png', caption: '動圖展示' },
+    { src: './assets/1758916889324.png', caption: 'Bionic ADHD閱讀輔助' },
+    { src: './assets/1758916889331.png', caption: 'Youtube 字幕高亮' }
+  ]"
+  item-width="600px"
+  gap="20px"
+/>
 
 
 ## 🌟 核心功能
