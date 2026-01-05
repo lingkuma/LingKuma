@@ -1,0 +1,228 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope");
+
+:root {
+  font-size: clamp(1.5rem, 2vw + 1rem, 2.5rem);
+}
+
+body {
+  background: black;
+  height: 100svh;
+  display: grid;
+  place-items: center;
+
+  font-family: "Manrope", sans-serif;
+  color: white;
+
+  grid-template-areas: "stack";
+
+  > * {
+    grid-area: stack;
+  }
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+main {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  padding: 10%;
+  grid-template-areas: "stack";
+
+  filter: url(#ambilight);
+
+  & > * {
+    grid-area: stack;
+  }
+}
+
+main p {
+  font-size: 3rem;
+  text-align: center;
+  margin-top: -3em;
+}
+
+@supports (-moz-appearance:none) {
+  p::after {
+    display: block;
+    content: 'this is not gonna work for you furryfox user, sorry';
+    font-size: .75rem;
+    max-width: 20ch;
+    text-align: start;
+    line-height: 1;
+    color: #B00B50;
+    text-shadow: #f005 1px 0 10px;
+    font-weight: bold;
+    letter-spacing: 5px;
+  }
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+
+  rotate: 0deg;
+  transition: 0.3s;
+  color: #b00b50;
+  text-shadow: #f005 1px 0 10px;
+  font-size: 1.5rem;
+}
+@keyframes example {
+  to {
+    /*     color: #bada55; */
+    color: #fff;
+  }
+}
+
+a:hover {
+  animation: 0.5s example infinite alternate;
+  transform: skewX(-5deg);
+  rotate: -5deg;
+  letter-spacing: 2px;
+}
+
+[thanks]::after {
+  content: "";
+  position: absolute;
+  inset: 0px;
+  border-radius: 1em;
+  background-color: transparent;
+  backdrop-filter: blur(15px) saturate(1.5);
+  pointer-events: none;
+  mask: repeating-radial-gradient(
+    circle at 50% 50%,
+    #000 0px,
+    #000 1px,
+    #0000 4px,
+    #0000 7px
+  )
+}
+
+img {
+  /*   position: absolute; */
+  z-index: -1;
+  /*   inset: 0; */
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  overflow: hidden;
+  border-radius: 1em;
+  filter: brightness(0.5);
+}
+
+aside {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  /*     resize: both; */
+}
+
+svg {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+ul {
+  list-style: none;
+  gap: 0.5em;
+  display: grid;
+  grid-auto-flow: column;
+
+  overflow: visible;
+  overflow-x: auto;
+  padding-block: 2em;
+  width: 100%;
+  /*   cursor: ew-resize; */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+ul::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+ul {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+li {
+  box-shadow: 0 8px 32px 0 #000;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  background: #0005;
+  width: 7rem;
+  aspect-ratio: 8/12;
+  border-radius: 1em;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  backdrop-filter: blur(7px);
+}
+
+li::before {
+  content: attr(fx);
+  color: white;
+  text-shadow: 2px 2px 3px black;
+  font-weight: bold;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+ul:not(:has([wip])) {
+  li:first-child {
+    margin-inline-start: 80vw;
+  }
+  li:last-child {
+    margin-inline-end: 80vw;
+  }
+}
+
+[wip] {
+  margin-inline-start: 30vw;
+  order: -1;
+}
+
+[fx="fractal"] {
+  backdrop-filter: blur(5px) url(#fractal-glass);
+}
+[fx="flip"] {
+  backdrop-filter: blur(5px) url(#flip);
+}
+[fx="rgb-split"] {
+  backdrop-filter: blur(5px) url(#rgb-split);
+}
+[fx="pixel"] {
+  backdrop-filter: url(#pixel);
+}
+[fx="mosaic"] {
+  backdrop-filter: blur(2px) url(#mosaic);
+}
+[fx="ellipses"] {
+  backdrop-filter: url(#ellipses);
+}
+[fx="rough"] {
+  backdrop-filter: blur(7px) url(#rough);
+}
+[fx="bulge"] {
+  backdrop-filter: url(#bulge);
+}
+[fx="fluted"] {
+  backdrop-filter: url(#fluted);
+}
+[fx="tiled"] {
+  backdrop-filter: url(#tiled);
+}
+

@@ -1,0 +1,11 @@
+{
+  "extName": {
+    "message": "LingKuma - Aprendizado de idiomas",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Aprenda qualquer idioma na web",
+    "description": "Extension description"
+  }
+}
+

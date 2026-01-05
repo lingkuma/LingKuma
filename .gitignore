@@ -36,3 +36,13 @@ Thumbs.db
 *.tmp
 *.temp
 
+# 忽略第三方插件
+.cunzhi-memory
+.augment
+.VSCodeCounter/
+
+# 忽略打包输出
+/*.zip
+/*.crx
+/*.pem
+/*.tar

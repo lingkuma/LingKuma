@@ -1,0 +1,123 @@
+{
+  "manifest_version": 3,
+  "name": "__MSG_extName__",
+  "version": "1.0.3",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
+  "icons": {
+    "128": "src/icons/icon128.png",
+    "48": "src/icons/icon48.png",
+    "32": "src/icons/icon32.png",
+    "16": "src/icons/icon16.png"
+  },
+  "permissions": [
+    "activeTab",
+    "tts",
+    "storage",
+    "tabs",
+    "offscreen",
+    "downloads",
+    "sidePanel",
+    "clipboardRead",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/utils/cloudAPI.js",
+        "src/utils/dataAccessLayer.js",
+        "src/service/a0_afdian.js",
+        "src/service/jp/kuromoji.js",
+        "src/utils/evaluateExpression.js",
+        "src/utils/pdfDetection.js",
+        "src/utils/sentenseOoOo.js",
+        "src/plugin/bionic.js",
+        "src/utils/liquid-glass.js",
+        "src/plugin/readingRuler.js",
+        "src/plugin/clipSubtitles.js",
+        "src/plugin/waifu/waifu.js",
+        "src/plugin/youtubeCaptionGet.js",
+        "src/plugin/youtubeCaptionFix.js",
+        "src/service/a1_loadKnowWords.js",
+        "src/service/a2_hightlight.js",
+        "src/service/a3_aiFragen.js",
+        "src/service/a4_tooltip_new.js",
+        "src/service/a5_custom_word_selection.js",
+        "src/service/a6_custom_highlight.js",
+        "src/service/a7_words_boom.js",
+        "src/plugin/tts.js",
+        "src/plugin/edge_tts.js",
+        "src/plugin/orion_tts.js",
+        "src/content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "all_frames": true,
+      "match_about_blank": true,
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "./src/popup/popup.html"
+  },
+  "side_panel": {
+    "default_path": "src/sidebar/sidebar.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/options/images/*",
+        "src/service/jp/dict/*",
+        "src/service/image/pattern.png",
+        "src/service/image/pattern2.png",
+        "src/service/image/pattern3.png",
+        "src/service/image/tg/*.svg",
+        "src/service/image/tg_png/*.jpg",
+        "src/service/image/lottie/*.tgs",
+        "src/service/image/lottie/tgs-balloon.html",
+        "src/service/image/lottie/tgs-balloon.js",
+        "src/utils/liquid-glass.js",
+        "src/utils/tgs-player.min.js",
+        "src/service/videos/kawai.mp4",
+        "src/popup/popup.html",
+        "src/player/offscreen.html",
+        "src/player/offscreen.js",
+        "src/plugin/orion_tts.js",
+        "src/plugin/youtubeCaptionInjected.js",
+        "src/sidebar/sidebar.html",
+        "src/utils/liquid-glass.js",
+        "src/fonts/LXGWWenKaiGBLite-Regular.ttf",
+        "src/fonts/Fanwood.otf",
+        "src/fonts/Fanwood_Bold.otf",
+        "src/fonts/Fanwood_Italic.otf"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "options_ui": {
+    "page": "src/options/options.html",
+    "open_in_tab": true
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "firefox@lingkuma.org",
+      "strict_min_version": "140.0"
+    }
+  }
+}

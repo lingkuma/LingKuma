@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>EPUB Roman Clean | EPUB 注音清理工具 | EPUB ルビ削除ツール</title>
+  <style>
+    :root {
+      --bg-color: #1a1a1a;
+      --container-bg: #2d2d2d;
+      --text-color: #e0e0e0;
+      --border-color: #404040;
+      --input-bg: #3d3d3d;
+      --input-border: #505050;
+      --shadow-color: rgba(0, 0, 0, 0.3);
+      --accent-color: #6c9e6c;
+      --secondary-color: #9e6c6c;
+      --example-bg: #252525;
+    }
+
+    body {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+
+    h2 {
+      color: var(--text-color);
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .container {
+      background-color: var(--container-bg);
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px var(--shadow-color);
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-color);
+      font-weight: bold;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      border: 2px dashed var(--border-color);
+      border-radius: 4px;
+      margin-bottom: 20px;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+    }
+
+    .clean-modes {
+      margin: 20px 0;
+      padding: 20px;
+      background-color: var(--input-bg);
+      border-radius: 4px;
+      border-left: 4px solid var(--accent-color);
+    }
+
+    .clean-modes h3 {
+      margin-top: 0;
+      color: var(--accent-color);
+    }
+
+    .mode-option {
+      margin: 10px 0;
+      padding: 10px;
+      background-color: var(--container-bg);
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+    }
+
+    .mode-option input[type="radio"] {
+      margin-right: 10px;
+    }
+
+    .mode-option label {
+      cursor: pointer;
+      font-weight: normal;
+      margin-bottom: 5px;
+    }
+
+    .mode-description {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 5px;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 12px 20px;
+      margin-top: 20px;
+      background-color: var(--accent-color);
+      color: var(--bg-color);
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+    }
+
+    button:not(:disabled):hover {
+      background-color: #8bc38b;
+    }
+
+    .example-section {
+      margin-top: 30px;
+      padding: 20px;
+      background-color: var(--example-bg);
+      border-radius: 4px;
+      border-left: 4px solid var(--secondary-color);
+    }
+
+    .example-section h3 {
+      color: var(--secondary-color);
+      margin-top: 0;
+    }
+
+    .example-item {
+      margin: 15px 0;
+      padding: 15px;
+      background-color: var(--container-bg);
+      border-radius: 4px;
+    }
+
+    .example-before, .example-after {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .example-before {
+      background-color: #4a2c2c;
+      border-left: 3px solid #d73a49;
+    }
+
+    .example-after {
+      background-color: #2c4a2c;
+      border-left: 3px solid #28a745;
+    }
+
+    .example-label {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .language-section {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .language-section p {
+      margin: 15px 0;
+      color: var(--text-color);
+      line-height: 1.8;
+      font-size: 16px;
+      padding: 10px;
+      background-color: var(--input-bg);
+      border-radius: 4px;
+      border-left: 4px solid var(--accent-color);
+    }
+
+    .ruby-demo {
+      font-size: 18px;
+      line-height: 2;
+      padding: 15px;
+      background-color: var(--input-bg);
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>EPUB Roman Clean | EPUB 注音清理工具 | EPUB ルビ削除ツール</h2>
+    
+    <div class="input-group">
+      <label for="epubFileInput">选择EPUB文件 | Select EPUB file | EPUBファイルを選択:</label>
+      <input type="file" id="epubFileInput" accept=".epub"/>
+    </div>
+
+    <div class="clean-modes">
+      <h3>清理模式 | Clean Mode | クリーンモード</h3>
+      
+      <div class="mode-option">
+        <input type="radio" id="mode1" name="cleanMode" value="1" checked>
+        <label for="mode1">模式1: 标准日文注音清理 | Mode 1: Standard Japanese Ruby Clean | モード1: 標準的な日本語ルビ削除</label>
+        <div class="mode-description">删除 &lt;rt&gt; 注音标签，保留 &lt;rb&gt; 内文字，清理整个 &lt;ruby&gt; 结构</div>
+      </div>
+
+      <div class="mode-option">
+        <input type="radio" id="mode2" name="cleanMode" value="2" disabled>
+        <label for="mode2">模式2: 其他格式清理 | Mode 2: Other Format Clean | モード2: その他フォーマット削除</label>
+        <div class="mode-description">预留给其他注音格式（开发中...）</div>
+      </div>
+    </div>
+
+    <button id="cleanEpubButton" disabled>开始清理 | Start Cleaning | クリーニング開始</button>
+
+    <div class="example-section">
+      <h3>清理示例 | Cleaning Examples | クリーニング例</h3>
+      
+      <div class="example-item">
+        <h4>模式1示例 - 标准日文注音清理:</h4>
+        
+        <div class="example-label">清理前 (Before):</div>
+        <div class="example-before">
+&lt;p class="calibre"&gt;　別に、&lt;ruby&gt;&lt;rb&gt;遅&lt;/rb&gt;&lt;rt&gt;おそ&lt;/rt&gt;&lt;/ruby&gt;くまで飲んでいたわけではない。&lt;/p&gt;
+
+&lt;p class="calibre"&gt;　今の自分の格好を思い出し、&lt;ruby&gt;&lt;rb&gt;羞&lt;/rb&gt;&lt;rt&gt;しゆう&lt;/rt&gt;&lt;rb&gt;恥&lt;/rb&gt;&lt;rt&gt;ち&lt;/rt&gt;&lt;rb&gt;心&lt;/rb&gt;&lt;rt&gt;しん&lt;/rt&gt;&lt;/ruby&gt;が一気にこみ上げた。&lt;/p&gt;
+        </div>
+        
+        <div class="example-label">清理后 (After):</div>
+        <div class="example-after">
+&lt;p class="calibre"&gt;　別に、遅くまで飲んでいたわけではない。&lt;/p&gt;
+
+&lt;p class="calibre"&gt;　今の自分の格好を思い出し、羞恥心が一気にこみ上げた。&lt;/p&gt;
+        </div>
+
+        <div class="example-label">实际显示效果对比:</div>
+        <div class="ruby-demo">
+          <div style="color: #ff6b6b; margin-bottom: 10px;">
+            清理前: 別に、<ruby><rb>遅</rb><rt>おそ</rt></ruby>くまで飲んでいたわけではない。
+          </div>
+          <div style="color: #51cf66;">
+            清理后: 別に、遅くまで飲んでいたわけではない。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="language-section">
+      <h2>为什么需要清理注音 | Why Clean Ruby | なぜルビを削除するのか</h2>
+      <p>🇨🇳 日文EPUB中的注音标签会影响文本处理插件的正常工作，如单词识别、翻译等功能。清理注音后可以获得纯净的日文文本，提升阅读和学习体验。</p>
+      <p>🇺🇸 Ruby tags in Japanese EPUB files can interfere with text processing plugins like word recognition and translation. Cleaning ruby tags provides clean Japanese text for better reading and learning experience.</p>
+      <p>🇯🇵 日本語EPUBファイル内のルビタグは、単語認識や翻訳などのテキスト処理プラグインの正常な動作を妨げることがあります。ルビを削除することで、純粋な日本語テキストを取得し、読書と学習体験を向上させることができます。</p>
+    </div>
+  </div>
+
+  <!-- 引入 JSZip 和 FileSaver.js 库 -->
+  <script src="../epubSplitter/jszip.min.js"></script>
+  <script src="../epubSplitter/FileSaver.min.js"></script>
+  
+  <!-- 引入注音清理逻辑脚本 -->
+  <script src="./romanClean.js"></script>
+</body>
+</html>

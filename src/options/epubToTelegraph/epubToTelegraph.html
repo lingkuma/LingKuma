@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>EPUB to Telegra.ph</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --container-bg: #2d2d2d;
+            --text-color: #e0e0e0;
+            --border-color: #404040;
+            --input-bg: #3d3d3d;
+            --input-border: #505050;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --accent-color: #6c9e6c;
+        }
+
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            max-width: 800px; /* Added from reference for consistency */
+            margin: 0 auto; /* Added from reference for consistency */
+            padding: 20px; /* Added from reference for consistency */
+        }
+        .container {
+            background-color: var(--container-bg);
+            padding: 30px; /* Adjusted from reference */
+            border-radius: 8px;
+            box-shadow: 0 2px 4px var(--shadow-color); /* Adjusted from reference */
+        }
+        h1 { /* Added from reference for consistency */
+            color: var(--text-color);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        p { /* Added for general text styling */
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        input[type="file"] {
+            width: 100%; /* Added from reference */
+            padding: 10px; /* Adjusted from reference */
+            border: 2px dashed var(--border-color); /* Adjusted from reference */
+            border-radius: 4px;
+            margin-bottom: 20px; /* Adjusted from reference */
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+        button {
+            display: block; /* Added from reference */
+            width: 100%; /* Added from reference */
+            padding: 12px 20px; /* Adjusted from reference */
+            margin-top: 20px; /* Added from reference */
+            background-color: var(--accent-color);
+            color: var(--bg-color); /* Adjusted from reference for contrast */
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease; /* Added from reference */
+        }
+        button:hover {
+            background-color: #8bc38b; /* Adjusted from reference */
+        }
+        button:disabled { /* Added from reference */
+            background-color: #555;
+            cursor: not-allowed;
+        }
+        #statusArea {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid var(--border-color); /* Adjusted from reference */
+            background-color: var(--input-bg); /* Adjusted from reference */
+            border-radius: 4px;
+            min-height: 50px;
+            color: var(--text-color); /* Ensure text is visible */
+        }
+        #publishedPagesArea { /* Styling for consistency */
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            background-color: var(--input-bg);
+            border-radius: 4px;
+            min-height: 30px;
+            color: var(--text-color); /* Ensure text is visible */
+        }
+        a {
+            color: #6cb5f5; /* 调整链接颜色以适应暗色模式 */
+        }
+        #publishedPagesArea a {
+            display: block; /* 使每个链接占据一行 */
+        }
+
+        .language-section {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .language-section p {
+      margin: 15px 0;
+      color: var(--text-color);
+      line-height: 1.8;
+      font-size: 16px;
+      padding: 10px;
+      background-color: var(--input-bg);
+      border-radius: 4px;
+      border-left: 4px solid var(--accent-color);
+    }
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <div class="language-section">
+            <h1>EPUB To Telegra.ph</h2>
+      </div>
+
+        <br>
+   
+        <input type="file" id="epubFile" accept=".epub">
+
+        <br>
+
+        <button id="convertToTelegraphButton">开始转换为 Telegra.ph 页面</button>
+        
+        
+        <div id="statusArea">请选择一个 EPUB 文件...  </div>
+
+
+        <div id="publishedPagesArea">
+            <!-- 发布结果将显示在这里 -->
+        </div>
+
+        <div class="language-section">
+            <p>🇨🇳 粗略估算，一个 Telegraph 页面最大文本量大约在 9000 到 13000 个英文单词之间，德语7000-10000个单词。其他语言请自测。</p>
+            <p>🇺🇸 Roughly estimate, the maximum text content of a Telegraph page is about 9000 to 13000 English words, 7000-10000 German words. Please test other languages yourself.</p>
+        </div>
+
+        <div class="language-section">
+            <h2>为什么要发布到Telegra.ph？|Why Publish to Telegra.ph?</h2>
+            <p>🇨🇳 因为Iphone Ios 的浏览器无法在Iframe内运行插件，所以需要使用Telegra.ph的API发布。</p>
+            <p>🇺🇸 Because the browser on Iphone Ios cannot run plugins in an iframe, we need to use the Telegra.ph API to publish.</p>
+            <p>Download <a href="https://apps.apple.com/app/id1484498200" target="_blank">Orion(IOS US-store)</a></p>
+        </div>
+
+
+    </div>
+
+    <script src="../epubSplitter/jszip.min.js"></script>
+    <script src="epubToTelegraph.js"></script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>EPUB Splitter | EPUB 拆分工具 |  EPUB 分割ツール</title>
+  <style>
+    :root {
+      --bg-color: #1a1a1a;
+      --container-bg: #2d2d2d;
+      --text-color: #e0e0e0;
+      --border-color: #404040;
+      --input-bg: #3d3d3d;
+      --input-border: #505050;
+      --shadow-color: rgba(0, 0, 0, 0.3);
+      --accent-color: #6c9e6c;
+    }
+
+    body {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+
+    h2 {
+      color: var(--text-color);
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .container {
+      background-color: var(--container-bg);
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px var(--shadow-color);
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-color);
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      border: 2px dashed var(--border-color);
+      border-radius: 4px;
+      margin-bottom: 20px;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+    }
+
+    input[type="number"] {
+      width: 100px;
+      padding: 8px;
+      border: 1px solid var(--input-border);
+      border-radius: 4px;
+      background-color: var(--input-bg);
+      color: var(--text-color);
+    }
+
+    .language-section {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .language-section p {
+      margin: 15px 0;
+      color: var(--text-color);
+      line-height: 1.8;
+      font-size: 16px;
+      padding: 10px;
+      background-color: var(--input-bg);
+      border-radius: 4px;
+      border-left: 4px solid var(--accent-color);
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 12px 20px;
+      margin-top: 20px;
+      background-color: var(--accent-color);
+      color: var(--bg-color);
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+    }
+
+    button:not(:disabled):hover {
+      background-color: #8bc38b;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>EPUB Splitter | EPUB 拆分工具 | EPUB 分割ツール</h2>
+    
+    <div class="input-group">
+      <label for="epubFileInput">选择EPUB文件 | Select EPUB file | EPUBファイルを選択:</label>
+      <input type="file" id="epubFileInput" accept=".epub"/>
+    </div>
+
+    <div class="input-group">
+      <label for="targetWordsInput">每章节目标单词数: | Target words per chapter: | 每章节目标単語数:</label>
+      <input type="number" id="targetWordsInput" value="8000" min="1">
+    </div>
+
+    <button id="processEpubButton" disabled>开始拆分 | Splitter EPUB | 分割を開始</button>
+    <button id="fixNakedTextButton" disabled>修复裸文本 | Fix Naked Text | テキスト修正</button>
+
+    <div class="language-section">
+          <h2>为啥拆分 | Why Split EPUB | なぜ分割するのか | Warum EPUB teilen</h2>
+          <p>🇨🇳 当某个Epub的某个章节过长的时候，可以通过此工具进行切分。Bionic极其占据性能，这样可以改善。同时也能改善高亮加载速度</p>
+          <p>🇺🇸 When a chapter of an Epub is too long, you can split it using this tool. This improves performance, especially for features like Bionic Reading, and speeds up the loading of word highlights.</p>
+          <p>🇯🇵 Epubの特定の章が長すぎる場合、このツールを使用して分割できます。これにより、特にBionic Readingのような機能のパフォーマンスが向上し、単語のハイライト表示の読み込み速度も改善されます。</p>
+          <p>🇩🇪 Wenn ein Kapitel eines Epubs zu lang ist, können Sie es mit diesem Tool aufteilen. Dies verbessert die Leistung, insbesondere bei Funktionen wie Bionic Reading, und beschleunigt das Laden von Worthervorhebungen.</p>
+        </div>
+    
+
+    <div class="language-section">
+      <h2>啥是格式修复 |Why Format Fixing</h2>
+      <p>🇨🇳 修复未被 &lt;p&gt; 标签包裹的文本行，改善阅读器兼容性。当你发现阅读器无法改字体时可以尝试此修复。 </p>
+      <p>🇺🇸 Fix text lines not wrapped in &lt;p&gt; tags for better reader compatibility. When you find that ebook  -reader cannot change the font, you can try this repair.</p>
+      <p>🇯🇵 &lt;p&gt; タグで囲まれていないテキスト行を修正し、リーダーの互換性を向上させます。   </p>
+    </div>
+  </div>
+
+  <!-- 引入 JSZip 和 FileSaver.js 库 -->
+  <script src="./jszip.min.js"></script>
+  <script src="./FileSaver.min.js"></script>
+  
+  <!-- 引入拆分逻辑脚本 -->
+  <script src="./epubSplitter.js"></script>
+  <!-- 新增：引入格式修复逻辑 -->
+  <script src="./epubFormatter.js"></script>
+</body>
+</html> 

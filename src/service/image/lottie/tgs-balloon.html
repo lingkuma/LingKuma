@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      overflow: hidden;
+    }
+    body {
+      position: relative;
+    }
+    tgs-player {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+    }
+    /* 底层：气球子图，缩小到 1/1.3 ≈ 76.9% */
+    tgs-player:first-of-type {
+      transform: translate(-50%, -50%) scale(0.769);
+    }
+    /* 上层：气球，保持100%填满容器 */
+    tgs-player.balloon-overlay {
+      transform: translate(-50%, -50%);
+    }
+  </style>
+</head>
+<body>
+  <!-- 动态加载的tgs-player将通过JavaScript插入 -->
+
+  <script src="../../../utils/tgs-player.min.js"></script>
+  <script src="tgs-balloon.js"></script>
+</body>
+</html>
+

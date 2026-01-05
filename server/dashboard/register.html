@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lingkuma - 注册</title>
+    <link rel="stylesheet" href="register.css">
+</head>
+<body>
+    <canvas id="particleCanvas"></canvas>
+    <div class="container">
+        <div class="register-card">
+            <div class="header">
+                <h1>Lingkuma</h1>
+                <p>创建您的账户</p>
+            </div>
+            
+            <div class="oauth-section">
+                <div class="form-group" id="oauthServerGroup">
+                    <label for="oauthDataServer">选择数据服务器</label>
+                    <select id="oauthDataServer" name="oauthDataServer" required>
+                        <option value="">加载中...</option>
+                    </select>
+                    <small class="help-text">选择用于存储您的数据的服务器</small>
+                </div>
+                
+                <button type="button" id="afdianLoginBtn" class="btn-oauth">
+                    <svg class="oauth-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                    </svg>
+                    <span class="oauth-text">使用爱发电账号登录/注册</span>
+                </button>
+                <div class="divider">
+                    <span>或</span>
+                </div>
+            </div>
+            
+            <form id="registerForm" class="register-form">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" name="username" required autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">邮箱</label>
+                    <input type="email" id="email" name="email" required autocomplete="email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" required autocomplete="new-password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="dataServer">数据服务器</label>
+                    <select id="dataServer" name="dataServer" required>
+                        <option value="">加载中...</option>
+                    </select>
+                    <small class="help-text">选择用于存储您的数据的服务器</small>
+                </div>
+                
+                <div class="form-group" id="afdianGroup" style="display: none;">
+                    <label for="afdianUserId">爱发电用户ID</label>
+                    <input type="text" id="afdianUserId" name="afdianUserId" placeholder="请输入您的爱发电用户ID">
+                    <small class="help-text">注册时需要验证您的爱发电订阅状态</small>
+                </div>
+                
+                <button type="submit" id="registerBtn" class="btn-primary">
+                    <span class="btn-text">注册</span>
+                    <span class="btn-loading" style="display: none;">注册中...</span>
+                </button>
+            </form>
+            
+            <div id="message" class="message"></div>
+            
+            <div class="footer">
+                <p>已有账户？<a href="/dashboard/login.html">登录</a></p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="register.js"></script>
+</body>
+</html>

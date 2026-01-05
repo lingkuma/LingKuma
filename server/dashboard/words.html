@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>单词查询 - Lingqmal Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-left">
+        <a href="/dashboard" class="btn btn-back">← 返回主页</a>
+        <h1>单词查询</h1>
+      </div>
+      <div class="user-info">
+        <span id="username"></span>
+        <button id="logoutBtn" class="btn btn-secondary">退出登录</button>
+      </div>
+    </header>
+
+    <div class="filter-section">
+      <h3>筛选条件</h3>
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>筛选模式:</label>
+          <div class="filter-mode-buttons">
+            <button type="button" class="filter-mode-btn active" data-value="current">
+              单词创建（修改）日期
+            </button>
+            <button type="button" class="filter-mode-btn" data-value="status">
+              状态达成日期
+            </button>
+          </div>
+        </div>
+        <div class="filter-group">
+          <label for="languageFilter">语言:</label>
+          <select id="languageFilter">
+            <option value="all">全部</option>
+            <option value="en">英语</option>
+            <option value="ja">日语</option>
+            <option value="ko">韩语</option>
+            <option value="de">德语</option>
+            <option value="fr">法语</option>
+            <option value="es">西班牙语</option>
+            <option value="ru">俄语</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-row status-filter-row">
+        <div class="filter-group status-filter-group">
+          <label>状态:</label>
+          <div class="status-filters">
+            <button type="button" class="status-checkbox-btn" data-value="0">
+              <span class="checkbox-icon"></span>
+              已归档 (0)
+            </button>
+            <button type="button" class="status-checkbox-btn" data-value="1" checked>
+              <span class="checkbox-icon"></span>
+              新词 (1)
+            </button>
+            <button type="button" class="status-checkbox-btn" data-value="2" checked>
+              <span class="checkbox-icon"></span>
+              学习中 (2)
+            </button>
+            <button type="button" class="status-checkbox-btn" data-value="3" checked>
+              <span class="checkbox-icon"></span>
+              眼熟的 (3)
+            </button>
+            <button type="button" class="status-checkbox-btn" data-value="4" checked>
+              <span class="checkbox-icon"></span>
+              熟练的 (4)
+            </button>
+            <button type="button" class="status-checkbox-btn" data-value="5" checked>
+              <span class="checkbox-icon"></span>
+              已知的 (5)
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="filter-row">
+        <div class="filter-group">
+          <label for="startDateFilter">开始日期:</label>
+          <input type="date" id="startDateFilter">
+        </div>
+        <div class="filter-group">
+          <label for="endDateFilter">结束日期:</label>
+          <input type="date" id="endDateFilter">
+        </div>
+        <div class="filter-group">
+          <label for="pageSizeSelector">每页显示:</label>
+          <select id="pageSizeSelector">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-row">
+        <div class="filter-group date-shortcuts">
+          <label>快捷日期:</label>
+          <button type="button" class="btn btn-secondary date-shortcut-btn" data-type="today">当日</button>
+          <button type="button" class="btn btn-secondary date-shortcut-btn" data-type="yesterday">昨日</button>
+          <button type="button" class="btn btn-secondary date-shortcut-btn" data-type="thisWeek">本周</button>
+          <button type="button" class="btn btn-secondary date-shortcut-btn" data-type="thisMonth">本月</button>
+          <button type="button" class="btn btn-secondary date-shortcut-btn" data-type="lastDays">前</button>
+          <input type="number" id="lastDaysInput" class="last-days-input" value="30" min="1" max="365">
+          <span>天</span>
+        </div>
+      </div>
+      <div class="filter-row">
+        <button id="applyFilterBtn" class="btn btn-primary">应用筛选</button>
+        <button id="clearFilterBtn" class="btn btn-secondary">清除筛选</button>
+      </div>
+    </div>
+
+    <div class="trend-section">
+      <div class="trend-header">
+        <h3>单词趋势图</h3>
+        <button id="toggleTrendBtn" class="btn btn-secondary">显示/隐藏</button>
+      </div>
+      <div id="trendChartContainer" class="trend-chart-container">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+
+    <div class="stats-section" id="statsSection">
+      <div class="stat-item">
+        <span class="stat-label">总单词数:</span>
+        <span id="totalWords" class="stat-value">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">当前页:</span>
+        <span id="currentPage" class="stat-value">1</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">总页数:</span>
+        <span id="totalPages" class="stat-value">1</span>
+      </div>
+    </div>
+
+    <div class="action-bar" id="actionBar">
+      <label class="select-all-wrapper">
+        <input type="checkbox" id="selectAllCheckbox">
+        <span>全选</span>
+      </label>
+      <button id="deleteSelectedBtn" class="btn btn-danger" disabled>删除选中</button>
+      <span id="selectedCount" class="selected-count">已选 0 个</span>
+    </div>
+
+    <div class="word-list-section" id="wordListSection">
+      <div id="wordList" class="word-list">
+        <div class="loading">加载中...</div>
+      </div>
+    </div>
+
+    <div class="pagination-section" id="paginationSection">
+      <button id="prevBtn" class="btn btn-secondary" disabled>上一页</button>
+      <span id="pageInfo">第 1 页 / 共 1 页</span>
+      <button id="nextBtn" class="btn btn-secondary" disabled>下一页</button>
+    </div>
+
+    <div class="status-tabs-section" id="statusTabsSection" style="display: none;">
+      <div class="status-tabs" id="statusTabs"></div>
+      <div class="status-tab-content" id="statusTabContent"></div>
+    </div>
+  </div>
+
+  <script src="words.js"></script>
+</body>
+</html>

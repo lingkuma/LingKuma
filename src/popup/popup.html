@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Settings</title>
+  <style>
+    :root {
+      /* 优化的默认中性主题颜色 */
+      --ios-bg: #0000007a;
+      --ios-card: #0503035b;
+      --ios-border: #0101026b;
+      --ios-text: #212529;
+      --ios-secondary: #6c757d;
+      --ios-blue: #007aff;
+
+      /* 添加过渡动画 - 关键改进 */
+      transition:
+        --ios-bg 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        --ios-card 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        --ios-border 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        --ios-text 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        --ios-secondary 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        --ios-blue 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 添加暗色主题变量 */
+    [data-theme="dark"] {
+      --ios-bg: #000000;
+      --ios-card: #1c1c1ea8;
+      --ios-border: #38383a;
+      --ios-text: #ffffff;
+      --ios-secondary: #98989d;
+      --ios-blue: #0a84ff;
+    }
+
+    textarea {
+      width: 100%;
+      border: 1px solid var(--ios-border);
+      border-radius: 4px;
+      background-color: var(--ios-bg);
+      color: var(--ios-text);
+      transition:
+        background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+
+    /* 修改所有标签样式，使用CSS变量 */
+    label {
+      color: var(--ios-text) !important;
+      transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .input-setting label,
+    .slider-setting label,
+    .color-setting label,
+    .mode-selector label {
+      color: var(--ios-text) !important;
+      transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 16px;
+      min-width: 320px;
+      max-width: 320px; /* 桌面版最大宽度 */
+      width: 95vw;     /* 默认宽度为视口宽度 */
+      /* 靠左对齐 */
+      margin: 0;
+      background-color: var(--ios-bg);
+      /* 添加最大高度和滚动 */
+      max-height: 100vh;
+      overflow-y: overlay; /* 使用overlay代替auto，让滚动条覆盖在内容上而不占用空间 */
+      /* 背景图片样式 */
+      background-size: auto;
+      background-position: center;
+      background-repeat: repeat;
+      position: relative;
+
+      /* 添加过渡动画 */
+      transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 移动端适配 - 只通过JavaScript类名触发，不依赖媒体查询 */
+    .mobile-device {
+      min-width: 100vw !important;
+      max-width: 100vw !important;
+      width: 100vw !important;
+      padding: 12px !important;
+      box-sizing: border-box !important;
+      font-size: 16px !important; /* 防止iOS自动缩放 */
+    }
+
+    .mobile-device .settings-group {
+      margin-bottom: 12px;
+    }
+
+    .mobile-device .toggle,
+    .mobile-device .slider-setting,
+    .mobile-device .color-setting,
+    .mobile-device .button-setting,
+    .mobile-device .input-group {
+      padding: 10px 12px;
+    }
+
+    .mobile-device .group-title {
+      padding: 12px 12px 6px;
+      font-size: 12px;
+    }
+
+    /* 特别针对Orion浏览器的适配 */
+    .orion-browser {
+      padding: 8px !important;
+    }
+
+    .orion-browser html {
+      zoom: 1 !important;
+      transform: scale(1) !important;
+      transform-origin: 0 0 !important;
+    }
+
+    /* 自定义滚动条样式 - 与弹窗一致 */
+    body::-webkit-scrollbar {
+      width: 8px;  /* 滚动条宽度 */
+      background-color: transparent;  /* 滚动条背景透明 */
+    }
+
+    body::-webkit-scrollbar-track {
+      background: transparent;  /* 滚动条轨道背景透明 */
+      margin: 4px 0;  /* 上下留出一点空间 */
+    }
+
+    body::-webkit-scrollbar-thumb {
+      background-color: rgba(221, 221, 221, 0.6);  /* 半透明浅灰色 */
+      border-radius: 4px;  /* 滚动条圆角 */
+      border: 2px solid transparent;  /* 透明边框 */
+      background-clip: padding-box;  /* 确保背景不会延伸到边框下 */
+      transition: background-color 0.3s;  /* 添加过渡效果 */
+    }
+
+    /* 鼠标悬停时滚动条样式 */
+    body::-webkit-scrollbar-thumb:hover {
+      background-color: rgba(200, 200, 200, 0.8);  /* 悬停时更深的颜色 */
+    }
+
+    /* 暗色模式下的滚动条 */
+    [data-theme="dark"] body::-webkit-scrollbar-thumb {
+      background-color: rgba(85, 85, 85, 0.6);  /* 半透明深灰色 */
+      border: 2px solid transparent;  /* 透明边框 */
+      background-clip: padding-box;  /* 确保背景不会延伸到边框下 */
+    }
+
+    /* 暗色模式下鼠标悬停时滚动条样式 */
+    [data-theme="dark"] body::-webkit-scrollbar-thumb:hover {
+      background-color: rgba(100, 100, 100, 0.8);  /* 悬停时更深的颜色 */
+    }
+
+    /* 添加背景图片遮罩效果 */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--ios-bg);
+      opacity: 0.5; /* 调整透明度以控制背景图片的可见度 */
+      z-index: -1;
+      pointer-events: none; /* 确保不会拦截鼠标事件 */
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+      color: var(--ios-text);
+      transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .settings-group {
+      /*  background-color: rgba(255, 255, 255, 0.2);s半透明背景 */
+
+      border-radius: 10px;
+      margin-bottom: 16px;
+      padding: 2px 0;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.18);
+      background-color: var(--ios-card);
+      /* 背景模糊 - 玻璃效果的关键 */
+      backdrop-filter: blur(1px);
+      -webkit-backdrop-filter: blur(10px);
+
+      /* 边框 */
+      border: 1px solid rgba(255, 255, 255, 0.3);
+
+      /* 添加过渡动画 */
+      transition:
+        background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 暗色模式下的玻璃效果 */
+    [data-theme="dark"] .settings-group {
+      background-color: rgba(25, 25, 25, .8);
+      border: 1px solid rgba(64, 64, 64, 0.3);
+    }
+
+    .group-title {
+      color: var(--ios-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 16px 16px 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--ios-border);
+      margin: 0;
+      transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .toggle:last-child {
+      border-bottom: none;
+    }
+
+    .toggle label {
+      flex: 1;
+      font-size: 15px;
+      color: var(--ios-text);
+      transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* iOS style checkbox */
+    .toggle input[type="checkbox"] {
+      position: relative;
+      width: 40px;
+      height: 24px;
+      margin: 0;
+      appearance: none;
+      background-color: var(--ios-border);
+      border-radius: 12px;
+      transition: background-color 0.3s;
+      cursor: pointer;
+    }
+
+    .toggle input[type="checkbox"]:checked {
+      background-color: var(--ios-blue);
+    }
+
+    .toggle input[type="checkbox"]::before {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background-color: white;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.3s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .toggle input[type="checkbox"]:checked::before {
+      transform: translateX(16px);
+    }
+
+    .slider-setting, .color-setting, .button-setting {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--ios-border);
+      margin: 0;
+      transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .slider-setting:last-child, .color-setting:last-child, .button-setting:last-child {
+      border-bottom: none;
+    }
+
+    .slider-setting label, .color-setting label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 15px;
+      color: var(--ios-text);
+      transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .value-display {
+      color: var(--ios-text);
+      transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 28px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 4px;
+      background: var(--ios-border);
+      border-radius: 2px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 18px;
+      width: 18px;
+      border-radius: 50%;
+      background: var(--ios-blue);
+      margin-top: -7px;
+    }
+
+    input[type="color"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 18px;
+      cursor: pointer;
+    }
+
+    .ios-button {
+      background-color: var(--ios-blue);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+      text-align: center;
+    }
+
+    .ios-button:hover {
+      background-color: #0069d9;
+    }
+
+    .settings-section {
+      display: none;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+
+    .settings-section.visible {
+      display: block;
+      max-height: 2000px;
+    }
+
+    .settings-toggle-button {
+  background: none;
+  border: none;
+  color: var(--ios-blue);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+    .settings-toggle-button:hover {
+      background-color: rgba(0, 122, 255, 0.1);
+    }
+
+    .settings-section {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+      background-color: rgba(0, 0, 0, 0.02);
+      margin-left: 12px;
+      margin-right: 12px;
+      border-radius: 8px;
+      border-left: 3px solid rgba(0, 122, 255, 0.3);
+    }
+
+    .settings-section.visible {
+      max-height: 2000px;
+      padding: 8px 0;
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+
+    .mode-selector {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--ios-border);
+    }
+
+    .mode-selector label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 15px;
+      color: var(--ios-text);
+    }
+
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+    }
+
+    .radio-option input[type="radio"] {
+      margin-right: 8px;
+    }
+
+    .radio-option label {
+      margin-bottom: 0;
+    }
+
+    #customWidthSetting {
+      display: none;
+    }
+
+    #customWidthSetting.visible {
+      display: block;
+    }
+
+    .input-with-slider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .input-with-slider input[type="range"] {
+      flex: 1;
+      margin-right: 10px;
+    }
+
+    .input-number-wrapper {
+      display: flex;
+      align-items: center;
+    }
+
+    .input-number-wrapper input[type="number"] {
+      width: 60px;
+      height: 28px;
+      padding: 0 8px;
+      border-radius: 8px;
+      border: 1px solid var(--ios-border);
+      font-size: 14px;
+      text-align: right;
+    }
+
+    .input-number-wrapper span {
+      margin-left: 4px;
+      font-size: 14px;
+      color: var(--ios-secondary);
+    }
+
+    .theme-buttons {
+      display: flex;
+      gap: 8px;
+      margin-right: 12px;
+    }
+
+    .theme-button {
+      background: none;
+      border: 1px solid var(--ios-border);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      padding: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ios-text);
+      transition: all 0.2s ease;
+    }
+
+    .theme-button:hover {
+      background-color: rgba(0, 122, 255, 0.1);
+      border-color: var(--ios-blue);
+      color: var(--ios-blue);
+    }
+
+    .theme-button.active {
+      background-color: var(--ios-blue);
+      border-color: var(--ios-blue);
+      color: white;
+      transform: scale(1.05);
+      box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+    }
+
+    /* tooltip 容器 */
+    .tooltip-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    /* tooltip 提示文本 */
+    .tooltip-text {
+      visibility: hidden;
+      width: max-content;
+      max-width: calc(100vw - 20px); /* 限制宽度，防止超出视口 */
+      background-color: var(--ios-card);
+      color: var(--ios-text);
+      text-align: center;
+      padding: 6px 8px;
+      border-radius: 8px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+      position: absolute;
+      z-index: 10;
+      bottom: calc(100% + 8px); /*  tooltip 显示在元素上方，预留 8px 间距 */
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    /* 鼠标悬浮时显示 tooltip */
+    .tooltip-container:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .input-group {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--ios-border);
+      margin: 0;
+    }
+
+    .input-group:last-child {
+      border-bottom: none;
+    }
+
+    .input-group label {
+      flex: 1;
+      font-size: 15px;
+      color: var(--ios-text);
+    }
+
+    .key-input {
+      width: 40px;
+      height: 20px;
+      text-align: center;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--ios-border);
+      background-color: var(--ios-bg);
+      color: var(--ios-text);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .key-input:focus {
+      outline: none;
+      border-color: var(--ios-blue);
+      box-shadow: 0 0 0 2px rgba(0,122,255,0.3);
+    }
+
+    .language-selector {
+      padding: 6px 10px;
+      border: 1px solid var(--ios-border);
+      border-radius: 10px;
+      background-color: var(--ios-bg);
+      color: var(--ios-text);
+      font-size: 12px;
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg width='12' height='12' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9L1 4h10z' fill='%238E8E93'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      padding-right: 25px;
+      cursor: pointer;
+    }
+
+    /* 自定义分割线样式 */
+    .custom-divider {
+      height: 1px;
+      margin: 12px 16px;
+      background: linear-gradient(to right, transparent, var(--ios-border) 20%, var(--ios-border) 80%, transparent);
+      position: relative;
+    }
+
+    .custom-divider::before {
+      content: '';
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background-color: var(--ios-border);
+      border-radius: 50%;
+      top: -2.5px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    /* 移动端专用样式 */
+    .mobile-device {
+      font-size: 16px !important; /* 防止iOS自动缩放 */
+    }
+
+    .mobile-device .theme-buttons {
+      gap: 6px;
+    }
+
+    .mobile-device .theme-button {
+      width: 28px;
+      height: 28px;
+      padding: 4px;
+    }
+
+    .mobile-device .language-selector {
+      padding: 4px 8px;
+      font-size: 11px;
+      padding-right: 20px;
+    }
+
+    .mobile-device .tooltip-text {
+      font-size: 11px;
+      max-width: calc(100vw - 40px);
+    }
+
+    .mobile-device .key-input {
+      width: 35px;
+      height: 18px;
+      font-size: 14px;
+    }
+
+    .mobile-device textarea {
+      font-size: 14px;
+      padding: 6px;
+    }
+
+    .mobile-device input[type="range"] {
+      height: 24px;
+    }
+
+    .mobile-device .input-number-wrapper input[type="number"] {
+      width: 50px;
+      height: 24px;
+      font-size: 13px;
+    }
+
+    /* Orion浏览器特殊优化 */
+    .orion-browser {
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
+    }
+
+    .orion-browser * {
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
+    }
+
+    /* 下拉菜单样式 */
+    .dropdown-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown-trigger {
+      cursor: pointer;
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      background-color: var(--ios-card);
+      border: 1px solid var(--ios-border);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      min-width: 180px;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .dropdown-menu.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .dropdown-item {
+      display: block;
+      padding: 10px 16px;
+      color: var(--ios-text);
+      text-decoration: none;
+      font-size: 14px;
+      border-bottom: 1px solid var(--ios-border);
+      transition: background-color 0.2s ease;
+    }
+
+    .dropdown-item:last-child {
+      border-bottom: none;
+    }
+
+    .dropdown-item:hover {
+      background-color: rgba(0, 122, 255, 0.1);
+      color: var(--ios-blue);
+    }
+
+    .dropdown-item:first-child {
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+    }
+
+    .dropdown-item:last-child {
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
+    }
+
+    /* 暗色模式下的下拉菜单 */
+    [data-theme="dark"] .dropdown-menu {
+      background-color: rgba(25, 25, 25, 0.9);
+      border: 1px solid rgba(64, 64, 64, 0.3);
+    }
+
+    [data-theme="dark"] .dropdown-item {
+      border-bottom: 1px solid rgba(64, 64, 64, 0.3);
+    }
+
+    [data-theme="dark"] .dropdown-item:hover {
+      background-color: rgba(10, 132, 255, 0.2);
+    }
+
+    /* 主题切换过渡类 - 确保所有元素都有平滑过渡 */
+    .theme-transitioning,
+    .theme-transitioning * {
+      transition:
+        background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    /* 为主题切换添加微妙的缩放效果 */
+    .theme-transitioning {
+      transform: scale(0.998);
+    }
+
+    .theme-transitioning.theme-complete {
+      transform: scale(1);
+    }
+
+    /* 为所有使用CSS变量的元素添加通用过渡 - 更精确的选择器 */
+    body,
+    .settings-group,
+    .toggle,
+    .slider-setting,
+    .color-setting,
+    .button-setting,
+    .input-group,
+    .group-title,
+    label,
+    textarea,
+    input,
+    select,
+    .theme-button,
+    .dropdown-menu,
+    .dropdown-item {
+      transition:
+        background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 保持原有的特定过渡效果不被覆盖 */
+    input[type="checkbox"],
+    .ios-button,
+    .theme-button {
+      transition:
+        background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  </style>
+</head>
+<body>
+  <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 16px;">
+    <div class="theme-buttons">
+      <select id="ui-language" class="language-selector">
+        <option value="zh">中</option>
+        <option value="zh_TW">繁</option>
+        <option value="en">En</option>
+        <option value="de">De</option>
+        <option value="fr">Fr</option>
+        <option value="es">Es</option>
+        <option value="ja">日</option>
+        <option value="ko">ko</option>
+        <option value="ru">ru</option>
+        <option value="it">Italiano</option>
+      </select>
+      <div class="dropdown-container">
+        <button class="theme-button dropdown-trigger" id="dropdownTrigger" title="快速入口">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </button>
+        <div class="dropdown-menu" id="dropdownMenu">
+          <a href="#" class="dropdown-item" data-action="openEpubTtsu">
+            Epub Ttsu 
+          </a>
+
+     
+          <a href="#" class="dropdown-item" data-action="openPDFViewer">
+            PDF Mozilla 
+          </a>
+
+          <a href="#" class="dropdown-item" data-action="openReadest">
+            <img src="./img/favicon.ico" alt="Readest" width="16" height="16" style="margin-right: 8px; vertical-align: middle;">
+            Readest
+          </a>
+
+          <a href="#" class="dropdown-item" data-action="openSyncLingua">SyncLingua</a>
+
+          <a href="#" class="dropdown-item" data-action="openCaptions">LiveCaptions - Luna</a>
+          <a href="#" class="dropdown-item" data-action="openTing">TingCaptions - Daily</a>
+          <a href="#" class="dropdown-item" data-action="openLingkuma">Help</a>
+          <a href="#" class="dropdown-item" data-action="openLingkumaBlog">blog</a>
+          <a href="#" class="dropdown-item" data-action="openOptions">Options</a>
+
+        </div>
+      </div>
+      <button class="theme-button" id="lightTheme" title="日间模式">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+      <button class="theme-button" id="darkTheme" title="夜间模式">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+      <button class="theme-button" id="openOptionsPageBtn" title="插件设置">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82-.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+      <button class="theme-button" id="openSidebar" title="打开侧栏">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="9" y1="3" x2="9" y2="21"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <div class="group-title" data-i18n="basic_settings">基础设置</div>
+    <div class="toggle">
+      <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <div class="tooltip-container">
+          <label for="enablePlugin" data-i18n="word_highlight">单词高亮</label>
+          <span class="tooltip-text" data-i18n="word_highlight_tooltip" >启用或禁用插件功能<br>可设置黑名单网站</span>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <div class="theme-buttons" style="margin-right: 12px;">
+            <button class="theme-button" id="highlightLightTheme"  title="日间模式">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/>
+                <line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              </svg>
+            </button>
+            <button class="theme-button" id="highlightDarkTheme" title="夜间模式">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            </button>
+          </div>
+          <button class="settings-toggle-button" id="pluginSettingsToggle" style="margin-right: 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82-.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+          <input type="checkbox" id="enablePlugin">
+        </div>
+      </div>
+    </div>
+
+
+
+
+    <div class="settings-section" id="pluginSettings">
+
+
+      <div class="toggle">
+        <label for="highlightChinese" data-i18n="highlight_chinese">Chinese</label>
+        <input type="checkbox" id="highlightChinese">
+      </div>
+      <div class="toggle">
+        <label for="highlightJapanese" data-i18n="highlight_japanese">Japanese</label>
+        <input type="checkbox" id="highlightJapanese">
+      </div>
+      <div class="toggle" style="margin-left: 20px;">
+        <label for="autoDetectJapaneseKanji" data-i18n="auto_detect_japanese_kanji">Smart detect Japanese Kanji</label>
+        <input type="checkbox" id="autoDetectJapaneseKanji">
+      </div>
+      <div class="toggle" style="margin-left: 20px;">
+        <label for="autoLoadKuromojiForJapanese" data-i18n="auto_load_kuromoji_for_japanese">Smart detect Japanese page and auto load Kuromoji</label>
+        <input type="checkbox" id="autoLoadKuromojiForJapanese">
+      </div>
+      <div class="toggle" style="margin-left: 20px;">
+        <label for="useKuromojiTokenizer" data-i18n="use_kuromoji_tokenizer">Use Kuromoji for Japanese (slower)</label>
+        <input type="checkbox" id="useKuromojiTokenizer">
+      </div>
+      <div class="toggle">
+        <label for="highlightKorean" data-i18n="highlight_korean">Korean</label>
+        <input type="checkbox" id="highlightKorean">
+      </div>
+      <div class="toggle" style="border-bottom: 1px solid var(--ios-border);"> <!-- 添加底部边框以分隔 -->
+        <label for="highlightAlphabetic" data-i18n="highlight_alphabetic">alphabetic, english, french, etc.</label>
+        <input type="checkbox" id="highlightAlphabetic">
+      </div>
+
+
+
+
+
+
+
+
+
+      <div class="input-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+        <label for="pluginBlacklistWebsites" style="display: block; margin-bottom: 8px;" data-i18n="plugin_blacklist">插件黑名单网站</label>
+        <textarea id="pluginBlacklistWebsites"    placeholder="*://test.com/*;*test*;" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; resize: vertical;"></textarea>
+      </div>
+
+      <div class="input-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+        <label for="highlightDefaultDayWebsites" style="display: block; margin-bottom: 8px;" data-i18n="default_day_websites">默认日间模式网站</label>
+        <textarea id="highlightDefaultDayWebsites" placeholder="*://test.com/*;*test*;" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; resize: vertical;"></textarea>
+      </div>
+
+      <div class="input-setting" style="padding: 12px 16px;">
+        <label for="highlightDefaultNightWebsites" style="display: block; margin-bottom: 8px;" data-i18n="default_night_websites">默认夜间模式网址</label>
+        <textarea id="highlightDefaultNightWebsites" placeholder="*://test.com/*;*test*;" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; resize: vertical;"></textarea>
+      </div>
+    </div>
+
+    <div class="toggle">
+      <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <div class="tooltip-container">
+          <label for="wordExplosionEnabled" data-i18n="word_explosion">单词爆炸💥</label>
+          <span class="tooltip-text" data-i18n="word_explosion_tooltip">显示句子中所有未知单词及其翻译</span>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <button class="settings-toggle-button" id="wordExplosionSettingsToggle" style="margin-right: 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82-.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+          <input type="checkbox" id="wordExplosionEnabled" checked>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section" id="wordExplosionSettings">
+      <div class="select-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+        <label for="wordExplosionTriggerMode" style="display: block; margin-bottom: 8px;" data-i18n="word_explosion_trigger_mode">触发模式</label>
+        <select id="wordExplosionTriggerMode" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text);">
+          <option value="click" data-i18n="word_explosion_trigger_click">点击触发</option>
+          <option value="hover" data-i18n="word_explosion_trigger_hover">鼠标悬停</option>
+        </select>
+      </div>
+
+      <div class="select-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+        <label for="wordExplosionPositionMode" style="display: block; margin-bottom: 8px;" data-i18n="word_explosion_position_mode">弹窗位置模式</label>
+        <select id="wordExplosionPositionMode" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text);">
+          <option value="auto" data-i18n="word_explosion_position_auto">自动上下</option>
+          <option value="manual" data-i18n="word_explosion_position_manual">手动移动</option>
+        </select>
+      </div>
+
+      <!-- 爆炸弹窗字体大小设置 -->
+      <div class="select-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+        <label for="wordExplosionFontSize" style="display: block; margin-bottom: 8px;" data-i18n="word_explosion_font_size">爆炸弹窗字体大小</label>
+        <select id="wordExplosionFontSize" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text);">
+          <option value="10">10px</option>
+          <option value="11">11px</option>
+          <option value="12">12px</option>
+          <option value="13">13px</option>
+          <option value="14" selected>14px</option>
+          <option value="15">15px</option>
+          <option value="16">16px</option>
+          <option value="17">17px</option>
+          <option value="18">18px</option>
+          <option value="20">20px</option>
+        </select>
+      </div>
+
+      <!-- 显示爆炸原句开关 -->
+      <div class="toggle">
+        <label for="showExplosionSentence" data-i18n="show_explosion_sentence">显示爆炸原句</label>
+        <input type="checkbox" id="showExplosionSentence" checked>
+      </div>
+
+      <div class="toggle">
+        <label for="explosionPriorityMode" data-i18n="explosion_priority_mode">爆炸优先模式</label>
+        <input type="checkbox" id="explosionPriorityMode">
+      </div>
+
+      <!-- 已知句子展示动效图开关 -->
+      <div class="toggle">
+        <label for="showKnownSentenceAnimation" data-i18n="show_known_sentence_animation">已知句子展示动效图</label>
+        <input type="checkbox" id="showKnownSentenceAnimation" checked>
+      </div>
+
+      <!-- 触发逐词高亮（TTS）开关 -->
+      <div class="toggle">
+        <label for="explosionHighlightWithTTS" data-i18n="explosion_highlight_with_tts">触发逐词高亮（TTS）</label>
+        <input type="checkbox" id="explosionHighlightWithTTS">
+      </div>
+
+      <!-- 触发逐词高亮（无TTS）开关 -->
+      <div class="toggle">
+        <label for="explosionHighlightNoTTS" data-i18n="explosion_highlight_no_tts">触发逐词高亮（无TTS）</label>
+        <input type="checkbox" id="explosionHighlightNoTTS" checked>
+      </div>
+
+      <!-- 爆炸窗口逐词高亮速度设置 -->
+      <div class="select-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+        <label for="explosionHighlightSpeed" style="display: block; margin-bottom: 8px;" data-i18n="explosion_highlight_speed">爆炸窗口逐词高亮速度 (ms/字符)</label>
+        <input type="number" id="explosionHighlightSpeed" placeholder="100" min="10" max="500" step="10" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text);">
+      </div>
+
+      <div class="toggle">
+        <label for="wordExplosionPreferUp" data-i18n="word_explosion_prefer_up">优先向上显示</label>
+        <input type="checkbox" id="wordExplosionPreferUp" checked>
+      </div>
+
+      <div class="select-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+        <label for="wordExplosionLayout" style="display: block; margin-bottom: 8px;" data-i18n="word_explosion_layout">单词布局</label>
+        <select id="wordExplosionLayout" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text);">
+          <option value="vertical" data-i18n="word_explosion_layout_vertical">垂直排列</option>
+          <option value="horizontal" data-i18n="word_explosion_layout_horizontal">水平排列</option>
+        </select>
+      </div>
+
+      <div class="select-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+        <label for="wordExplosionTranslationCount" style="display: block; margin-bottom: 8px;" data-i18n="word_explosion_translation_count">单词翻译显示数量</label>
+        <select id="wordExplosionTranslationCount" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text);">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="all" data-i18n="word_explosion_count_all">全部</option>
+        </select>
+      </div>
+
+      <div class="select-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+        <label for="explosionSentenceTranslationCount" style="display: block; margin-bottom: 8px;" data-i18n="explosion_sentence_translation_request_count">句子翻译请求数量</label>
+        <select id="explosionSentenceTranslationCount" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text);">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+        </select>
+        <small style="display: block; margin-top: 4px; color: var(--ios-secondary);" data-i18n="explosion_sentence_translation_request_hint">独立请求AI翻译，不依赖单词例句</small>
+      </div>
+
+      <div class="toggle">
+        <label for="wordExplosionHighlightSentence" data-i18n="word_explosion_highlight_sentence">高亮当前爆炸的句子</label>
+        <input type="checkbox" id="wordExplosionHighlightSentence" checked>
+      </div>
+
+      <div class="select-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+        <label for="wordExplosionHighlightColor" style="display: block; margin-bottom: 8px;" data-i18n="word_explosion_highlight_color">高亮背景颜色</label>
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+          <input type="text" id="wordExplosionHighlightColor" value="#955FBD40" placeholder="#955FBD40" style="flex: 1; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text); font-family: monospace;">
+          <div id="wordExplosionHighlightColorPreview" style="width: 40px; height: 40px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: #955FBD40; cursor: pointer;"></div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input type="color" id="wordExplosionHighlightColorPicker" value="#955FBD" style="width: 60px; height: 32px; border: 1px solid var(--ios-border); border-radius: 4px; cursor: pointer;">
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center;">
+              <label for="wordExplosionHighlightOpacity" style="font-size: 12px; color: var(--ios-text); margin-right: 8px;" data-i18n="word_explosion_highlight_opacity_label">透明度:</label>
+              <span id="wordExplosionHighlightOpacityValue" style="font-size: 12px; color: var(--ios-text);">25</span>%
+            </div>
+            <input type="range" id="wordExplosionHighlightOpacity" min="0" max="100" value="25" style="width: 100%;">
+          </div>
+        </div>
+        <small style="display: block; margin-top: 4px; color: var(--ios-text);" data-i18n="word_explosion_highlight_color_hint">点击色板选择颜色，拖动滑块调整透明度</small>
+      </div>
+
+      <div class="toggle">
+        <label for="wordExplosionUnderlineEnabled" data-i18n="word_explosion_underline_enabled">启用下划线</label>
+        <input type="checkbox" id="wordExplosionUnderlineEnabled">
+      </div>
+
+      <div id="wordExplosionUnderlineSettings" style="display: none;">
+        <div class="select-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+          <label for="wordExplosionUnderlineStyle" style="display: block; margin-bottom: 8px;" data-i18n="word_explosion_underline_style">下划线样式</label>
+          <select id="wordExplosionUnderlineStyle" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text);">
+            <option value="solid" data-i18n="underline_style_solid">直线</option>
+            <option value="wavy" data-i18n="underline_style_wavy">波浪线</option>
+            <option value="dotted" data-i18n="underline_style_dotted">点线</option>
+          </select>
+        </div>
+
+        <div class="select-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+          <label for="wordExplosionUnderlinePosition" style="display: block; margin-bottom: 8px;" data-i18n="word_explosion_underline_position">下划线位置</label>
+          <select id="wordExplosionUnderlinePosition" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text);">
+            <option value="bottom" data-i18n="underline_position_bottom">下</option>
+            <option value="top" data-i18n="underline_position_top">上</option>
+            <option value="both" data-i18n="underline_position_both">上+下</option>
+          </select>
+        </div>
+
+        <div class="select-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+          <label for="wordExplosionUnderlineColor" style="display: block; margin-bottom: 8px;" data-i18n="word_explosion_underline_color">下划线颜色</label>
+          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+            <input type="text" id="wordExplosionUnderlineColor" value="#955FBD80" placeholder="#955FBD80" style="flex: 1; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text); font-family: monospace;">
+            <div id="wordExplosionUnderlineColorPreview" style="width: 40px; height: 40px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: #955FBD80; cursor: pointer;"></div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="color" id="wordExplosionUnderlineColorPicker" value="#955FBD" style="width: 60px; height: 32px; border: 1px solid var(--ios-border); border-radius: 4px; cursor: pointer;">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center;">
+                <label for="wordExplosionUnderlineOpacity" style="font-size: 12px; color: var(--ios-text); margin-right: 8px;" data-i18n="word_explosion_underline_opacity_label">透明度:</label>
+                <span id="wordExplosionUnderlineOpacityValue" style="font-size: 12px; color: var(--ios-text);">50</span>%
+              </div>
+              <input type="range" id="wordExplosionUnderlineOpacity" min="0" max="100" value="50" style="width: 100%;">
+            </div>
+          </div>
+          <small style="display: block; margin-top: 4px; color: var(--ios-text);" data-i18n="word_explosion_underline_color_hint">点击色板选择颜色，拖动滑块调整透明度</small>
+        </div>
+
+        <div class="select-setting" style="padding: 12px 16px;">
+          <label for="wordExplosionUnderlineThickness" style="display: block; margin-bottom: 8px;" data-i18n="word_explosion_underline_thickness">下划线粗度 (px)</label>
+          <input type="number" id="wordExplosionUnderlineThickness" value="3" min="1" max="10" step="1" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text);">
+        </div>
+      </div>
+
+    
+    </div>
+
+    <div class="toggle">
+      <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <div class="tooltip-container">
+          <label for="enableWaifu" data-i18n="embed_other_websites">嵌入其他网页</label>
+          <span class="tooltip-text" data-i18n="embed_other_websites_tooltip">在网页上显示一个可拖动的窗口</span>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <button class="settings-toggle-button" id="waifuSettingsToggle" style="margin-right: 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82-.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+          <input type="checkbox" id="enableWaifu">
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section" id="waifuSettings">
+      <div class="input-setting" style="padding: 12px 16px;">
+        <label for="waifuUrl" style="display: block; margin-bottom: 8px;" data-i18n="waifu_url">请输入网址 URL</label>
+        <textarea id="waifuUrl" placeholder="Embed URL inside the page" data-i18n="waifu_url_placeholder" style="width: 100%;   border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text); resize: vertical;"></textarea>
+      </div>
+    </div>
+
+    <div class="toggle">
+      <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <div class="tooltip-container">
+          <label for="bionicEnabled"><b>Bio</b>nic & <span style="opacity: 0.1;">Tha</span><span style="opacity: 0.5;">nox</span></label>
+          <span class="tooltip-text" data-i18n="bionic_reading_tooltip">亮词首四分，减眸析之劳。<br>瞥目只一瞬，识形于瞬息。<br>极占性能，长文慎用。 </span>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <div class="theme-buttons" style="margin-right: 12px;">
+            <button class="theme-button" id="bionicLightTheme"   title="日间模式">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/>
+                <line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              </svg>
+            </button>
+            <button class="theme-button" id="bionicDarkTheme" title="夜间模式">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            </button>
+          </div>
+          <button class="settings-toggle-button" id="bionicSettingsToggle" style="margin-right: 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82-.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+          <input type="checkbox" id="bionicEnabled">
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section" id="bionicSettings">
+
+
+      <!-- Thanox Reading 设置 -->
+      <div class="toggle">
+        <label for="thanoxReadingEnabled" data-i18n="thanox_reading">Thanox Reading</label>
+        <input type="checkbox" id="thanoxReadingEnabled">
+      </div>
+
+      <div class="slider-setting">
+        <label for="thanoxProcessingOpacity" data-i18n="thanox_processing_opacity">处理中的透明值 <span id="thanoxProcessingOpacityValue">50</span>%</label>
+        <input type="range" id="thanoxProcessingOpacity" min="0" max="100" value="50">
+      </div>
+
+      <div class="slider-setting">
+        <label for="thanoxCompletedOpacity" data-i18n="thanox_completed_opacity">处理完成后的透明值 <span id="thanoxCompletedOpacityValue">10</span>%</label>
+        <input type="range" id="thanoxCompletedOpacity" min="0" max="100" value="10">
+      </div>
+
+      <div class="slider-setting">
+        <label for="thanoxWordSpeed" data-i18n="thanox_word_speed">单词消失速度 <span id="thanoxWordSpeedValue">1000</span>ms</label>
+        <input type="range" id="thanoxWordSpeed" min="100" max="5000" value="1000" step="100">
+      </div>
+
+      <!-- 碎片特效设置 -->
+      <div class="toggle">
+        <label for="thanoxFragmentEffect" data-i18n="thanox_fragment_effect">🎆 碎片特效</label>
+        <input type="checkbox" id="thanoxFragmentEffect" checked>
+      </div>
+
+      <div class="slider-setting">
+        <label for="thanoxFragmentCount" data-i18n="thanox_fragment_count">碎片数量 <span id="thanoxFragmentCountValue">8</span></label>
+        <input type="range" id="thanoxFragmentCount" min="3" max="15" value="8">
+      </div>
+
+      <div class="slider-setting">
+        <label for="thanoxFragmentDuration" data-i18n="thanox_fragment_duration">碎片动画时长 <span id="thanoxFragmentDurationValue">2000</span>ms</label>
+        <input type="range" id="thanoxFragmentDuration" min="1000" max="5000" value="2000" step="100">
+      </div>
+
+
+
+
+      <div class="input-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+        <label for="bionicBlacklistWebsites" style="display: block; margin-bottom: 8px;" data-i18n="bionic_blacklist">黑名单网站</label>
+        <textarea id="bionicBlacklistWebsites" placeholder="*://test.com/*;*test*;" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; resize: vertical;"></textarea>
+      </div>
+
+      <div class="input-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+        <label for="bionicFontFamily" style="display: block; margin-bottom: 8px;" data-i18n="font_selection">字体选择</label>
+        <select id="bionicFontFamily" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text);">
+          <option value="auto">auto (default)</option>
+          <option value="'LXGWWenKai', serif">LXGWWenKai</option>
+          <option value="'Fanwood', serif">Fanwood</option>
+          <option value="Arial, sans-serif">Arial</option>
+          <option value="'Times New Roman', serif">Times New Roman</option>
+          <option value="'Courier New', monospace">Courier New</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="Verdana, sans-serif">Verdana</option>
+          <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+          <option value="'Segoe UI', sans-serif">Segoe UI</option>
+          <option value="'Open Sans', sans-serif">Open Sans</option>
+          <option value="Roboto, sans-serif">Roboto</option>
+          <option value="'Helvetica Neue', Helvetica, sans-serif">Helvetica Neue</option>
+
+        </select>
+      </div>
+
+      <div class="input-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+        <label for="bionicFontSize" style="display: block; margin-bottom: 8px;" data-i18n="font_size_selection">字号设置</label>
+        <div class="input-with-slider">
+          <input type="range" id="bionicFontSize" min="8" max="64" value="16" step="1">
+          <div class="input-number-wrapper">
+            <input type="number" id="bionicFontSizeInput" min="8" max="64" value="16" step="1">
+            <span>px</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+        <label for="bionicDefaultDayWebsites" style="display: block; margin-bottom: 8px;" data-i18n="default_day_websites">默认日间模式网站</label>
+        <textarea id="bionicDefaultDayWebsites" placeholder="*://test.com/*;*test*;" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; resize: vertical;"></textarea>
+      </div>
+
+      <div class="input-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+        <label for="bionicDefaultNightWebsites" style="display: block; margin-bottom: 8px;" data-i18n="default_night_websites">默认夜间模式网址</label>
+        <textarea id="bionicDefaultNightWebsites" placeholder="*://test.com/*;*test*;" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; resize: vertical;">*://*.github.com/*;*://www.lingq.com/*</textarea>
+      </div>
+    </div>
+
+
+
+
+    <div class="toggle">
+      <label for="clipSubtitles" data-i18n="clip_subtitles">剪切板监听字幕</label>
+      <input type="checkbox" id="clipSubtitles">
+    </div>
+
+
+
+    <div class="toggle">
+      <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <div class="tooltip-container">
+          <label for="readingRuler" data-i18n="reading_ruler">Reading Ruler</label>
+          <span class="tooltip-text" data-i18n="reading_ruler_tooltip">琅嬛玉尺，助阅明眸。<br>极占性能，长文慎用。 </span>
+        </div>
+
+        <div style="display: flex; align-items: center;">
+          <button class="settings-toggle-button" id="rulerSettingsToggle">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82-.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+          <input type="checkbox" id="readingRuler">
+        </div>
+      </div>
+    </div>
+
+
+
+    <div class="settings-section" id="rulerSettings">
+
+      <div class="input-setting" style="padding: 12px 16px;">
+        <label for="readingRulerBlacklistWebsites" style="display: block; margin-bottom: 8px;" data-i18n="reading_ruler_blacklist">Reading Ruler 黑名单网站</label>
+        <textarea id="readingRulerBlacklistWebsites" placeholder="*://test.com/*;*test*;" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; resize: vertical;">*://github.com/*;</textarea>
+      </div>
+
+
+      <div class="toggle">
+        <label for="rulerInvertedMode" data-i18n="ruler_inverted_mode">反色模式</label>
+        <input type="checkbox" id="rulerInvertedMode">
+      </div>
+
+      <div class="mode-selector">
+        <label data-i18n="width_mode">宽度模式</label>
+        <div class="radio-group">
+          <div class="radio-option">
+            <input type="radio" id="widthModeAuto" name="widthMode" value="auto">
+            <label for="widthModeAuto" data-i18n="auto_width">自动宽度</label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" id="widthModeScreen" name="widthMode" value="screen">
+            <label for="widthModeScreen" data-i18n="screen_width">屏幕宽度</label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" id="widthModeCustom" name="widthMode" value="custom">
+            <label for="widthModeCustom" data-i18n="custom_width">自定义宽度</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="slider-setting" id="customWidthSetting">
+        <label for="rulerCustomWidth" data-i18n="custom_width">自定义宽度</label>
+        <div class="input-with-slider">
+          <input type="range" id="rulerCustomWidth" min="50" max="2400" value="200">
+          <div class="input-number-wrapper">
+            <input type="number" id="rulerCustomWidthInput" min="50" max="2400" value="200">
+            <span>px</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="slider-setting">
+        <label for="rulerHeight" data-i18n="ruler_height">高度 <span id="rulerHeightValue">24</span>px</label>
+        <input type="range" id="rulerHeight" min="10" max="100" value="24">
+      </div>
+      <div class="slider-setting">
+        <label for="rulerOpacity" data-i18n="ruler_opacity">透明度 <span id="rulerOpacityValue">30</span>%</label>
+        <input type="range" id="rulerOpacity" min="0" max="100" value="30">
+      </div>
+      <div class="color-setting">
+        <label for="rulerColor" data-i18n="ruler_color">颜色</label>
+        <input type="color" id="rulerColor" value="#6f6f6f">
+      </div>
+    </div>
+
+
+    <!-- youtube caption fix -->
+    <div class="toggle"> <!-- 使用 toggle class -->
+      <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <div class="tooltip-container">
+          <label for="youtubeCaptionFix" data-i18n="youtube_caption_fix">YouTube 字幕插件</label>
+          <span class="tooltip-text" data-i18n="youtube_caption_fix_tooltip">修复YouTube字幕显示和分句功能</span>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <button class="settings-toggle-button" id="youtubeSettingsToggle" style="margin-right: 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82-.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+          <input type="checkbox" id="youtubeCaptionFix">
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section" id="youtubeSettings">
+      <div class="toggle">
+        <label for="youtubeCommaSentencing" data-i18n="youtube_comma_sentencing">分割split by ","</label>
+        <input type="checkbox" id="youtubeCommaSentencing">
+      </div>
+      <div class="toggle">
+        <label for="youtubeBionicReading" data-i18n="youtube_bionic_reading">仿生阅读</label>
+        <input type="checkbox" id="youtubeBionicReading">
+      </div>
+      <div class="slider-setting">
+        <label for="youtubeFontSize" data-i18n="youtube_font_size">字体大小</label>
+        <div class="slider-wrapper">
+          <input type="range" id="youtubeFontSize" min="12" max="48" step="1" value="24">
+          <span id="youtubeFontSizeValue" color="#ffffff" >24px</span>
+        </div>
+      </div>
+      <div class="slider-setting">
+        <label for="youtubeFontFamily" data-i18n="youtube_font_family">字体样式</label>
+        <select id="youtubeFontFamily">
+          <option value="Fanwood">Fanwood</option>
+          <option value="LXGWWenKai">LXGWWenKai</option>
+          <option value="Arial">Arial</option>
+          <option value="Helvetica">Helvetica</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Verdana">Verdana</option>
+          <option value="Tahoma">Tahoma</option>
+          <option value="Trebuchet MS">Trebuchet MS</option>
+          <option value="Impact">Impact</option>
+        </select>
+      </div>
+
+    </div>
+
+
+  </div>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="settings-group">
+    <div class="group-title" data-i18n="ai_translation_settings">AI 翻译设置</div>
+    <div class="toggle">
+      <label for="autoRequestAITranslations" data-i18n="auto_request_ai_translations">自动请求AI释义</label>
+      <input type="checkbox" id="autoRequestAITranslations">
+    </div>
+    <div class="toggle">
+      <label for="autoAddAITranslations" data-i18n="auto_add_ai_translations">自动添加AI释义</label>
+      <input type="checkbox" id="autoAddAITranslations">
+    </div>
+    <div class="toggle">
+      <label for="autoAddAITranslationsFromUnknown" data-i18n="auto_add_ai_translations_from_unknown">自动添加AI释义（未知/无释义）</label>
+      <input type="checkbox" id="autoAddAITranslationsFromUnknown">
+    </div>
+    <div class="toggle">
+      <label for="autoRequestAITranslations2" data-i18n="auto_request_ai_translations_2">自动请求第二个AI释义</label>
+      <input type="checkbox" id="autoRequestAITranslations2">
+    </div>
+    <div class="toggle">
+      <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <label for="autoAddExampleSentences" data-i18n="auto_add_example_sentences">自动添加例句</label>
+        <div style="display: flex; align-items: center;">
+          <button class="settings-toggle-button" id="sentencesSettingsToggle" style="margin-right: 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82-.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+          <input type="checkbox" id="autoAddExampleSentences">
+        </div>
+      </div>
+    </div>
+
+    <!-- 自动添加例句子设置区域 -->
+    <div class="settings-section" id="sentencesSettings">
+      <div class="input-setting" style="padding: 12px 16px; border-bottom: none; background-color: transparent;">
+        <label for="autoAddSentencesLimit" style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500;" data-i18n="auto_add_sentences_limit">自动添加上限条数</label>
+        <div class="input-with-slider">
+          <input type="range" id="autoAddSentencesLimit" min="1" max="20" value="1" step="1">
+          <div class="input-number-wrapper">
+            <input type="number" id="autoAddSentencesLimitInput" min="1" max="999" value="1" step="1">
+            <span data-i18n="auto_add_sentences_limit_unit">条</span>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: var(--ios-secondary); margin-top: 8px; font-style: italic; opacity: 0.8;" data-i18n="auto_add_sentences_limit_hint">
+          你不想把所有书都存到你的数据库中吧，展开例句可手动添加。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <div class="group-title" data-i18n="tooltip_settings">提示窗设置</div>
+    <div class="toggle">
+      <label for="clickOnlyTooltip" data-i18n="click_only_tooltip">仅点击触发小窗</label>
+      <input type="checkbox" id="clickOnlyTooltip">
+    </div>
+    <div class="toggle">
+      <label for="autoExpandTooltip" data-i18n="auto_expand_tooltip">自动展开未高亮单词的小窗</label>
+      <input type="checkbox" id="autoExpandTooltip">
+    </div>
+    <div class="toggle">
+      <label for="autoCloseTooltip" data-i18n="auto_close_tooltip">鼠标离开小窗自动关闭</label>
+      <input type="checkbox" id="autoCloseTooltip">
+    </div>
+    <div class="toggle">
+      <label for="autoRefreshTooltip" data-i18n="auto_refresh_tooltip">新单词刷新小窗</label>
+      <input type="checkbox" id="autoRefreshTooltip">
+    </div>
+    <div class="toggle">
+      <label for="defaultExpandTooltip" data-i18n="default_expand_tooltip">小窗默认展开</label>
+      <input type="checkbox" id="defaultExpandTooltip">
+    </div>
+    <div class="toggle">
+      <label for="defaultExpandSententsTooltip" data-i18n="default_expand_sentents_tooltip">例句默认展开</label>
+      <input type="checkbox" id="defaultExpandSententsTooltip">
+    </div>
+    <div class="toggle">
+      <label for="defaultExpandCapsule" data-i18n="default_expand_capsule">胶囊默认展开</label>
+      <input type="checkbox" id="defaultExpandCapsule">
+    </div>
+    <div class="toggle">
+      <label for="preferPopupAbove" data-i18n="prefer_popup_above">优先向上弹出</label>
+      <input type="checkbox" id="preferPopupAbove">
+    </div>
+    <div class="toggle">
+      <label for="selectionPopupPreferDown" data-i18n="selection_popup_prefer_down">划词弹窗优先默认向下弹出</label>
+      <input type="checkbox" id="selectionPopupPreferDown">
+    </div>
+
+    <div class="slider-setting">
+      <!-- 鼠标悬浮提示 -->
+      <div class="tooltip-container">
+        <label for="tooltipGap" data-i18n="tooltip_gap">单词弹窗间隙:</label>
+        <span id="tooltipGapValue" class="value-display">50</span>px
+        <span class="tooltip-text">弹窗和单词之间的间隙 <span id="tooltipGapValue">50</span></span>
+      </div>
+      <input type="range" id="tooltipGap" min="0" max="200" value="50">
+    </div>
+    <div class="slider-setting">
+      <!-- 鼠标悬浮提示 -->
+      <div class="tooltip-container">
+        <label for="selectionPopupGap" data-i18n="selection_popup_gap">划词弹窗间隙:</label>
+        <span id="selectionPopupGapValue" class="value-display">10</span>px
+        <span class="tooltip-text">划词弹窗和选中文本之间的间隙 <span id="selectionPopupGapValue">10</span></span>
+      </div>
+      <input type="range" id="selectionPopupGap" min="0" max="200" value="10">
+    </div>
+    <div class="slider-setting">
+        <!-- 鼠标悬浮提示 -->
+        <div class="tooltip-container">
+          <label for="devicePixelRatio" data-i18n="device_pixel_ratio">单词弹窗缩放:</label>
+          <span id="devicePixelRatioValue" class="value-display">1.0</span>
+          <span class="tooltip-text">Scale = Custom DPR / html DPR</span>
+        </div>
+      
+      <input type="range" id="devicePixelRatio" min="0.5" max="4.0" step="0.1" value="1.0">
+    </div>
+  </div>
+
+
+  <div class="settings-group">
+    <div class="group-title" data-i18n="text_speech_settings">文本语音设置</div>
+    <div class="toggle">
+      <label for="enableWordTTS" data-i18n="word_tts">单词朗读</label>
+      <input type="checkbox" id="enableWordTTS">
+    </div>
+    <div class="toggle">
+      <label for="enableSentenceTTS" data-i18n="sentence_tts">句子朗读</label>
+      <input type="checkbox" id="enableSentenceTTS">
+    </div>
+    <div class="toggle">
+      <label for="enableAutoWordTTS" data-i18n="auto_word_tts">自动播放鼠标下单词</label>
+      <input type="checkbox" id="enableAutoWordTTS">
+    </div>
+
+    <div class="toggle">
+      <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <div class="tooltip-container">
+        <label for="useOrionTTS">🐚TTS for IOS</label>
+        <span class="tooltip-text">在iOS Edge（ORION）浏览器中使用嵌入式TTS，<br> 当默认tts不可用时启用此选项</span>
+        </div>
+        <input type="checkbox" id="useOrionTTS">
+      </div>
+
+    </div>
+
+
+  </div>
+
+
+
+  <div class="settings-group">
+    <div class="group-title" data-i18n="shortcut_settings">快捷键设置</div>
+    <div class="input-group">
+      <label for="wordQueryBtn" data-i18n="word_query">单词查询</label>
+      <input type="text" id="wordQueryBtn" class="key-input" readonly maxlength="1">
+    </div>
+
+    <div class="input-group">
+      <label for="copySentenceBtn" data-i18n="copy_sentence">复制句子到剪切板</label>
+      <input type="text" id="copySentenceBtn" class="key-input" readonly maxlength="1">
+    </div>
+    <div class="input-group">
+      <label for="analysisWindowBtn" data-i18n="analysis_window">弹窗句子解析</label>
+      <input type="text" id="analysisWindowBtn" class="key-input" readonly maxlength="1">
+    </div>
+    <div class="input-group">
+      <label for="sidePanelBtn" data-i18n="side_panel">侧边栏句子解析</label>
+      <input type="text" id="sidePanelBtn" class="key-input" readonly maxlength="1">
+    </div>
+
+    <!-- 插入分割线元素 -->
+    <div class="custom-divider"></div>
+    <div class="input-group">
+      <label for="closeTooltipBtn" data-i18n="close_tooltip">关闭小窗</label>
+      <input type="text" id="closeTooltipBtn" class="key-input" readonly placeholder="CapsLock" data-i18n="close_tooltip">
+    </div>
+
+    <div class="input-group">
+      <label for="addAITranslationBtn" data-i18n="add_ai_translation">添加AI释义</label>
+      <input type="text" id="addAITranslationBtn" class="key-input" readonly placeholder="Tab">
+    </div>
+    <!-- 新增单词状态快捷键 -->
+
+    <!-- 插入分割线元素 -->
+    <div class="custom-divider"></div>
+    <!-- 新增反引号快捷键 -->
+    <div class="input-group">
+      <label for="wordStatus0Key" data-i18n="word_status_0">单词状态 0 (未知)</label>
+      <input type="text" id="wordStatus0Key" class="key-input" readonly maxlength="1">
+    </div>
+
+
+    <div class="input-group">
+      <label for="wordStatus1Key" data-i18n="word_status_1">单词状态 1 (新)</label>
+      <input type="text" id="wordStatus1Key" class="key-input" readonly maxlength="1">
+    </div>
+    <div class="input-group">
+      <label for="wordStatus2Key" data-i18n="word_status_2">单词状态 2 (已知)</label>
+      <input type="text" id="wordStatus2Key" class="key-input" readonly maxlength="1">
+    </div>
+    <div class="input-group">
+      <label for="wordStatus3Key" data-i18n="word_status_3">单词状态 3 (学习中)</label>
+      <input type="text" id="wordStatus3Key" class="key-input" readonly maxlength="1">
+    </div>
+    <div class="input-group">
+      <label for="wordStatus4Key" data-i18n="word_status_4">单词状态 4 (忽略)</label>
+      <input type="text" id="wordStatus4Key" class="key-input" readonly maxlength="1">
+    </div>
+    <div class="input-group">
+      <label for="wordStatus5Key" data-i18n="word_status_5">单词状态 5 (标记)</label>
+      <input type="text" id="wordStatus5Key" class="key-input" readonly maxlength="1">
+    </div>
+
+    <div class="input-group">
+      <label for="wordStatusToggleKey" data-i18n="word_status_toggle">切换已知/未知</label>
+      <!-- 使用 readonly 防止直接输入，通过 JS 处理按键 -->
+      <input type="text" id="wordStatusToggleKey" class="key-input" readonly placeholder="Space">
+    </div>
+
+  </div>
+
+
+
+
+
+  <script src="./popup.js"></script>
+</body>
+</html>

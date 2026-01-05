@@ -1,0 +1,942 @@
+.vocab-highlight {
+  background-color: #ffeb3b;
+  cursor: pointer;
+  position: relative;
+  display: inline-block;
+}
+
+.vocab-tooltip {
+  background: white;
+  border: 1px solid #ccc;
+  padding: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  z-index: 2147483647;
+  cursor: auto;
+  transform: translateZ(0); /* 启用硬件加速 */
+  will-change: transform, opacity; /* 提示浏览器元素将发生变化 */
+  max-width: 300px; /* 限制宽度避免过大的DOM结构 */
+  max-height: 400px;
+  overflow-y: auto; /* 内容过多时允许滚动 */
+}
+
+.vocab-tooltip button {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.tooltip-header {
+  margin-bottom: 8px;
+}
+
+.close-btn {
+  cursor: pointer;
+  float: right;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #ff0000;
+}
+
+/* PDF 页面样式：使用半透明 rgba 高亮 */
+:root.pdf-viewer ::highlight(default) {
+  background-color: rgba(198,223,255, 0.2); /* PDF: 默认不认识的单词 */
+}
+:root.pdf-viewer ::highlight(state1) {
+  background-color: rgba(255,232,149, 0.3);
+}
+:root.pdf-viewer ::highlight(state2) {
+  background-color: rgba(255,242,197, 0.3);
+}
+:root.pdf-viewer ::highlight(state3) {
+  background-color: rgba(255,247,219, 0.3);
+}
+:root.pdf-viewer ::highlight(state4) {
+  background-color: rgba(245,245,235, 0.3);
+}
+
+/* PDF 页面暗色模式：半透明 rgba 高亮 */
+:root.pdf-viewer ::highlight(dark-default) {
+  background-color: rgba(37,57,82, 0.3); /* PDF: 暗色模式默认不认识的单词 */
+}
+:root.pdf-viewer ::highlight(dark-state1) {
+  background-color: rgba(108,87,43, 0.3);
+}
+:root.pdf-viewer ::highlight(dark-state2) {
+  background-color: rgba(66,60,44, 0.3);
+}
+:root.pdf-viewer ::highlight(dark-state3) {
+  background-color: rgba(60,62,63, 0.3);
+}
+:root.pdf-viewer ::highlight(dark-state4) {
+  background-color: rgba(60,62,63, 0.3);
+}
+
+/* PDF 页面句子高亮（与非 PDF 页面保持一致） */
+:root.pdf-viewer ::highlight(sentence-highlight) {
+  background-color: rgba(255, 255, 0, 0.2);
+  border-radius: 2px;
+}
+
+/* 爆炸句子高亮 - 样式由JavaScript动态生成 */
+/* 用户可以在popup中自定义颜色和下划线，样式会通过JavaScript动态应用 */
+::highlight(explosion-sentence-highlight) {
+  /* 样式由 a7_words_boom.js 中的 updateExplosionHighlightColor() 函数动态生成 */
+}
+
+/* 非 PDF 页面：恢复原始纯 rgb 高亮样式 */
+:root:not(.pdf-viewer) ::highlight(default) {
+  background-color: rgb(198,223,255);
+}
+:root:not(.pdf-viewer) ::highlight(state1) {
+  background-color: rgb(255,232,149);
+}
+:root:not(.pdf-viewer) ::highlight(state2) {
+  background-color: rgb(255,242,197);
+}
+:root:not(.pdf-viewer) ::highlight(state3) {
+  background-color: rgb(255,247,219);
+}
+:root:not(.pdf-viewer) ::highlight(state4) {
+  /* background-color: rgb(245,245,235); */
+  text-decoration: underline;
+  text-decoration-color: #2e70ad;
+  text-decoration-thickness: 2px;
+
+
+}
+
+:root:not(.pdf-viewer) ::highlight(dark-default) {
+  background-color: rgba(63, 108, 190, 0.548);
+}
+:root:not(.pdf-viewer) ::highlight(dark-state1) {
+  background-color: rgba(138, 113, 58, 0.514);
+}
+:root:not(.pdf-viewer) ::highlight(dark-state2) {
+  background-color: rgba(92, 84, 63, 0.582);
+}
+:root:not(.pdf-viewer) ::highlight(dark-state3) {
+  background-color: rgb(60,62,63,0.7);
+
+
+
+}
+:root:not(.pdf-viewer) ::highlight(dark-state4) {
+  /* background-color: rgb(60,62,63,0.7); */
+  text-decoration: underline;
+  text-decoration-color: #2e70ad;
+  text-decoration-thickness: 2px;
+
+}
+
+
+/* :root:not(.pdf-viewer) ::highlight(dark-default) {
+  background-color: rgba(0, 132, 255, 0.5);
+}
+:root:not(.pdf-viewer) ::highlight(dark-state1) {
+  background-color: rgb(108,87,43,0.7);
+}
+:root:not(.pdf-viewer) ::highlight(dark-state2) {
+  background-color: rgb(66,60,44,0.7);
+}
+:root:not(.pdf-viewer) ::highlight(dark-state3) {
+  background-color: rgb(60,62,63,0.7);
+}
+:root:not(.pdf-viewer) ::highlight(dark-state4) {
+  background-color: rgb(60,62,63,0.7);
+} */
+
+
+/* 添加分析窗口样式 */
+.analysis-window {
+  position: fixed;
+  top: 20%;
+  left: 20%;
+  width: 400px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  z-index: 2147483647;
+}
+
+.analysis-header {
+  padding: 10px;
+  background: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+  cursor: move;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.analysis-content {
+  padding: 15px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.sentence-display {
+  margin-bottom: 10px;
+  padding: 10px;
+  background: #f9f9f9;
+  border-radius: 4px;
+  line-height: 1.5;
+}
+
+.analysis-result {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  font-size: 14px;
+  padding: 10px;
+}
+
+.analysis-result strong {
+  color: #2196F3;
+  display: block;
+  margin-top: 10px;
+}
+
+.analysis-result code {
+  background: #f5f5f5;
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: #e91e63;
+}
+
+.analysis-result br {
+  display: block;
+  margin: 5px 0;
+  content: "";
+}
+
+.drag-handle {
+  font-weight: bold;
+  user-select: none;
+}
+
+
+/* 亮色模式（默认）*/
+.vocab-tooltip, .analysis-window {
+  background-color: white;
+  color: #333;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* 暗色模式 */
+.vocab-tooltip.dark-mode, .analysis-window.dark-mode {
+  background: #222 !important;
+  color: #eee;
+  border: 1px solid #444  !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  opacity: 1 !important;
+}
+
+/* 为暗色模式添加其他元素样式 */
+.dark-mode .tooltip-header {
+  background-color: #333;
+}
+
+.dark-mode input, .dark-mode button {
+  background-color: #444;
+  color: #eee;
+  border: 1px solid #666;
+}
+
+.dark-mode .translation-item, .dark-mode .example-sentence, .dark-mode .example-translation {
+  color: #ddd;
+}
+
+.dark-mode .tag {
+  background-color: #444;
+  color: #eee;
+}
+
+/* 优化高亮计算性能 */
+::highlight(default),
+::highlight(state1),
+::highlight(state2),
+::highlight(state3),
+::highlight(state4),
+::highlight(dark-default),
+::highlight(dark-state1),
+::highlight(dark-state2),
+::highlight(dark-state3),
+::highlight(dark-state4) {
+  will-change: background-color;
+}
+
+:root.pdf-viewer ::highlight(default),
+:root.pdf-viewer ::highlight(state1),
+:root.pdf-viewer ::highlight(state2),
+:root.pdf-viewer ::highlight(state3),
+:root.pdf-viewer ::highlight(state4),
+:root.pdf-viewer ::highlight(dark-default),
+:root.pdf-viewer ::highlight(dark-state1),
+:root.pdf-viewer ::highlight(dark-state2),
+:root.pdf-viewer ::highlight(dark-state3),
+:root.pdf-viewer ::highlight(dark-state4) {
+  mix-blend-mode: multiply;
+}
+
+/* ShadowHost在top layer模式下的样式 */
+#lingkuma-tooltip-host.in-top-layer {
+  background: transparent !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: auto !important;
+  pointer-events: none !important;
+}
+
+/* 确保在top layer模式下弹窗内容可以正常交互 */
+#lingkuma-tooltip-host.in-top-layer .vocab-tooltip {
+  pointer-events: auto !important;
+  position: fixed !important;
+}
+
+/* 确保弹窗内的所有交互元素都可以正常工作 */
+#lingkuma-tooltip-host.in-top-layer .vocab-tooltip * {
+  pointer-events: auto !important;
+}
+
+/* 但是弹窗外的区域应该完全透明 */
+#lingkuma-tooltip-host.in-top-layer > *:not(.vocab-tooltip) {
+  pointer-events: none !important;
+}
+
+/* ShadowHost全屏时的backdrop样式 */
+#lingkuma-tooltip-host:fullscreen::backdrop {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  pointer-events: none !important;
+}
+
+/* =======================
+   单词爆炸弹窗样式
+   ======================= */
+.word-explosion-container {
+  /* position由JS动态控制: 自动模式用absolute, 手动模式用fixed */
+  background: #FBFAF5;
+  border: 1px solid #ccc;
+  border-radius: 16px;
+  padding: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 2147483646; /* 比查词弹窗低一层 */
+  max-width: 500px;
+  max-height: 600px;
+  overflow: auto; /* 外层容器负责滚动 */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+  display: none;
+  pointer-events: auto; /* 确保可以点击 */
+}
+
+.word-explosion-container:has(.word-explosion-empty) {
+  background: rgba(251, 250, 245, 0);
+  border-color: rgba(254, 254, 254, 0);
+  box-shadow: none;
+}
+
+/* 左侧按钮容器（外挂在弹窗左侧） */
+.word-explosion-left-buttons {
+  position: absolute;
+  top: 24px;
+  left: -28px; /* 定位在弹窗左侧外部，24px按钮+4px空隙 */
+  display: flex;
+  flex-direction: column;
+  gap: 6px; /* 与右侧按钮保持一致 */
+  z-index: 2147483647; /* 确保在最上层 */
+  pointer-events: auto; /* 确保按钮可以点击 */
+  visibility: visible; /* 强制可见 */
+}
+
+/* 透明连接层，填充按钮和弹窗之间的空隙 */
+.word-explosion-left-buttons-bridge {
+  position: absolute;
+  top: 8px;
+  left: -4px; /* 从弹窗左边往外-4px */
+  width: 4px; /* 填充空隙 */
+  /* 高度由JS动态设置与弹窗一致 */
+  background: transparent; /* 完全透明 */
+  z-index: 2147483647; /* 与按钮同层 */
+  pointer-events: auto; /* 阻止鼠标穿透 */
+  display: none;
+}
+
+/* 右上角按钮容器 */
+.word-explosion-top-right-buttons {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  z-index: 100;
+}
+
+/* 关闭按钮 */
+.word-explosion-close-btn {
+  position: relative;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  transition: all 0.2s;
+}
+
+.word-explosion-close-btn:hover {
+  background: #f0f0f0;
+  color: #ff0000;
+}
+
+/* 左侧按钮样式（Ask和Sidebar） */
+.word-explosion-left-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: #f5f5f5;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 2px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.word-explosion-left-btn:hover {
+  background: #e0e0e0;
+  color: #333;
+  transform: scale(1.05);
+}
+
+.word-explosion-left-btn:active {
+  transform: scale(0.95);
+}
+
+.word-explosion-left-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* 右上角按钮样式 */
+.word-explosion-top-btn {
+  position: relative;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: #f5f5f5;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 2px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.word-explosion-top-btn:hover {
+  background: #e0e0e0;
+  color: #333;
+  transform: scale(1.05);
+}
+
+.word-explosion-top-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* TTS按钮特殊样式（使用emoji） */
+.word-explosion-tts-btn {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* 一键已知按钮特殊样式 */
+.word-explosion-mark-all-known-btn {
+  font-size: 16px;
+  line-height: 1;
+  font-weight: bold;
+  color: #4CAF50;
+}
+
+.word-explosion-mark-all-known-btn:hover {
+  background: #e8f5e9;
+  color: #2E7D32;
+}
+
+/* 拖动手柄 */
+.word-explosion-drag-handle {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 24px;
+  height: 24px;
+  cursor: move;
+  color: #999;
+  font-size: 16px;
+  display: none; /* 默认隐藏，手动模式下显示 */
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.word-explosion-drag-handle:hover {
+  color: #666;
+}
+
+/* 内容容器 */
+.word-explosion-content {
+  margin-top: 4px;
+  /* 移除max-height和overflow，让内容自然撑开，由外层容器负责滚动 */
+}
+
+/* 原句 */
+.word-explosion-sentence {
+  position: relative;
+  font-size: 12px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 6px;
+  padding: 4px 6px;
+  background: #f8f9fa;
+  border-radius: 7px;
+  border-left: 2px solid #4CAF50;
+  display: block;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* 按钮容器 - 悬浮在喇叭下方 */
+.word-explosion-button-container {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  opacity: 0.5;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+/* 句子解析按钮样式 */
+.word-explosion-analysis-btn,
+.word-explosion-sidebar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: #f5f5f5;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 2px;
+  color: #666;
+}
+
+.word-explosion-analysis-btn:hover,
+.word-explosion-sidebar-btn:hover {
+  background: #e8e8e8;
+  color: #333;
+  transform: scale(1.05);
+}
+
+.word-explosion-analysis-btn:active,
+.word-explosion-sidebar-btn:active {
+  transform: scale(0.95);
+}
+
+.word-explosion-analysis-btn svg,
+.word-explosion-sidebar-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* 句子翻译 */
+.word-explosion-sentence-translations {
+  margin-bottom: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.word-explosion-sentence-translation {
+  font-size: 11px;
+  color: #555;
+  padding: 3px 6px;
+  background: #fff3cd;
+  border-radius: 7px;
+  border: 1px solid #ffc107;
+  flex: 0 1 auto;
+}
+
+/* 分隔线 */
+.word-explosion-separator {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 8px 0;
+}
+
+/* 单词列表容器 */
+.word-explosion-words {
+  display: flex;
+  gap: 8px;
+}
+
+/* 垂直布局 */
+.word-explosion-layout-vertical {
+  flex-direction: column;
+}
+
+/* 水平布局 */
+.word-explosion-layout-horizontal {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+/* 单词项 */
+.word-explosion-word-item {
+  padding: 4px 6px;
+  background: #f5f5f5;
+  border-radius: 7px;
+  border: 1px solid #e0e0e0;
+  transition: all 0.2s;
+}
+
+.word-explosion-word-item:hover {
+  background: #ebebeb;
+  border-color: #4CAF50;
+}
+
+/* 词组项特殊样式 */
+.word-explosion-phrase-item {
+  background: #f0f8ff;
+  border-color: #87ceeb;
+}
+
+.word-explosion-phrase-item:hover {
+  background: #e6f3ff;
+  border-color: #4682b4;
+}
+
+/* 水平布局下的单词项 */
+.word-explosion-layout-horizontal .word-explosion-word-item {
+  flex: 0 0 calc(50% - 6px);
+  min-width: 150px;
+}
+
+/* 单词标题 */
+.word-explosion-word-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 词组标签 */
+/* .word-explosion-phrase-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 500;
+  color: #fff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-right: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+} */
+
+/* TTS喇叭按钮 */
+.word-explosion-tts-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+  border-radius: 7px;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.word-explosion-tts-button:hover {
+  background: rgba(76, 175, 80, 0.1);
+  transform: scale(1.1);
+}
+
+.word-explosion-tts-button:active {
+  transform: scale(0.95);
+}
+
+/* 单词翻译列表 */
+.word-explosion-word-translations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* 单词翻译项 */
+.word-explosion-word-translation {
+  font-size: 11px;
+  color: #555;
+  padding: 2px 6px;
+  background: #f0f0f0;
+  border-radius: 7px;
+  border: 1px solid #ddd;
+  flex: 0 1 auto;
+}
+
+.word-explosion-word-translation .translation-number {
+  color: #999;
+  margin-right: 2px;
+  font-weight: 500;
+}
+
+/* 加载中 */
+.word-explosion-word-loading {
+  font-size: 13px;
+  color: #999;
+  font-style: italic;
+}
+
+/* 空状态 */
+.word-explosion-empty {
+  text-align: center;
+  padding: 0px;
+  color: #999;
+  font-size: 14px;
+}
+
+/* 滚动条样式 */
+.word-explosion-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.word-explosion-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.word-explosion-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.word-explosion-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* =======================
+   单词爆炸弹窗 - 暗色主题
+   ======================= */
+.word-explosion-container.dark-mode {
+  background: #1e1e1e;
+  border-color: #444;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.word-explosion-container.dark-mode:has(.word-explosion-empty) {
+  background: rgba(30, 30, 30, 0);
+  border-color: rgba(68, 68, 68, 0);
+  box-shadow: none;
+}
+
+/* 暗色主题 - 关闭按钮 */
+.word-explosion-container.dark-mode .word-explosion-close-btn {
+  color: #aaa;
+  background-color: #ffffff00;
+}
+
+.word-explosion-container.dark-mode .word-explosion-close-btn:hover {
+  background: #33333300;
+  color: #ff6666;
+}
+
+/* 暗色主题 - 左侧按钮（弹窗内） */
+.word-explosion-container.dark-mode .word-explosion-left-btn {
+  background: #2a2a2a;
+  color: #aaa;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.word-explosion-container.dark-mode .word-explosion-left-btn:hover {
+  background: #3a3a3a;
+  color: #ddd;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* 暗色主题 - 左侧悬挂按钮容器（独立于弹窗外部） */
+#word-explosion-left-buttons-wrapper.dark-mode .word-explosion-left-btn {
+  background: #2a2a2a;
+  color: #aaa;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+#word-explosion-left-buttons-wrapper.dark-mode .word-explosion-left-btn:hover {
+  background: #3a3a3a;
+  color: #ddd;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* 暗色主题 - 右上角按钮 */
+.word-explosion-container.dark-mode .word-explosion-top-btn {
+  background: #2a2a2a;
+  color: #aaa;
+}
+
+.word-explosion-container.dark-mode .word-explosion-top-btn:hover {
+  background: #3a3a3a;
+  color: #ddd;
+}
+
+/* 暗色主题 - 一键已知按钮 */
+.word-explosion-container.dark-mode .word-explosion-mark-all-known-btn {
+  color: #66BB6A;
+}
+
+.word-explosion-container.dark-mode .word-explosion-mark-all-known-btn:hover {
+  background: #1b5e20;
+  color: #81C784;
+}
+
+/* 暗色主题 - 拖动手柄 */
+.word-explosion-container.dark-mode .word-explosion-drag-handle {
+  color: #666;
+}
+
+.word-explosion-container.dark-mode .word-explosion-drag-handle:hover {
+  color: #999;
+}
+
+/* 暗色主题 - 原句 */
+.word-explosion-container.dark-mode .word-explosion-sentence {
+  color: #e0e0e0;
+  background: #2a2a2a;
+  border-left-color: #66bb6a;
+}
+
+/* 暗色主题 - 句子解析按钮 */
+.word-explosion-container.dark-mode .word-explosion-analysis-btn,
+.word-explosion-container.dark-mode .word-explosion-sidebar-btn {
+  background: #2a2a2a;
+  color: #aaa;
+}
+
+.word-explosion-container.dark-mode .word-explosion-analysis-btn:hover,
+.word-explosion-container.dark-mode .word-explosion-sidebar-btn:hover {
+  background: #333;
+  color: #e0e0e0;
+}
+
+/* 暗色主题 - 句子翻译 */
+.word-explosion-container.dark-mode .word-explosion-sentence-translation {
+  color: #e0e0e0;
+  background: #3a3a1a;
+  border-color: #d4a017;
+}
+
+/* 暗色主题 - 分隔线 */
+.word-explosion-container.dark-mode .word-explosion-separator {
+  background: #444;
+}
+
+/* 暗色主题 - 单词项 */
+.word-explosion-container.dark-mode .word-explosion-word-item {
+  background: #2a2a2a;
+  border-color: #444;
+}
+
+.word-explosion-container.dark-mode .word-explosion-word-item:hover {
+  background: #333;
+  border-color: #6b5e80;
+}
+
+/* 暗色主题 - 词组项 */
+.word-explosion-container.dark-mode .word-explosion-phrase-item {
+  background: #1a2a3a;
+  border-color: #4682b4;
+}
+
+.word-explosion-container.dark-mode .word-explosion-phrase-item:hover {
+  background: #243444;
+  border-color: #5a9fd4;
+}
+
+/* 暗色主题 - 单词标题 */
+.word-explosion-container.dark-mode .word-explosion-word-title {
+  color: #e0e0e0;
+}
+
+/* 暗色主题 - TTS喇叭按钮 */
+.word-explosion-container.dark-mode .word-explosion-tts-button:hover {
+  background: rgba(102, 187, 106, 0.2);
+}
+
+/* 暗色主题 - 单词翻译项 */
+.word-explosion-container.dark-mode .word-explosion-word-translation {
+  color: #ccc;
+  background: #2a2a2a;
+  border-color: #555;
+}
+
+.word-explosion-container.dark-mode .word-explosion-word-translation .translation-number {
+  color: #888;
+}
+
+/* 暗色主题 - 加载中 */
+.word-explosion-container.dark-mode .word-explosion-word-loading {
+  color: #888;
+}
+
+/* 暗色主题 - 空状态 */
+.word-explosion-container.dark-mode .word-explosion-empty {
+  color: #888;
+}
+
+/* 暗色主题 - 滚动条 */
+.word-explosion-container.dark-mode::-webkit-scrollbar-track {
+  background: #2a2a2a;
+}
+
+.word-explosion-container.dark-mode::-webkit-scrollbar-thumb {
+  background: #555;
+}
+
+.word-explosion-container.dark-mode::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}

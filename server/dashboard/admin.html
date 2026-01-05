@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lingqmal 服务器管理</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .header h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card h3 {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .stat-card .value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .section {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .section h2 {
+      color: #333;
+      margin-bottom: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+      margin-right: 5px;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+    }
+
+    .btn-danger {
+      background: #f56565;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #e53e3e;
+    }
+
+    .btn-success {
+      background: #48bb78;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #38a169;
+    }
+
+    .btn-secondary {
+      background: #a0aec0;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #718096;
+    }
+
+    .status {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-active {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .status-inactive {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .status-maintenance {
+      background: #fefcbf;
+      color: #744210;
+    }
+
+    .status-healthy {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .status-unhealthy {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .status-unknown {
+      background: #e2e8f0;
+      color: #4a5568;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    #loginSection {
+      max-width: 400px;
+      margin: 100px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #adminPanel {
+      display: none;
+    }
+
+    .message {
+      padding: 12px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+    }
+
+    .message-success {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .message-error {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      max-width: 500px;
+      margin: 100px auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+    }
+
+    .close-btn:hover {
+      color: #333;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: #e2e8f0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #667eea;
+      transition: width 0.3s;
+    }
+
+    .progress-fill.warning {
+      background: #ed8936;
+    }
+
+    .progress-fill.danger {
+      background: #f56565;
+    }
+  </style>
+</head>
+<body>
+  <div id="loginSection">
+    <h2 style="margin-bottom: 20px; text-align: center;">管理员登录</h2>
+    <div id="loginMessage"></div>
+    <div class="form-group">
+      <label for="adminPassword">管理员密码:</label>
+      <input type="password" id="adminPassword" placeholder="请输入管理员密码">
+    </div>
+    <button class="btn btn-primary" style="width: 100%;" onclick="login()">登录</button>
+  </div>
+
+  <div id="adminPanel">
+    <div class="container">
+      <div class="header">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h1>🎛️ Lingqmal 服务器管理</h1>
+            <p style="color: #666;">管理数据服务器和监控系统状态</p>
+          </div>
+          <button class="btn btn-danger" onclick="logout()">🚪 登出</button>
+        </div>
+      </div>
+
+      <div id="message"></div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <h3>总用户数</h3>
+          <div class="value" id="totalUsers">-</div>
+        </div>
+        <div class="stat-card">
+          <h3>服务器总数</h3>
+          <div class="value" id="totalServers">-</div>
+        </div>
+        <div class="stat-card">
+          <h3>活跃服务器</h3>
+          <div class="value" id="activeServers">-</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>数据服务器</h2>
+        <button class="btn btn-success" onclick="healthCheckAll()" style="margin-bottom: 15px;">🔍 健康检查</button>
+        <button class="btn btn-primary" onclick="showAddServerModal()" style="margin-bottom: 15px;">➕ 添加服务器</button>
+        <table id="serversTable">
+          <thead>
+            <tr>
+              <th>名称</th>
+              <th>URL</th>
+              <th>位置</th>
+              <th>用户数</th>
+              <th>容量</th>
+              <th>状态</th>
+              <th>可用</th>
+              <th>健康</th>
+              <th>优先级</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="serversTableBody">
+            <tr>
+              <td colspan="10" style="text-align: center; color: #999;">加载中...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="addServerModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>添加新服务器</h2>
+        <button class="close-btn" onclick="hideAddServerModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label for="serverName">服务器名称:</label>
+        <input type="text" id="serverName" placeholder="例如: 数据服务器1">
+      </div>
+      <div class="form-group">
+        <label for="serverUrl">服务器URL:</label>
+        <input type="text" id="serverUrl" placeholder="https://d1.lingkuma.org">
+      </div>
+      <div class="form-group">
+        <label for="serverLocation">服务器位置:</label>
+        <input type="text" id="serverLocation" placeholder="例如: 日本东京">
+      </div>
+      <div class="form-group">
+        <label for="serverMaxUsers">最大用户数:</label>
+        <input type="number" id="serverMaxUsers" value="10000">
+      </div>
+      <div class="form-group">
+        <label for="serverPriority">优先级 (越小优先级越高):</label>
+        <input type="number" id="serverPriority" value="100">
+      </div>
+      <button class="btn btn-primary" onclick="addServer()">添加</button>
+      <button class="btn btn-secondary" onclick="hideAddServerModal()">取消</button>
+    </div>
+  </div>
+
+  <div id="editServerModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>编辑服务器</h2>
+        <button class="close-btn" onclick="hideEditServerModal()">&times;</button>
+      </div>
+      <input type="hidden" id="editServerId">
+      <div class="form-group">
+        <label for="editServerName">服务器名称:</label>
+        <input type="text" id="editServerName">
+      </div>
+      <div class="form-group">
+        <label for="editServerUrl">服务器URL:</label>
+        <input type="text" id="editServerUrl">
+      </div>
+      <div class="form-group">
+        <label for="editServerLocation">服务器位置:</label>
+        <input type="text" id="editServerLocation">
+      </div>
+      <div class="form-group">
+        <label for="editServerMaxUsers">最大用户数:</label>
+        <input type="number" id="editServerMaxUsers">
+      </div>
+      <div class="form-group">
+        <label for="editServerPriority">优先级:</label>
+        <input type="number" id="editServerPriority">
+      </div>
+      <div class="form-group">
+        <label for="editServerStatus">状态:</label>
+        <select id="editServerStatus">
+          <option value="active">活跃</option>
+          <option value="inactive">不活跃</option>
+          <option value="maintenance">维护中</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="editServerAvailable">是否可用:</label>
+        <select id="editServerAvailable">
+          <option value="true">可用</option>
+          <option value="false">不可用</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="updateServer()">更新</button>
+      <button class="btn btn-secondary" onclick="hideEditServerModal()">取消</button>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

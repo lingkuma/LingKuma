@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liquid Glass Effects</title>
+  <link rel="stylesheet" href="index.css">
+  <!--
+    main inspirations:
+    https://glass.motion.dev/
+    https://pixflow.net/product/refracto-glass-effects/
+    https://x.com/Ibelick/status/1736868297625501768
+  -->
+</head>
+<body>
+  <main>
+    <img src="https://unsplash.it/1920/1080?luxury&123" alt="random image">
+    <p>Made By Cubiq</p>
+  </main>
+
+  <aside>
+    <ul id="glass-list">
+      <!--     <li></li> -->
+      <li fx="fractal"></li>
+      <li fx="flip"></li>
+      <li fx="rgb-split"></li>
+      <li fx="pixel"></li>
+      <li fx="fluted"></li>
+      <li fx="tiled"></li>
+      <li fx="mosaic"></li>
+      <li fx="ellipses"></li>
+      <li fx="rough"></li>
+      <li fx="bulge"></li>
+
+      <!--     <li fx="bulge" wip></li> -->
+
+      <li thanks>
+        <a href="https://cubiq.dev" target="_blank">by Cubiq</a>
+      </li>
+    </ul>
+  </aside>
+  
+  <!--
+    📑 SVG DEFINES
+  -->
+  
+  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" color-interpolation-filters="sRGB">
+    <defs>
+  
+    <!--
+      ------------
+     🔆 Ambilight: 
+      https://expensive.toys/blog/ambilight-effect
+      ------------
+    -->
+  
+      <filter id="ambilight">
+        <feOffset in="SourceGraphic" result="source-copy"></feOffset>
+        <feColorMatrix in="source-copy" type="saturate" values="1.5" result="saturated-copy"></feColorMatrix>
+        <feColorMatrix in="saturated-copy" type="matrix" values="1 0 0 0 0
+                       0 1 0 0 0
+                       0 0 1 0 0
+                       33 33 33 101 -100" result="bright-colors"></feColorMatrix>
+        <feMorphology in="bright-colors" operator="dilate" radius="9" result="spread"></feMorphology>
+        <feGaussianBlur in="spread" stdDeviation="40" result="ambilight-light"></feGaussianBlur>
+        <feOffset in="SourceGraphic" result="source"></feOffset>
+        <feComposite in="source" in2="ambilight-light" operator="over"></feComposite>
+      </filter>
+      
+  
+    <!--
+      ------------
+     〰 Fractal Glass
+      ------------
+    -->
+  
+      <filter id="fractal-glass">
+        <feTurbulence type="fractalNoise" baseFrequency=".1" numOctaves="1" result="warp" />
+        <feDisplacementMap xChannelSelector="R" yChannelSelector="G" scale="30" in="SourceGraphic" in2="warp" />
+      </filter>
+  
+    <!--
+      ------
+     ↔ Flip
+      ------
+    -->
+  
+      <filter id="flip" primitiveUnits="objectBoundingBox">
+        <!--  vectorized gradient - high quality interpolation   -->
+        <feImage result="gradient-raw" xlink:href="data:image/svg+xml;charset=utf-8,
+          <svg xmlns='http://www.w3.org/2000/svg'>
+          <defs>
+            <linearGradient id='grad'>
+              <stop offset='0%' stop-color='red' />
+              <stop offset='100%' stop-color='black' />
+            </linearGradient>
+          </defs>
+          <rect width='100%' height='100%' x='0' y='0' fill='url(%23grad)' />
+        </svg>" x="0" y="0" width="1" height="1" preserveAspectRatio="none" />
+  
+        <feComponentTransfer in="gradient-raw" result="gradient">
+          <feFuncA type="linear" slope="0.5" intercept="0" />
+        </feComponentTransfer>
+        <feDisplacementMap result="displaced" in="SourceGraphic" in2="gradient" scale="2" xChannelSelector="R" />
+        <!--     <feGaussianBlur stdDeviation=".01" /> -->
+      </filter>
+  
+    <!--
+      ------
+     🔱 RGB Split
+      ------
+    -->
+  
+      <filter id="rgb-split" primitiveUnits="objectBoundingBox">
+        <feOffset dx="0.02" in="SourceGraphic" result="f225-0"></feOffset>
+        <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0 " in="f225-0" result="f49-0"></feColorMatrix>
+        <feOffset in="SourceGraphic" result="f241-0"></feOffset>
+        <feColorMatrix type="matrix" values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 " in="f241-0" result="f121-0"></feColorMatrix>
+        <feBlend mode="screen" in="f49-0" in2="f121-0" result="f102-0"></feBlend>
+        <feOffset dx="-0.02" in="SourceGraphic" result="f257-0"></feOffset>
+        <feColorMatrix type="matrix" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 " in="f257-0" result="f137-0"></feColorMatrix>
+        <feBlend mode="screen" in="f102-0" in2="f137-0" result="f150-0"></feBlend>
+      </filter>
+  
+    <!--
+      ------
+     👾 Pixel
+      ------
+    -->
+  
+      <filter id="pixel">
+        <feFlood x="4" y="4" height="2" width="2" />
+        <feComposite width="10" height="10" />
+        <feTile result="a" />
+        <feComposite in="SourceGraphic" in2="a" operator="in" />
+        <feMorphology operator="dilate" radius="5" />
+      </filter>
+  
+    <!--
+      ------
+     🎹 Fluted
+      ------
+    -->
+  
+      <filter id="fluted" primitiveUnits="objectBoundingBox" >
+        <feImage x="0" y="0" height="1" in="blur_0" result="image_0" crossorigin="anonymous" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' color-interpolation-filters='sRGB'>
+          <g>
+            <rect width='1' height='1' fill='black' />
+            <rect width='1' height='1' fill='url(%23red)' style='mix-blend-mode:screen' />
+            <rect width='1' height='1' fill='url(%23green)' style='mix-blend-mode:screen' />
+            <rect width='1' height='1' fill='url(%23yellow)' style='mix-blend-mode:screen' />
+          </g>
+          <defs>
+            <radialGradient id='yellow' cx='0' cy='0' r='1' >
+              <stop stop-color='yellow' />
+              <stop stop-color='yellow' offset='1' stop-opacity='0' />
+            </radialGradient>
+            <radialGradient id='green' cx='1' cy='0' r='1' >
+              <stop stop-color='green' />
+              <stop stop-color='green' offset='1' stop-opacity='0' />
+            </radialGradient>
+            <radialGradient id='red' cx='0' cy='1' r='1' >
+              <stop stop-color='red' />
+              <stop stop-color='red' offset='1' stop-opacity='0' />
+            </radialGradient>
+          </defs>
+        </svg>" preserveAspectRatio="none meet" width=".08" />
+        <feTile in="image_0" result="tile_0" />
+        <feGaussianBlur stdDeviation=".0042069" edgeMode="none" in="tile_0" result="bar_smoothness" x="0" y="0" />
+        <feGaussianBlur stdDeviation=".03" edgeMode="none" in="SourceGraphic" result="blur_glass" />
+        <feDisplacementMap scale=".3" xChannelSelector="R" yChannelSelector="G" in="blur_glass" in2="bar_smoothness" result="displacement_0" />
+      </filter>
+      
+     <!--
+      ------
+     🔳 Tiled
+      ------
+    -->
+  
+      <filter id="tiled" primitiveUnits="objectBoundingBox" >
+        <feImage x="0" y="0" in="blur_0" result="image_0" crossorigin="anonymous" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' color-interpolation-filters='sRGB'>
+          <g>
+            <rect width='1' height='1' fill='black' />
+            <rect width='1' height='1' fill='url(%23red)' style='mix-blend-mode:screen' />
+            <rect width='1' height='1' fill='url(%23green)' style='mix-blend-mode:screen' />
+            <rect width='1' height='1' fill='url(%23yellow)' style='mix-blend-mode:screen' />
+          </g>
+          <defs>
+            <radialGradient id='yellow' cx='0' cy='0' r='1' >
+              <stop stop-color='yellow' />
+              <stop stop-color='yellow' offset='1' stop-opacity='0' />
+            </radialGradient>
+            <radialGradient id='green' cx='1' cy='0' r='1' >
+              <stop stop-color='green' />
+              <stop stop-color='green' offset='1' stop-opacity='0' />
+            </radialGradient>
+            <radialGradient id='red' cx='0' cy='1' r='1' >
+              <stop stop-color='red' />
+              <stop stop-color='red' offset='1' stop-opacity='0' />
+            </radialGradient>
+          </defs>
+        </svg>" preserveAspectRatio="none meet" width=".15" height='.1'/>
+        <feTile in="image_0" result="tile_0" />
+        <feGaussianBlur stdDeviation=".008" edgeMode="none" in="tile_0" result="bar_smoothness" x="0" y="0" />
+        <feGaussianBlur stdDeviation=".03" edgeMode="none" in="SourceGraphic" result="blur_glass" />
+        <feDisplacementMap scale=".45" xChannelSelector="R" yChannelSelector="G" in="blur_glass" in2="bar_smoothness" result="displacement_0" />
+      </filter>
+      
+    <!--
+      ------
+     💠 Mosaic
+      ------
+    -->
+  
+      <filter id="mosaic" primitiveUnits="objectBoundingBox">
+        <feImage result="f275-0" xlink:href="data:image/svg+xml,
+          <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' width='100%' height='100%'>
+            <rect width='1' height='1' fill='olive' />
+           <rect fill='url(%23mosaic)' width='1' height='1'></rect>
+            <defs>
+              <pattern id='mosaic' viewBox='0 0 40 40' width='.4' height='.4' preserveAspectRatio='none'
+                patternUnits='userSpaceOnUse' patternTransform='rotate(45)'>
+                <path
+                  d='M20 20.5V18H0v-2h20v-2H0v-2h20v-2H0V8h20V6H0V4h20V2H0V0h22v20h2V0h2v20h2V0h2v20h2V0h2v20h2V0h2v20h2v2H20v-1.5zM0 20h2v20H0V20zm4 0h2v20H4V20zm4 0h2v20H8V20zm4 0h2v20h-2V20zm4 0h2v20h-2V20zm4 4h20v2H20v-2zm0 4h20v2H20v-2zm0 4h20v2H20v-2zm0 4h20v2H20v-2z'
+                  fill='red' fill-opacity='1' fill-rule='evenodd' />
+              </pattern>
+            </defs>
+          </svg>
+  " x="0" y="0" width="1" height="1" preserveAspectRatio="xMidYMid slice" />
+        <feGaussianBlur stdDeviation="0.0075" result="blur" />
+        <feDisplacementMap xChannelSelector="R" yChannelSelector="G" scale="0.3" in="SourceGraphic" in2="blur" />
+      </filter>
+  
+    <!--
+      ------
+     🌀 Ellipses
+      ------
+    -->
+  
+      <filter id="ellipses" primitiveUnits="objectBoundingBox">
+        <feImage xlink:href="data:image/svg+xml;utf8,<svg width='300' height='300' preserveAspectRatio='none' xmlns='http://www.w3.org/2000/svg'
+    xmlns:xlink='http://www.w3.org/1999/xlink'>
+    <defs>
+      <radialGradient id='radialGradient' r='.035' cx='50%' cy='50%' spreadMethod='reflect'>
+        <stop offset='10%' stop-color='red' stop-opacity='1'></stop>
+        <stop offset='100%' stop-color='white'></stop>
+      </radialGradient>
+    </defs>
+    <rect fill='url(%23radialGradient)' width='300' height='300' fill-opacity='1'></rect>
+  </svg>" result="img4" x="0" y="0" width="1" height="1" preserveAspectRatio='none' />
+        <feDisplacementMap scale=".05" xChannelSelector="R" yChannelSelector="G" in2="img4" in="SourceGraphic" />
+      </filter>
+    
+    <!--
+      ------
+      🥐 Rough
+      ------
+    -->
+   
+      <filter id="rough">
+        <feImage preserveAspectRatio="none" xlink:href="data:image/svg+xml,
+      <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' width='100%' height='100%'>
+    <defs>
+      <pattern id='mosaic' viewBox='0 0 40 40' width='1' height='1' preserveAspectRatio='none'
+        patternUnits='userSpaceOnUse' patternTransform='rotate(-90)'>
+        <path
+          d='M40 37.1429v2.8571h-5.5357c1.6429-1.8143 3.5286-2.8571 5.5357-2.8571zm-18.5714 2.8571a2.8571 1.4286 90 10-2.8571 0h-2.9214A37.1143 18.5571 90 000 22.8571v-2.8571c.4786 0 .9571.0286 1.4286.1V20a2.8571 1.4286 90 00-1.4286-2.8571v-2.8571a5.7143 2.8571 90 012.8429 5.1429 40.1286 20.0643 90 012-5.5143A11.4286 5.7143 90 000 8.5714V5.7143a14.2714 7.1357 90 015.8357 6.0429c.6714-1.3571 1.4-2.6143 2.1643-3.7571A19.9714 9.9857 90 000 0h5.5357c1.4286 1.5714 2.6643 3.7571 3.6429 6.3571.8-1.0286 1.6429-1.9571 2.5214-2.7571A28.7143 14.3571 90 0010.2 0h1.9286c.3214.8.6286 1.6286.9214 2.4857.9286-.6857 1.8786-1.2429 2.8571-1.6429-.0786-.2857-.1643-.5714-.2571-.8429H18.5714v.1a40.5714 20.2857 90 012.8571 0V0h2.9214l-.2643.8429c.9857.4 1.9429.9571 2.8643 1.6429.2857-.8571.6-1.6857.9286-2.4857h1.9214a28.7143 14.3571 90 00-1.5 3.6c.8786.8 1.7214 1.7143 2.5286 2.7571A22.9714 11.4857 90 0134.4643 0H40c-3.2714 0-6.1786 3.1429-8 8 .7643 1.1429 1.4929 2.4 2.1643 3.7571A14.2714 7.1357 90 0140 5.7143v2.8571a11.4286 5.7143 90 00-4.8357 5.3429c.7357 1.7143 1.4071 3.5714 1.9929 5.5143A5.7143 2.8571 90 0140 14.2857v2.8571a2.8571 1.4286 90 00-1.4286 2.9571 40.5714 20.2857 90 011.4286-.1v2.8571c-6.5714 0-12.3571 6.8286-15.65 17.1429H21.4286zM5.5357 40H0v-2.8571c2.0071 0 3.9 1.0429 5.5357 2.8571zM40 28.5714v2.8571c-4 0-7.6071 3.2857-10.2 8.5714h-1.9286c2.8857-6.9857 7.25-11.4286 12.1286-11.4286zm-27.8786 11.4286h-1.9214C7.6071 34.7143 4 31.4286 0 31.4286v-2.8571c4.8786 0 9.2429 4.4429 12.1214 11.4286zm10.7214-.5714a40.1286 20.0643 90 012-5.5143 11.4286 5.7143 90 00-9.6786 0c.7357 1.7143 1.4071 3.5714 1.9929 5.5143a5.7143 2.8571 90 015.6857 0zm10.2071-16.9429c.9286-.6857 1.8786-1.2429 2.8571-1.6429a37.1286 18.5643 90 00-31.8214 0c.9857.4 1.9429.9571 2.8643 1.6429a31.4 15.7 90 0126.1 0zm-3.8786 3.8714c.8071-1.0286 1.6429-1.9571 2.5286-2.7571a28.5429 14.2714 90 00-23.4 0c.8786.8 1.7214 1.7143 2.5286 2.7571a22.8286 11.4143 90 0118.3429 0zm-3.3357 5.4c.6714-1.3571 1.4-2.6143 2.1643-3.7571a19.9714 9.9857 90 00-16 0c.7643 1.1429 1.4929 2.4 2.1643 3.7571a14.2714 7.1357 90 0111.6714 0z'
+          fill='red' fill-opacity='1' fill-rule='evenodd' />
+      </pattern>
+    </defs>
+    <rect fill='url(%23mosaic)' width='100%25' height='100%25'></rect>
+  </svg>" result="pattern-raw" width="250" height="250" />
+        <feTile in="pattern-raw" result="tile" />
+        <feGaussianBlur stdDeviation="1" result="pattern-smooth" in="tile" />
+        <feTurbulence type="fractalNoise" baseFrequency=".3" result="noise" />
+        <feComposite operator="xor" result="masked" in1="noise" in2="pattern-smooth" />
+        <feDisplacementMap scale="100" xChannelSelector="R" yChannelSelector="G" in="SourceGraphic" in2="masked" />
+      </filter>
+  
+    <!--
+      ------
+     💢 Bulge
+      ------
+    -->
+  
+      <filter id="bulge" primitiveUnits="objectBoundingBox">
+      <!-- preparing for chromatic aberration -->
+      <!-- https://stackoverflow.com/a/28826058 - replaced by vector gradient -->
+        <feImage result="gradient" xlink:href="data:image/svg+xml;charset=utf-8,
+        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' color-interpolation-filters='sRGB'>
+          <rect width='1' height='1' fill='olive' />
+          <g mask='url(%23c)'>
+            <rect width='1' height='1' fill='%23000' />
+            <rect width='1' height='1' fill='url(%23red)' style='mix-blend-mode:screen' />
+            <rect width='1' height='1' fill='url(%23green)' style='mix-blend-mode:screen' />
+            <rect width='1' height='1' fill='url(%23yellow)' style='mix-blend-mode:screen' />
+          </g>
+          <defs>   
+            <mask id='c' >
+              <rect width='1' height='1' fill='url(%23b)' />
+            </mask>
+            <radialGradient id='b' cx='50%' cy='50%' r='50%'>
+              <stop offset='.5' stop-color='white' />
+              <stop offset='1' stop-color='white' stop-opacity='0' />
+            </radialGradient>
+            <radialGradient id='yellow' cx='0' cy='0' r='1' >
+              <stop stop-color='yellow' />
+              <stop stop-color='yellow' offset='1' stop-opacity='0' />
+            </radialGradient>
+            <radialGradient id='green' cx='1' cy='0' r='1' >
+              <stop stop-color='green' />
+              <stop stop-color='green' offset='1' stop-opacity='0' />
+            </radialGradient>
+            <radialGradient id='red' cx='0' cy='1' r='1' >
+              <stop stop-color='red' />
+              <stop stop-color='red' offset='1' stop-opacity='0' />
+            </radialGradient>
+          </defs>
+        </svg>" x="0" y="0" width="1" height="1" preserveAspectRatio="none" />
+        <feDisplacementMap result="displaced" in="SourceGraphic" in2="gradient" scale="0.5" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+      
+    </defs>
+  </svg>
+
+  <script src="index.js"></script>
+</body>
+</html>
