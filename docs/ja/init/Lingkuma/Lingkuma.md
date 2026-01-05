@@ -27,20 +27,35 @@
 == Android
 [マルチプラットフォーム使用チュートリアル](../../more/platform/platform)
 :::
+
+<script setup>
+import img1 from './assets/1280x800-1-boom-word-side1.png'
+import img2 from './assets/1280x800-2-explan.png'
+import img3 from './assets/1280x800-4-epub.png'
+import img4 from './assets/1280-800-3-youtube.png'
+import img5 from './assets/1280-800-5-PDF.png'
+import img6 from './assets/1280-800-6-phone.png'
+import img7 from './assets/1758916889304.png'
+import img8 from './assets/1758916889324.png'
+import img9 from './assets/1758916889331.png'
+
+const galleryImages = [
+  { src: img1, caption: '単語爆発' },
+  { src: img2, caption: 'AI 解析' },
+  { src: img3, caption: 'EPUB 読書' },
+  { src: img4, caption: 'YouTube 字幕' },
+  { src: img5, caption: 'PDF 読書' },
+  { src: img6, caption: 'モバイル対応' },
+  { src: img7, caption: 'アニメーション表示' },
+  { src: img8, caption: 'Bionic ADHD読書補助' },
+  { src: img9, caption: 'Youtube 字幕ハイライト' }
+]
+</script>
+
 ## 製品紹介
 
-<ImageGallery 
-  :images="[
-    { src: './assets/1280x800-1-boom-word-side1.png', caption: '単語爆発' },
-    { src: './assets/1280x800-2-explan.png', caption: 'AI 解析' },
-    { src: './assets/1280x800-4-epub.png', caption: 'EPUB 読書' },
-    { src: './assets/1280-800-3-youtube.png', caption: 'YouTube 字幕' },
-    { src: './assets/1280-800-5-PDF.png', caption: 'PDF 読書' },
-    { src: './assets/1280-800-6-phone.png', caption: 'モバイル対応' },
-    { src: './assets/1758916889304.png', caption: 'アニメーション表示' },
-    { src: './assets/1758916889324.png', caption: 'Bionic ADHD読書補助' },
-    { src: './assets/1758916889331.png', caption: 'Youtube 字幕ハイライト' }
-  ]"
+<ImageGallery
+  :images="galleryImages"
   item-width="600px"
   gap="20px"
 />

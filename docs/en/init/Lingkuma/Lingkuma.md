@@ -27,20 +27,35 @@
 == Android
 [Multi-platform Tutorial](../../more/platform/platform)
 :::
+
+<script setup>
+import img1 from './assets/1280x800-1-boom-word-side1.png'
+import img2 from './assets/1280x800-2-explan.png'
+import img3 from './assets/1280x800-4-epub.png'
+import img4 from './assets/1280-800-3-youtube.png'
+import img5 from './assets/1280-800-5-PDF.png'
+import img6 from './assets/1280-800-6-phone.png'
+import img7 from './assets/1758916889304.png'
+import img8 from './assets/1758916889324.png'
+import img9 from './assets/1758916889331.png'
+
+const galleryImages = [
+  { src: img1, caption: 'Word Explosion' },
+  { src: img2, caption: 'AI Analysis' },
+  { src: img3, caption: 'EPUB Reading' },
+  { src: img4, caption: 'YouTube Subtitles' },
+  { src: img5, caption: 'PDF Reading' },
+  { src: img6, caption: 'Mobile Support' },
+  { src: img7, caption: 'Animation Demo' },
+  { src: img8, caption: 'Bionic ADHD Reading Assistant' },
+  { src: img9, caption: 'Youtube Subtitle Highlighting' }
+]
+</script>
+
 ## Product Showcase
 
-<ImageGallery 
-  :images="[
-    { src: './assets/1280x800-1-boom-word-side1.png', caption: 'Word Explosion' },
-    { src: './assets/1280x800-2-explan.png', caption: 'AI Analysis' },
-    { src: './assets/1280x800-4-epub.png', caption: 'EPUB Reading' },
-    { src: './assets/1280-800-3-youtube.png', caption: 'YouTube Subtitles' },
-    { src: './assets/1280-800-5-PDF.png', caption: 'PDF Reading' },
-    { src: './assets/1280-800-6-phone.png', caption: 'Mobile Support' },
-    { src: './assets/1758916889304.png', caption: 'Animation Demo' },
-    { src: './assets/1758916889324.png', caption: 'Bionic ADHD Reading Assistant' },
-    { src: './assets/1758916889331.png', caption: 'Youtube Subtitle Highlighting' }
-  ]"
+<ImageGallery
+  :images="galleryImages"
   item-width="600px"
   gap="20px"
 />

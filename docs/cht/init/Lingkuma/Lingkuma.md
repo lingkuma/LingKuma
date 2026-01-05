@@ -27,20 +27,35 @@
 == Android
 [多平台使用教學](../../more/platform/platform)
 :::
+
+<script setup>
+import img1 from './assets/1280x800-1-boom-word-side1.png'
+import img2 from './assets/1280x800-2-explan.png'
+import img3 from './assets/1280x800-4-epub.png'
+import img4 from './assets/1280-800-3-youtube.png'
+import img5 from './assets/1280-800-5-PDF.png'
+import img6 from './assets/1280-800-6-phone.png'
+import img7 from './assets/1758916889304.png'
+import img8 from './assets/1758916889324.png'
+import img9 from './assets/1758916889331.png'
+
+const galleryImages = [
+  { src: img1, caption: '單字爆炸' },
+  { src: img2, caption: 'AI 解析' },
+  { src: img3, caption: 'EPUB 閱讀' },
+  { src: img4, caption: 'YouTube 字幕' },
+  { src: img5, caption: 'PDF 閱讀' },
+  { src: img6, caption: '行動端支援' },
+  { src: img7, caption: '動圖展示' },
+  { src: img8, caption: 'Bionic ADHD閱讀輔助' },
+  { src: img9, caption: 'Youtube 字幕高亮' }
+]
+</script>
+
 ## 產品展示
 
-<ImageGallery 
-  :images="[
-    { src: './assets/1280x800-1-boom-word-side1.png', caption: '單字爆炸' },
-    { src: './assets/1280x800-2-explan.png', caption: 'AI 解析' },
-    { src: './assets/1280x800-4-epub.png', caption: 'EPUB 閱讀' },
-    { src: './assets/1280-800-3-youtube.png', caption: 'YouTube 字幕' },
-    { src: './assets/1280-800-5-PDF.png', caption: 'PDF 閱讀' },
-    { src: './assets/1280-800-6-phone.png', caption: '行動端支援' },
-    { src: './assets/1758916889304.png', caption: '動圖展示' },
-    { src: './assets/1758916889324.png', caption: 'Bionic ADHD閱讀輔助' },
-    { src: './assets/1758916889331.png', caption: 'Youtube 字幕高亮' }
-  ]"
+<ImageGallery
+  :images="galleryImages"
   item-width="600px"
   gap="20px"
 />
