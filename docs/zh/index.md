@@ -16,6 +16,31 @@ hero:
     - theme: alt
       text: 基本用法
       link: ./intro/start/start
+---
+
+<script setup>
+import img1 from './init/Lingkuma/assets/1280x800-1-boom-word-side1.png'
+import img2 from './init/Lingkuma/assets/1280x800-2-explan.png'
+import img3 from './init/Lingkuma/assets/1280x800-4-epub.png'
+import img4 from './init/Lingkuma/assets/1280-800-3-youtube.png'
+import img5 from './init/Lingkuma/assets/1280-800-5-PDF.png'
+import img6 from './init/Lingkuma/assets/1280-800-6-phone.png'
+import img7 from './init/Lingkuma/assets/1758916889304.png'
+import img8 from './init/Lingkuma/assets/1758916889324.png'
+import img9 from './init/Lingkuma/assets/1758916889331.png'
+
+const galleryImages = [
+  { src: img1, caption: '单词爆炸' },
+  { src: img2, caption: 'AI 解析' },
+  { src: img3, caption: 'EPUB 阅读' },
+  { src: img4, caption: 'YouTube 字幕' },
+  { src: img5, caption: 'PDF 阅读' },
+  { src: img6, caption: '移动端支持' },
+  { src: img7, caption: '动图展示' },
+  { src: img8, caption: 'Bionic ADHD阅读辅助' },
+  { src: img9, caption: 'Youtube 字幕高亮' }
+]
+</script>
 
 
 
@@ -72,18 +97,8 @@ features:
 
 
 
-<ImageGallery 
-  :images="[
-    { src: './init/Lingkuma/assets/1280x800-1-boom-word-side1.png', caption: '单词爆炸' },
-    { src: './init/Lingkuma/assets/1280x800-2-explan.png', caption: 'AI 解析' },
-    { src: './init/Lingkuma/assets/1280x800-4-epub.png', caption: 'EPUB 阅读' },
-    { src: './init/Lingkuma/assets/1280-800-3-youtube.png', caption: 'YouTube 字幕' },
-    { src: './init/Lingkuma/assets/1280-800-5-PDF.png', caption: 'PDF 阅读' },
-    { src: './init/Lingkuma/assets/1280-800-6-phone.png', caption: '移动端支持' },
-    { src: './init/Lingkuma/assets/1758916889304.png', caption: '动图展示' },
-    { src: './init/Lingkuma/assets/1758916889324.png', caption: 'Bionic ADHD阅读辅助' },
-    { src: './init/Lingkuma/assets/1758916889331.png', caption: 'Youtube 字幕高亮' }
-  ]"
+<ImageGallery
+  :images="galleryImages"
   item-width="600px"
   gap="20px"
 />

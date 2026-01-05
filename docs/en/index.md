@@ -16,6 +16,31 @@ hero:
     - theme: alt
       text: Basic Usage
       link: ./intro/start/start
+---
+
+<script setup>
+import img1 from './init/Lingkuma/assets/1280x800-1-boom-word-side1.png'
+import img2 from './init/Lingkuma/assets/1280x800-2-explan.png'
+import img3 from './init/Lingkuma/assets/1280x800-4-epub.png'
+import img4 from './init/Lingkuma/assets/1280-800-3-youtube.png'
+import img5 from './init/Lingkuma/assets/1280-800-5-PDF.png'
+import img6 from './init/Lingkuma/assets/1280-800-6-phone.png'
+import img7 from './init/Lingkuma/assets/1758916889304.png'
+import img8 from './init/Lingkuma/assets/1758916889324.png'
+import img9 from './init/Lingkuma/assets/1758916889331.png'
+
+const galleryImages = [
+  { src: img1, caption: 'Word Explosion' },
+  { src: img2, caption: 'AI Analysis' },
+  { src: img3, caption: 'EPUB Reading' },
+  { src: img4, caption: 'YouTube Subtitles' },
+  { src: img5, caption: 'PDF Reading' },
+  { src: img6, caption: 'Mobile Support' },
+  { src: img7, caption: 'Animation Demo' },
+  { src: img8, caption: 'Bionic ADHD Reading Assistant' },
+  { src: img9, caption: 'Youtube Subtitle Highlighting' }
+]
+</script>
 
 
 
@@ -72,18 +97,8 @@ features:
 
 
 
-<ImageGallery 
-  :images="[
-    { src: './init/Lingkuma/assets/1280x800-1-boom-word-side1.png', caption: 'Word Explosion' },
-    { src: './init/Lingkuma/assets/1280x800-2-explan.png', caption: 'AI Analysis' },
-    { src: './init/Lingkuma/assets/1280x800-4-epub.png', caption: 'EPUB Reading' },
-    { src: './init/Lingkuma/assets/1280-800-3-youtube.png', caption: 'YouTube Subtitles' },
-    { src: './init/Lingkuma/assets/1280-800-5-PDF.png', caption: 'PDF Reading' },
-    { src: './init/Lingkuma/assets/1280-800-6-phone.png', caption: 'Mobile Support' },
-    { src: './init/Lingkuma/assets/1758916889304.png', caption: 'Animation Demo' },
-    { src: './init/Lingkuma/assets/1758916889324.png', caption: 'Bionic ADHD Reading Assistant' },
-    { src: './init/Lingkuma/assets/1758916889331.png', caption: 'Youtube Subtitle Highlighting' }
-  ]"
+<ImageGallery
+  :images="galleryImages"
   item-width="600px"
   gap="20px"
 />
