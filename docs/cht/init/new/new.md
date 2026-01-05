@@ -1,9 +1,9 @@
 # 最新更新介紹：
 
 1. ## 句子爆炸
-	- ![](../lingkuma/assets/1280x800-1-boom-word-side1.png)
+	- ![](../Lingkuma/assets/1280x800-1-boom-word-side1.png)
 2. ## 句子解析可對話
-	- ![](../lingkuma/assets/1280x800-2-explan.png)
+	- ![](../Lingkuma/assets/1280x800-2-explan.png)
 3. ## 自訂詞組醒目提示
     - 可手動拖曳選取詞組，建立醒目提示
     - 日文自訂分詞、英文詞組，皆可設為醒目提示

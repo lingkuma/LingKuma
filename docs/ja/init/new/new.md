@@ -1,9 +1,9 @@
 # 最新アップデート紹介：
 
 1. ## 文の爆発
-	- ![](../lingkuma/assets/1280x800-1-boom-word-side1.png)
+	- ![](../Lingkuma/assets/1280x800-1-boom-word-side1.png)
 2. ## 文の解析が対話可能
-	- ![](../lingkuma/assets/1280x800-2-explan.png)
+	- ![](../Lingkuma/assets/1280x800-2-explan.png)
 3. ## カスタムフレーズハイライト
     - 手動でフレーズをドラッグ選択してハイライトを作成
     - 日本語のカスタム分かち書き、英語フレーズ、すべてハイライト可能

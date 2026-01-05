@@ -1,9 +1,9 @@
 # Latest Update Introduction:
 
 1. ## Sentence Explosion
-	- ![](../lingkuma/assets/1280x800-1-boom-word-side1.png)
+	- ![](../Lingkuma/assets/1280x800-1-boom-word-side1.png)
 2. ## Interactive Sentence Parsing
-	- ![](../lingkuma/assets/1280x800-2-explan.png)
+	- ![](../Lingkuma/assets/1280x800-2-explan.png)
 3. ## Custom Phrase Highlighting
     - Manually drag to select phrases and create highlights
     - Japanese custom word segmentation, English phrases, all can be highlighted
