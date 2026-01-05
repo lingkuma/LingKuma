@@ -1,9 +1,9 @@
 # 最新更新介绍：
 
 1. ## 句子爆炸
-	- ![](../lingkuma/assets/1280x800-1-boom-word-side1.png)
+	- ![](../Lingkuma/assets/1280x800-1-boom-word-side1.png)
 2. ## 句子解析可对话
-	- ![](../lingkuma/assets/1280x800-2-explan.png)
+	- ![](../Lingkuma/assets/1280x800-2-explan.png)
 3. ## 自定义词组高亮
     - 可以手动拖选词组然后创建高亮
     - 日语自定义分词，英语词组，统统可以高亮
