@@ -28,7 +28,11 @@
 
 
 
-# 🐻[LingKuma](https://Lingkuma.org) - Learn any language on the web
+# 🐻 LingKuma - Learn any language on the web
+
+# 📚 [Wiki](https://docs.lingkuma.org)
+
+# 📹 ScreenShots
 
 
 
@@ -36,6 +40,66 @@
 
 
 
+![boom](/docs/zh/init/Lingkuma/assets/1280x800-1-boom-word-side1.png)
+![explan](/docs/zh/init/Lingkuma/assets/1280x800-2-explan.png)
+![epub](/docs/zh/init/Lingkuma/assets/1280x800-4-epub.png)
+![youtube](/docs/zh/init/Lingkuma/assets/1280-800-3-youtube.png)
+![pdf](/docs/zh/init/Lingkuma/assets/1280-800-5-PDF.png)
+![phone](/docs/zh/init/Lingkuma/assets/1280-800-6-phone.png)
 
-## 📚 [Wiki](https://docs.lingkuma.org)
+## 🌟 Core Features
 
+### 📚 Smart Highlighting & Translation
+
+| Feature | Description |
+| :--- | :--- |
+| **Multi-word Highlighting** | Unfamiliar words in blue, familiar words in yellow, clear at a glance |
+| **Sentence Explosion** | Query multiple new words at once, with full-sentence AI translation |
+| **Word Notes** | Record your own understanding, personalized learning notes |
+| **AI Recommended Notes** | Sentence analysis, precise and easy to understand |
+| **AI Example Analysis** | Continuous questioning, deep understanding of word usage |
+| **Example Records** | Never forget important sentences, review anytime |
+| **Custom External Buttons** | One-click dictionary/encyclopedia search |
+
+---
+
+ 🌍 Cross-Platform Support
+
+ tip Seamless Cross-Platform Experience
+- **Browser Extensions**: Chrome / Edge / Firefox
+- **Mobile**: iOS / Android full coverage
+- **Sync Methods**: WebDAV / Docker free sync
+- **Reader Support**: Readest and other EPUB web readers
+- **PDF Support**: Mozilla PDF reader perfect support
+
+
+---
+
+### 🎯 More Practical Features
+
+#### YouTube Subtitle Enhancement
+- **Subtitle Control**: Flexible control of subtitle display and hiding
+- **AI Repair**: Smart repair of English subtitles without punctuation
+- **Highlight Support**: Compatible with Trancy and other plugins
+
+#### Reading Assistance
+- **Bionic Reading**: Improve reading speed and comprehension
+- **SimpRead Mode**: Highlight support, focused reading experience
+- **Liquid Glass Popup**: Elegant interface interaction
+
+#### Text-to-Speech
+- **Custom URL Entry**: Flexible TTS service configuration
+- **Edge TTS**: High-quality voice synthesis
+- **Minimax TTS**: Diverse voice options
+
+#### info Easter Eggs
+More surprises waiting for you to discover ✨
+
+
+
+# Sync-server-Self-hosted
+- [Docker](/server/readme.md)
+
+
+# License
+- [MIT](/LICENSE.txt)
