@@ -16,6 +16,20 @@ hero:
     - theme: alt
       text: 基本用法
       link: ./intro/start/start
+
+features:
+  - title: 最新功能
+    details: 即將推出重大更新！
+    link: ./init/new/new
+  - title: 多平台支援
+    details: 支援 iOS、Android、Chrome、Firefox
+    link: ./more/platform/platform
+  - title: 電子書閱讀
+    details: 支援 EPUB、PDF、Youtube
+    link: ./intro/ebook/ebook
+  - title: 即時字幕醒目標示
+    details: 支援即時字幕醒目標示
+    link: ./more/WindowsCaptions/WindowsCaptions
 ---
 
 <script setup>
@@ -41,23 +55,6 @@ const galleryImages = [
   { src: img9, caption: 'YouTube 字幕高亮' }
 ]
 </script>
-
-
-
-features:
-  - title: 最新功能
-    details: 即將推出重大更新！
-    link: ./init/new/new
-  - title: 多平台支援
-    details: 支援 iOS、Android、Chrome、Firefox
-    link: ./more/platform/platform
-  - title: 電子書閱讀
-    details: 支援 EPUB、PDF、Youtube
-    link: ./intro/ebook/ebook
-  - title: 即時字幕醒目標示
-    details: 支援即時字幕醒目標示
-    link: ./more/WindowsCaptions/WindowsCaptions
----
 
 <div style="display: flex; flex-wrap: wrap; gap: 20px; margin: 20px 0;">
 

@@ -16,6 +16,20 @@ hero:
     - theme: alt
       text: 基本的な使い方
       link: ./intro/start/start
+
+features:
+  - title: 最新機能
+    details: 大きなアップデートが来る？
+    link: ./init/new/new
+  - title: マルチプラットフォーム対応
+    details: iOS、Android、Chrome、Firefoxに対応
+    link: ./more/platform/platform
+  - title: 電子書籍リーディング
+    details: Epub、Pdf、Youtubeに対応
+    link: ./intro/ebook/ebook
+  - title: リアルタイム字幕ハイライト
+    details: リアルタイム字幕ハイライトに対応
+    link: ./more/WindowsCaptions/WindowsCaptions
 ---
 
 <script setup>
@@ -41,23 +55,6 @@ const galleryImages = [
   { src: img9, caption: 'Youtube 字幕ハイライト' }
 ]
 </script>
-
-
-
-features:
-  - title: 最新機能
-    details: 大きなアップデートが来る？
-    link: ./init/new/new
-  - title: マルチプラットフォーム対応
-    details: iOS、Android、Chrome、Firefoxに対応
-    link: ./more/platform/platform
-  - title: 電子書籍リーディング
-    details: Epub、Pdf、Youtubeに対応
-    link: ./intro/ebook/ebook
-  - title: リアルタイム字幕ハイライト
-    details: リアルタイム字幕ハイライトに対応
-    link: ./more/WindowsCaptions/WindowsCaptions
----
 
 <div style="display: flex; flex-wrap: wrap; gap: 20px; margin: 20px 0;">
 

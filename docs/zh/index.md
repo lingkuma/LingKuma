@@ -16,6 +16,20 @@ hero:
     - theme: alt
       text: 基本用法
       link: ./intro/start/start
+
+features:
+  - title: 最新功能
+    details: 大的要来了吗？
+    link: ./init/new/new
+  - title: 多平台支持
+    details: 支持Ios，Android，Chrome，Firefox
+    link: ./more/platform/platform
+  - title: 电子书阅读
+    details: 支持Epub，Pdf，Youtube
+    link: ./intro/ebook/ebook
+  - title: 实时字幕高亮
+    details: 支持实时字幕高亮
+    link: ./more/WindowsCaptions/WindowsCaptions
 ---
 
 <script setup>
@@ -41,23 +55,6 @@ const galleryImages = [
   { src: img9, caption: 'Youtube 字幕高亮' }
 ]
 </script>
-
-
-
-features:
-  - title: 最新功能
-    details: 大的要来了吗？
-    link: ./init/new/new
-  - title: 多平台支持
-    details: 支持Ios，Android，Chrome，Firefox
-    link: ./more/platform/platform
-  - title: 电子书阅读
-    details: 支持Epub，Pdf，Youtube
-    link: ./intro/ebook/ebook
-  - title: 实时字幕高亮
-    details: 支持实时字幕高亮
-    link: ./more/WindowsCaptions/WindowsCaptions
----
 
 <div style="display: flex; flex-wrap: wrap; gap: 20px; margin: 20px 0;">
 

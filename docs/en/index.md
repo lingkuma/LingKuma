@@ -16,6 +16,20 @@ hero:
     - theme: alt
       text: Basic Usage
       link: ./intro/start/start
+
+features:
+  - title: Latest Features
+    details: Something big is coming?
+    link: ./init/new/new
+  - title: Multi-platform Support
+    details: Supports iOS, Android, Chrome, Firefox
+    link: ./more/platform/platform
+  - title: E-book Reading
+    details: Supports Epub, Pdf, Youtube
+    link: ./intro/ebook/ebook
+  - title: Live Caption Highlighting
+    details: Supports live caption highlighting
+    link: ./more/WindowsCaptions/WindowsCaptions
 ---
 
 <script setup>
@@ -41,23 +55,6 @@ const galleryImages = [
   { src: img9, caption: 'Youtube Subtitle Highlighting' }
 ]
 </script>
-
-
-
-features:
-  - title: Latest Features
-    details: Something big is coming?
-    link: ./init/new/new
-  - title: Multi-platform Support
-    details: Supports iOS, Android, Chrome, Firefox
-    link: ./more/platform/platform
-  - title: E-book Reading
-    details: Supports Epub, Pdf, Youtube
-    link: ./intro/ebook/ebook
-  - title: Live Caption Highlighting
-    details: Supports live caption highlighting
-    link: ./more/WindowsCaptions/WindowsCaptions
----
 
 <div style="display: flex; flex-wrap: wrap; gap: 20px; margin: 20px 0;">
 
