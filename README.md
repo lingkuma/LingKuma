@@ -1,78 +1,41 @@
-# [LingKuma](https://Lingkuma.org) - Learn any language on the web
 
-## 📖 多语言文档 / Multi-language Documentation
 
-- [🇨🇳 简体中文](./docs/zh/init/Lingkuma/Lingkuma.md)
-- [🇭🇰 繁體中文](./docs/cht/init/Lingkuma/Lingkuma.md)
-- [🇺🇸 English](./docs/en/init/Lingkuma/Lingkuma.md)
-- [🇯🇵 日本語](./docs/ja/init/Lingkuma/Lingkuma.md)
+<div align="center">
+  <img src="src/icons/icon256.png" alt="LingKuma Icon" width="256" />
+</div>
+<br>
 
 ---
 
-## Lingkuma 中文介绍
 
 <br>
 
-💡 **启发于 Lingq 但：更好的网页兼容，AI解析，PDF，EPUB，Youtube ·····**
 
-### 📥 下载安装
 
-- [Chrome Store](https://chromewebstore.google.com/detail/lingkuma-language-learnin/denpakphibjnpnnkcnhiniicbffdamfh)
-- [Edge Store](https://microsoftedge.microsoft.com/addons/detail/lingkuma-language-learn/jmdokmfnifcbgmdgodgokigjkaagnmik)
-- [Firefox Store](https://addons.mozilla.org/en-US/firefox/addon/lingkuma-language-learning/)
-- iOS / Android: [多平台使用教程](https://docs.lingkuma.org/zh/more/platform/platform)
+<div align="center">
 
-### 🌐 社区
+[![Chrome Store](https://img.shields.io/chrome-web-store/v/denpakphibjnpnnkcnhiniicbffdamfh?color=blue&label=Chrome&logo=google-chrome&logoColor=white&style=flat)](https://chromewebstore.google.com/detail/lingkuma-language-learnin/denpakphibjnpnnkcnhiniicbffdamfh) [![Edge Store](https://img.shields.io/badge/dynamic/json?label=Edge&query=%24.version&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fjmdokmfnifcbgmdgodgokigjkaagnmik&logo=microsoft-edge&logoColor=white&style=flat)](https://microsoftedge.microsoft.com/addons/detail/lingkuma-language-learn/jmdokmfnifcbgmdgodgokigjkaagnmik) [![Firefox Store](https://img.shields.io/amo/v/lingkuma-language-learning?label=Firefox&logo=firefox&logoColor=white&style=flat)](https://addons.mozilla.org/en-US/firefox/addon/lingkuma-language-learning/) [![iOS/Android](https://img.shields.io/badge/iOS%2FAndroid-000000?style=flat&logo=android&logoColor=white)](https://docs.lingkuma.org/zh/more/platform/platform)
 
-- [Discord](http://dc.lingkuma.org/)
-- [Telegram](http://tg.lingkuma.org/)
+[![Discord](https://img.shields.io/badge/Discord-5865F2?style=flat&logo=discord&logoColor=white)](http://dc.lingkuma.org/) [![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=flat&logo=telegram&logoColor=white)](http://tg.lingkuma.org/)  [![QQChannel](https://img.shields.io/badge/QQ-Channel-12B7F5?style=flat&logo=tencentqq&logoColor=white)](https://pd.qq.com/s/hbotsiacz)
 
----
+</div>
 
-## 💡 高亮和翻译
 
-### 💡 全语言支持
-- 💭 日语分词可手动拖选词组然后创建高亮
 
-### 💡 高亮功能
-- 💭 陌生单词，蓝色高亮
-- 👾 熟悉单词，黄色高亮
-- 💭 认识单词，不高亮
-
-### 💡 翻译和例句
-- 💭 自定义添加笔记
-- 👾 AI 推荐翻译
-- 💭 保存每次查询的例句
-- 👾 AI 句子解析
-- 💭 第三方查询词典网站接入
-
-## 💡 其他特点
-
-### 👾 epub / Pdf 都支持高亮
-
-### 👾 Youtube 字幕控制和修正
-- 💭 对于无标点符号的老字幕，用 ai 插入标点符号，构成完整句子
-  > （2025年之前的自动字幕都没标点符号）
-- 💭 对于有标点符号的字幕，用 ASD 前进后退和重复
-  > （2025年之后的自动字幕都有标点符号）
-- 💭 用 ASD 前进后退和重复
-- 💭 支持高亮其他字幕插件
-
-### 👾 剪切板文本高亮
-- 💭 兼容浏览器之外的内容
-
-### 👾 多 TTS 渠道
-- 💭 自定义url，海螺TTS，本地TTS
 
 ---
 
-## 📺 视频介绍
 
-- [Youtube 教程](https://www.youtube.com/watch?v=RHh3Upabtfk)
-- [Bilibili 教程](https://www.bilibili.com/video/BV1RGZ8YbEGh/)
 
----
 
-## 📚 更多信息
+# 🐻[LingKuma](https://Lingkuma.org) - Learn any language on the web
 
-访问完整文档: [https://docs.lingkuma.org](https://docs.lingkuma.org)
+
+
+
+
+
+
+
+## 📚 [Wiki](https://docs.lingkuma.org)
+
