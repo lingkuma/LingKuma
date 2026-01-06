@@ -4050,7 +4050,7 @@ function injectExplosionStyles() {
       padding: 10px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       z-index: 2147483645; /* 比查词弹窗低一层 */
-      max-width: 500px;
+      max-width: 80vw;
       max-height: 600px;
       overflow: auto; /* 外层容器负责滚动 */
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
