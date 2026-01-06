@@ -47,6 +47,14 @@
 ![pdf](/docs/zh/init/Lingkuma/assets/1280-800-5-PDF.png)
 ![phone](/docs/zh/init/Lingkuma/assets/1280-800-6-phone.png)
 
+
+
+## Donate
+
+<a href="https://afdian.com/a/lingkuma"><img width="200" src="https://pic1.afdiancdn.com/static/img/welcome/button-sponsorme.png" alt=""></a> 
+
+![phone](/docs/public/wechat_belohnungs.JPG)
+
 ## 🌟 Core Features
 
 ### 📚 Smart Highlighting & Translation
