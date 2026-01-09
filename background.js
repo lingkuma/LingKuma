@@ -1901,14 +1901,14 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
             }
             // 使用用户配置的 baseURL 和 model
             config.apiBaseURL = apiBaseURL || "https://open.bigmodel.cn/api/paas/v4/chat/completions";
-            config.apiModel = apiModel || "GLM-4-FlashX-250414";
+            config.apiModel = apiModel || "GLM-4-Flash";
             config.apiKey = apiKey;
           } else if (!apiKey) {
             // 默认的多平台 API 池配置
             const defaultApiPools = {
               bigmodel: {
                 baseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-                model: "GLM-4-FlashX-250414",
+                model: "GLM-4-Flash",
                 keys: [
                   atob("YmFlMjdlNDQyODgyNGZlOGExNjFlZTc0ZDYyZWIzM2YubW5uOEVoNEplVG9kcmY0bg=="),
                   atob("ODUwZTNlMmEzYmVkNDg2N2I2MGIzZWI2NmUyMDAyNjMuYWhSOGhxYkJvaG1wRG81eg=="),
@@ -1933,7 +1933,7 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
           } else {
             // 用户配置了单个 API Key
             config.apiBaseURL = apiBaseURL || "https://open.bigmodel.cn/api/paas/v4/chat/completions";
-            config.apiModel = apiModel || "GLM-4-FlashX-250414";
+            config.apiModel = apiModel || "GLM-4-Flash";
             config.apiKey = apiKey;
           }
         }
