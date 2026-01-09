@@ -844,8 +844,21 @@ function findSentenceAcrossElements(detail, targetSentenceText, targetWords) {
         return null;
     }
 
-    // 获取共同的父元素，通常是段落或其他包含多个文本节点的元素
-    let commonParent = initialParent;
+    // 找到当前单词所在的文本节点
+    let textNodeParent = initialContainer.nodeType === Node.TEXT_NODE ? initialParent : initialContainer;
+    
+    // 如果父元素是absolute/fixed定位的，向上查找一个非absolute的父元素
+    while (textNodeParent && textNodeParent !== document.body) {
+        const style = window.getComputedStyle(textNodeParent);
+        if (style.position !== 'absolute' && style.position !== 'fixed') {
+            break;
+        }
+        textNodeParent = textNodeParent.parentElement;
+    }
+    
+    // 使用找到的父元素作为遍历起点
+    let commonParent = textNodeParent || initialParent;
+    
     // 向上查找更大的父元素，直到找到包含足够文本的元素
     const MIN_TEXT_LENGTH = 100; // 最小文本长度阈值
     while (commonParent && commonParent.textContent.length < MIN_TEXT_LENGTH && commonParent.parentElement) {

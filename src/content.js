@@ -144,8 +144,25 @@ function getSentenceForWord(detail) {
   // 添加过滤器,只收集可见元素中的文本节点
   let rawFullTextBuilder = "";
   const isYouTube = window.location.hostname.includes('youtube.com');
+  
+  // 找到当前单词所在的文本节点
+  const wordContainer = detail.range.startContainer;
+  let textNodeParent = wordContainer.nodeType === Node.TEXT_NODE ? wordContainer.parentElement : wordContainer;
+  
+  // 如果父元素是absolute/fixed定位的，向上查找一个非absolute的父元素
+  while (textNodeParent && textNodeParent !== document.body) {
+    const style = window.getComputedStyle(textNodeParent);
+    if (style.position !== 'absolute' && style.position !== 'fixed') {
+      break;
+    }
+    textNodeParent = textNodeParent.parentElement;
+  }
+  
+  // 使用找到的父元素作为遍历起点
+  const traversalParent = textNodeParent || parent;
+  
   const walker = document.createTreeWalker(
-    parent,
+    traversalParent,
     NodeFilter.SHOW_TEXT,
     {
       acceptNode: function(node) {
@@ -160,7 +177,7 @@ function getSentenceForWord(detail) {
         }
 
         // 检查元素是否隐藏
-        while (element && element !== parent) {
+        while (element && element !== traversalParent) {
           const style = window.getComputedStyle(element);
           if (style.display === 'none' ||
               style.visibility === 'hidden' ||
