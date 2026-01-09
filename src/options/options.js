@@ -3969,15 +3969,15 @@ chrome.storage.local.get('aiConfig', function(result) {
       document.getElementById('ohmygptBaseUrl3').checked = true;
     }
     // //ohmygpt model
-    document.getElementById('ohmygptModel').value = result.aiConfig.ohmygptModel || 'gemini-2.5-flash-preview-04-17-thinking-disabled'; // 新增：加载 OhMyGpt 模型，若无则默认为 gpt-4o-mini
+    document.getElementById('ohmygptModel').value = result.aiConfig.ohmygptModel || 'gemini-2.5-flash'; // 新增：加载 OhMyGpt 模型，若无则默认为 gpt-4o-mini
 
-    //如果ohmygptModel为空，则设置为gemini-2.5-flash-preview-04-17-thinking-disabled
+    //如果ohmygptModel为空，则设置为gemini-2.5-flash
     if (!result.aiConfig.ohmygptModel) {
 
       //同步设置aiconfig的ohmygptModel
       chrome.storage.local.get('aiConfig', function(result) {
         const aiConfig = result.aiConfig || {};
-        aiConfig.ohmygptModel = 'gemini-2.5-flash-preview-04-17-thinking-disabled';
+        aiConfig.ohmygptModel = 'gemini-2.5-flash';
         chrome.storage.local.set({ aiConfig: aiConfig }, function() {
           console.log("OhMyGpt Model 已保存到 aiConfig");
         });
@@ -4042,7 +4042,7 @@ chrome.storage.local.get('aiConfig', function(result) {
 
   } else {
 
-    document.getElementById('ohmygptModel').value = 'gemini-2.5-flash-preview-04-17-thinking-disabled'; // 新增：设置 OhMyGpt 模型的默认值
+    document.getElementById('ohmygptModel').value = 'gemini-2.5-flash'; // 新增：设置 OhMyGpt 模型的默认值
 
 
     // 新增：如果没有保存过配置，默认选中 'diy'

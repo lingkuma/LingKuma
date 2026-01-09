@@ -1876,7 +1876,7 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
         if (aiChannel === "ohmygpt") {
           // 如果是 ohmygpt 通道，使用 ohmygpt 的特定配置项
           config.apiBaseURL = responseConfig.ohmygptBaseUrl || "https://c-z0-api-01.hash070.com/v1/chat/completions";
-          config.apiModel = responseConfig.ohmygptModel || "gemini-2.5-flash-preview-04-17-thinking-disabled";
+          config.apiModel = responseConfig.ohmygptModel || "gemini-2.5-flash";
           config.apiKey = responseConfig.ohmygptToken || "";
           console.log("使用 OhMyGPT 配置:", config);
         } else {
