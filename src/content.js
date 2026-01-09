@@ -58,6 +58,101 @@ function normalizeText(text) {
 }
 
 // =======================
+// 显示单词限制通知
+// =======================
+function showWordLimitNotification(message) {
+  const existingNotification = document.getElementById('word-limit-notification');
+  if (existingNotification) {
+    existingNotification.remove();
+  }
+
+  const notification = document.createElement('div');
+  notification.id = 'word-limit-notification';
+
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999999;
+    background: linear-gradient(135deg, #fdcb6e, #e17055);
+    color: white;
+    padding: 16px 24px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideDown 0.3s ease-out;
+    max-width: 90%;
+    word-wrap: break-word;
+  `;
+
+  const icon = document.createElement('span');
+  icon.innerHTML = '⚠️';
+  icon.style.cssText = 'font-size: 20px;';
+
+  const text = document.createElement('span');
+  text.textContent = message;
+
+  const closeBtn = document.createElement('button');
+  closeBtn.innerHTML = '×';
+  closeBtn.style.cssText = `
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    transition: background 0.2s;
+  `;
+  closeBtn.onmouseenter = () => closeBtn.style.background = 'rgba(255, 255, 255, 0.3)';
+  closeBtn.onmouseleave = () => closeBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+  closeBtn.onclick = () => notification.remove();
+
+  notification.appendChild(icon);
+  notification.appendChild(text);
+  notification.appendChild(closeBtn);
+
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.style.animation = 'fadeOut 0.3s ease-out forwards';
+      setTimeout(() => notification.remove(), 300);
+    }
+  }, 8000);
+}
+
+// =======================
 // 检查元素是否为 YouTube 上允许处理的元素
 // =======================
 function isAllowedYouTubeElement(parent) {
@@ -1099,6 +1194,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     // 清理流式上下文
     window.currentStreamContext = null;
+  }
+  // 处理单词限制通知
+  else if (message.action === "showWordLimitNotification") {
+    showWordLimitNotification(message.message);
+    sendResponse({success: true});
+    return true;
   }
   // 处理Orion TTS相关消息 - 这些消息会被orion_tts.js处理，这里只是为了兼容性
   else if (message.action === "playCustom" ||

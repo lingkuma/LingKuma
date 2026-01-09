@@ -128,7 +128,23 @@ async function cloudRequest(endpoint, options = {}) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || `HTTP ${response.status}`);
+    const errorMessage = data.message || `HTTP ${response.status}`;
+    
+    if (errorMessage.includes('Word limit reached') || errorMessage.includes('单词限制')) {
+      console.log('[CloudDB] Word limit reached, sending notification to all tabs');
+      
+      chrome.tabs.query({}, function(tabs) {
+        tabs.forEach(tab => {
+          chrome.tabs.sendMessage(tab.id, {
+            action: "showWordLimitNotification",
+            message: errorMessage
+          }).catch(() => {
+          });
+        });
+      });
+    }
+    
+    throw new Error(errorMessage);
   }
 
   return data;
