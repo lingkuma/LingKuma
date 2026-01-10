@@ -244,13 +244,30 @@ function getSentenceForWord(detail) {
   const wordContainer = detail.range.startContainer;
   let textNodeParent = wordContainer.nodeType === Node.TEXT_NODE ? wordContainer.parentElement : wordContainer;
   
-  // 如果父元素是absolute/fixed定位的，向上查找一个非absolute的父元素
-  while (textNodeParent && textNodeParent !== document.body) {
-    const style = window.getComputedStyle(textNodeParent);
-    if (style.position !== 'absolute' && style.position !== 'fixed') {
-      break;
-    }
-    textNodeParent = textNodeParent.parentElement;
+  // 向上查找合适的父元素 
+  
+  while (textNodeParent && textNodeParent !== document.body) { 
+    // 如果当前节点是文本节点，继续向上查找 
+    if (textNodeParent.nodeType === Node.TEXT_NODE) { 
+      textNodeParent = textNodeParent.parentElement; 
+      continue; 
+    } 
+    
+    // 检查当前元素是否是absolute/fixed定位 
+    const style = window.getComputedStyle(textNodeParent); 
+    if (style.position === 'absolute' || style.position === 'fixed') { 
+      // 如果是absolute/fixed定位，停止向上查找，使用当前元素 
+      break; 
+    } 
+    
+    // 如果不是absolute/fixed定位，检查文本长度 
+    if (textNodeParent.innerText && textNodeParent.innerText.trim().length >= MIN_TEXT_LENGTH) { 
+      // 文本长度足够，停止查找 
+      break; 
+    } 
+    
+    // 文本长度不够，继续向上查找 
+    textNodeParent = textNodeParent.parentElement; 
   }
   
   // 使用找到的父元素作为遍历起点
