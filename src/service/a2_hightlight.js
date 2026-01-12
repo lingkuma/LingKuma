@@ -705,7 +705,7 @@ class ScopeObserver {
         for (const segment of segments) {
           if (segment.isWordLike) {
             const word = segment.segment.toLowerCase();
-            if (word.length >= 2 && !this.isNonLanguageSymbol(word)) {
+            if (word.length >= 1 && !this.isNonLanguageSymbol(word)) {
               wordsToQuery.add(word);
             }
           }
@@ -2093,7 +2093,7 @@ if (window.location.hostname.includes('youtube.com')) {
         for (const segment of segments) {
           if (segment.isWordLike) {
             const word = segment.segment.toLowerCase();
-            if (word.length >= 2 && !this.isNonLanguageSymbol(word) && !this.wordDetailsFromDB[word]) {
+            if (word.length >= 1 && !this.isNonLanguageSymbol(word) && !this.wordDetailsFromDB[word]) {
               wordsToQuery.add(word);
             }
           }
