@@ -3997,10 +3997,7 @@ function initExplosionShadowDOM() {
   function updateShadowHostHeight() {
     const pageHeight = Math.max(
       document.body.scrollHeight,
-      document.body.offsetHeight,
-      document.documentElement.clientHeight,
-      document.documentElement.scrollHeight,
-      document.documentElement.offsetHeight
+      document.body.offsetHeight
     );
     explosionShadowHost.style.height = pageHeight + 'px';
   }
@@ -4008,12 +4005,11 @@ function initExplosionShadowDOM() {
   // 初始更新高度
   updateShadowHostHeight();
 
-  // 监听页面高度变化
+  // 监听页面高度变化 - 只监听 body，避免视口变化（如打开/关闭开发者工具）的影响
   const resizeObserver = new ResizeObserver(() => {
     updateShadowHostHeight();
   });
   resizeObserver.observe(document.body);
-  resizeObserver.observe(document.documentElement);
 
   // 注入CSS样式到Shadow DOM
   injectExplosionStyles();
