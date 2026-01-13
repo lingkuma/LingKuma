@@ -3533,25 +3533,34 @@
         <input type="radio" id="ohmygptBaseUrl1" name="ohmygptBaseUrl" value="https://api.ohmygpt.com/v1/chat/completions" data-auto-save="true" data-storage-key="ohmygptBaseUrl" data-storage-area="aiConfig" style="margin-left: 0; margin-right: 8px;">
         <label for="ohmygptBaseUrl1" style="cursor: pointer;">
           <strong data-i18n="ohmygptBaseUrlRecommended"></strong> https://api.ohmygpt.com/ <br>
-          <small style="color: var(--text-secondary);" data-i18n="ohmygptBaseUrlRecommendedDesc">USA WEST</small>
+          <small style="color: var(--text-secondary);" data-i18n="ohmygptBaseUrlRecommendedDesc">US Direct | Enterprise</small>
         </label>
       </div>
       <!-- Option 2: Cloudflare CDN -->
       <div class="radio-item" style="display: flex; align-items: center;">
         <!-- 明确设置 margin-left: 0 -->
-        <input type="radio" id="ohmygptBaseUrl2" name="ohmygptBaseUrl" value="https://apic.ohmygpt.com/v1/chat/completions" data-auto-save="true" data-storage-key="ohmygptBaseUrl" data-storage-area="aiConfig" style="margin-left: 0; margin-right: 8px;">
+        <input type="radio" id="ohmygptBaseUrl2" name="ohmygptBaseUrl" value="https://apic1.ohmycdn.com/v1/chat/completions" data-auto-save="true" data-storage-key="ohmygptBaseUrl" data-storage-area="aiConfig" style="margin-left: 0; margin-right: 8px;">
         <label for="ohmygptBaseUrl2" style="cursor: pointer;">
-          <strong data-i18n="ohmygptBaseUrlCloudflare"></strong> https://apic.ohmygpt.com <br>
-          <small style="color: var(--text-secondary);" data-i18n="ohmygptBaseUrlCloudflareDesc">Not Asia:</small>
+          <strong data-i18n="ohmygptBaseUrlCloudflare"></strong> https://apic1.ohmycdn.com <br>
+          <small style="color: var(--text-secondary);" data-i18n="ohmygptBaseUrlCloudflareDesc">Cloudflare CDN | Global</small>
         </label>
       </div>
-      <!-- Option 3: Mainland Optimized -->
+      <!-- Option 3: Asia Optimized -->
       <div class="radio-item" style="display: flex; align-items: center;">
         <!-- 明确设置 margin-left: 0 -->
         <input type="radio" id="ohmygptBaseUrl3" name="ohmygptBaseUrl" value="https://c-z0-api-01.hash070.com/v1/chat/completions" data-auto-save="true" data-storage-key="ohmygptBaseUrl" data-storage-area="aiConfig" style="margin-left: 0; margin-right: 8px;">
         <label for="ohmygptBaseUrl3" style="cursor: pointer;">
           <strong data-i18n="ohmygptBaseUrlMainland"></strong> https://c-z0-api-01.hash070.com <br>
-          <small style="color: var(--text-secondary);" data-i18n="ohmygptBaseUrlMainlandDesc">Asia</small>
+          <small style="color: var(--text-secondary);" data-i18n="ohmygptBaseUrlMainlandDesc">Asia Optimized CDN</small>
+        </label>
+      </div>
+      <!-- Option 4: CN2 GIA -->
+      <div class="radio-item" style="display: flex; align-items: center;">
+        <!-- 明确设置 margin-left: 0 -->
+        <input type="radio" id="ohmygptBaseUrl4" name="ohmygptBaseUrl" value="https://cn2us02.opapi.win/v1/chat/completions" data-auto-save="true" data-storage-key="ohmygptBaseUrl" data-storage-area="aiConfig" style="margin-left: 0; margin-right: 8px;">
+        <label for="ohmygptBaseUrl4" style="cursor: pointer;">
+          <strong data-i18n="ohmygptBaseUrlCn2"></strong> https://cn2us02.opapi.win <br>
+          <small style="color: var(--text-secondary);" data-i18n="ohmygptBaseUrlCn2Desc">CN2 GIA | Asia</small>
         </label>
       </div>
     </div>
