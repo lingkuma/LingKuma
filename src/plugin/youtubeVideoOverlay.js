@@ -1134,11 +1134,19 @@
         const controlBar = document.getElementById('overlay-control-bar');
         const subtitleContainer = document.getElementById('overlay-subtitle-container');
         const subtitleListContainer = document.getElementById('overlay-subtitle-list-container');
+        const leftContainer = document.getElementById('overlay-left-container');
         const rightContainer = document.getElementById('overlay-right-container');
 
         if (subtitleContainer) subtitleContainer.remove();
         if (subtitleListContainer) subtitleListContainer.remove();
         if (rightContainer) rightContainer.remove();
+
+        if (leftContainer) {
+            if (videoContainer && videoContainer.parentElement === leftContainer) {
+                overlay.appendChild(videoContainer);
+            }
+            leftContainer.remove();
+        }
 
         lastOverlaySubtitleText = '';
         subtitleListInitialized = false;
@@ -1321,6 +1329,8 @@
 
         Object.assign(videoContainer.style, {
             flex: '0 0 auto',
+            width: '100%',
+            maxWidth: '100%',
             padding: '20px'
         });
 
