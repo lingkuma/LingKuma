@@ -860,7 +860,18 @@ function mapNormalizedPositionToOriginal(originalText, normalizedPosition) {
 
 // 显示单词爆炸弹窗
 function showWordExplosion(sentence, sentenceRect = null, sentenceInfo = null) {
-  if (!wordExplosionEnabled) return;
+  console.log('[WordExplosion] showWordExplosion 被调用');
+  console.log('[WordExplosion] 参数:', { 
+    sentence: sentence?.substring(0, 50) + '...', 
+    hasSentenceRect: !!sentenceRect,
+    hasSentenceInfo: !!sentenceInfo
+  });
+  console.log('[WordExplosion] wordExplosionEnabled:', wordExplosionEnabled);
+  
+  if (!wordExplosionEnabled) {
+    console.log('[WordExplosion] wordExplosionEnabled 为 false，直接返回');
+    return;
+  }
 
   // === 新增：检测句子语言，根据popup中的语言高亮设置过滤 ===
   if (!shouldShowExplosionForLanguage(sentence)) {
@@ -3326,16 +3337,26 @@ document.addEventListener('pointerdown',async (e) => {
   }
 
   // 使用基于单词位置的检测算法
+  console.log('[WordExplosion] 开始查找句子，坐标:', { x: eventClientX, y: eventClientY });
   const sentenceInfo = findWordAndSentenceAtPosition(eventClientX, eventClientY);
+  console.log('[WordExplosion] findWordAndSentenceAtPosition 返回结果:', sentenceInfo);
 
   // 只有当句子长度合理时才显示（至少5个字符）
   if (sentenceInfo && sentenceInfo.sentence && sentenceInfo.sentence.trim().length >= 5) {
+    console.log('[WordExplosion] 找到有效句子，准备显示弹窗:', sentenceInfo.sentence);
     // 获取句子的位置信息
     const sentenceRect = getSentenceRect(sentenceInfo.sentence, {
       textNode: sentenceInfo.textNode,
       range: sentenceInfo.range
     });
+    console.log('[WordExplosion] 句子位置信息:', sentenceRect);
     showWordExplosion(sentenceInfo.sentence, sentenceRect, sentenceInfo);
+  } else {
+    console.log('[WordExplosion] 未找到有效句子，原因:', {
+      hasSentenceInfo: !!sentenceInfo,
+      hasSentence: !!(sentenceInfo && sentenceInfo.sentence),
+      sentenceLength: sentenceInfo && sentenceInfo.sentence ? sentenceInfo.sentence.trim().length : 0
+    });
   }
 }, true);
 
@@ -3445,6 +3466,10 @@ function getSentenceRectFallback(sentence, clickRange) {
 
 // 基于单词位置信息查找鼠标位置的单词和句子
 function findWordAndSentenceAtPosition(x, y) {
+  console.log('[WordExplosion] findWordAndSentenceAtPosition 开始，坐标:', { x, y });
+  console.log('[WordExplosion] highlightManager 存在:', !!highlightManager);
+  console.log('[WordExplosion] parent2Text2RawsAllUnknow 存在:', !!(highlightManager && highlightManager.parent2Text2RawsAllUnknow));
+  
   if (!highlightManager || !highlightManager.parent2Text2RawsAllUnknow) {
     console.log('[WordExplosion] highlightManager 或单词位置数据未初始化，使用备用方案');
     return findWordAndSentenceAtPositionFallback(x, y);
@@ -3456,8 +3481,15 @@ function findWordAndSentenceAtPosition(x, y) {
   try {
     // 获取所有存储的父元素和文本节点数据
     const allParents = Array.from(highlightManager.parent2Text2RawsAllUnknow.entries());
+    console.log('[WordExplosion] 存储的父元素数量:', allParents.length);
+
+    let matchedParent = null;
+    let matchedTextNode = null;
+    let parentsChecked = 0;
 
     for (const [parent, textMap] of allParents) {
+      parentsChecked++;
+      
       // 确保父元素仍在文档中且可见
       if (!document.contains(parent)) {
         continue;
@@ -3474,8 +3506,13 @@ function findWordAndSentenceAtPosition(x, y) {
         continue;
       }
 
+      console.log('[WordExplosion] 找到匹配的父元素:', parent.tagName, parent.className, parent.id);
+      matchedParent = parent;
+
       // 遍历该父元素下的所有文本节点
       const textEntries = Array.from(textMap.entries());
+      console.log('[WordExplosion] 父元素下的文本节点数量:', textEntries.length);
+      
       for (const [textNode, rawRanges] of textEntries) {
         // 确保文本节点仍在文档中
         if (!document.contains(textNode)) {
@@ -3509,19 +3546,29 @@ function findWordAndSentenceAtPosition(x, y) {
           continue;
         }
 
+        console.log('[WordExplosion] 找到匹配的文本节点:', textNode.textContent.substring(0, 50));
+        console.log('[WordExplosion] 文本节点位置:', textNodeRect);
+        console.log('[WordExplosion] 文本节点单词数量:', rawRanges.length);
+        matchedTextNode = textNode;
+
         // 首先过滤掉纯数字和标点符号的rawRanges
         const filteredRanges = rawRanges.filter(raw => !highlightManagerFilter(raw.word));
+        console.log('[WordExplosion] 过滤后的单词数量:', filteredRanges.length);
 
         // 在过滤后的文本节点中查找鼠标位置的单词
         const foundWord = findWordAtPositionInTextNode(textNode, filteredRanges, x, y);
+        console.log('[WordExplosion] findWordAtPositionInTextNode 结果:', foundWord);
+        
         if (foundWord) {
           // 找到单词后，获取包含该单词的完整句子
           const sentence = getSentenceForWord({
             range: foundWord.range,
             word: foundWord.word
           });
+          console.log('[WordExplosion] getSentenceForWord 返回:', sentence);
 
           if (sentence) {
+            console.log('[WordExplosion] 成功找到句子和单词:', { word: foundWord.word, sentence: sentence.substring(0, 50) + '...' });
             return {
               word: foundWord.word,
               wordLower: foundWord.wordLower,
@@ -3530,10 +3577,16 @@ function findWordAndSentenceAtPosition(x, y) {
               textNode: textNode,
               range: foundWord.range
             };
+          } else {
+            console.log('[WordExplosion] getSentenceForWord 返回空');
           }
         }
       }
     }
+    
+    console.log('[WordExplosion] 检查了', parentsChecked, '个父元素，匹配的父元素:', matchedParent?.tagName, '匹配的文本节点:', matchedTextNode?.textContent?.substring(0, 30));
+    console.log('[WordExplosion] 未找到匹配的单词，使用备用方案');
+    return findWordAndSentenceAtPositionFallback(x, y);
 
     // 如果没有找到任何单词，返回null
     return null;
@@ -3546,18 +3599,25 @@ function findWordAndSentenceAtPosition(x, y) {
 // 在指定的文本节点中查找指定位置的单词
 function findWordAtPositionInTextNode(textNode, rawRanges, x, y) {
   try {
+    console.log('[WordExplosion] findWordAtPositionInTextNode 开始，坐标:', { x, y });
+    console.log('[WordExplosion] 文本节点内容:', textNode.textContent.substring(0, 100));
+    console.log('[WordExplosion] rawRanges 数量:', rawRanges.length);
+    
     // 创建Range对象来获取文本节点的精确位置信息
     const textRange = document.createRange();
     textRange.selectNodeContents(textNode);
     const textNodeRects = textRange.getClientRects();
 
+    console.log('[WordExplosion] 文本节点矩形数量:', textNodeRects.length);
     if (textNodeRects.length === 0) {
+      console.log('[WordExplosion] 文本节点没有矩形，返回null');
       return null;
     }
 
     // 找到鼠标所在的行（处理多行文本）
     let targetLineRect = null;
     for (const rect of textNodeRects) {
+      console.log('[WordExplosion] 检查行矩形:', { top: rect.top, bottom: rect.bottom, y });
       if (y >= rect.top && y <= rect.bottom) {
         targetLineRect = rect;
         break;
@@ -3565,13 +3625,20 @@ function findWordAtPositionInTextNode(textNode, rawRanges, x, y) {
     }
 
     if (!targetLineRect) {
+      console.log('[WordExplosion] 未找到匹配的行矩形，返回null');
       return null;
     }
 
+    console.log('[WordExplosion] 找到匹配的行矩形:', targetLineRect);
+
     // 在该行的单词中查找鼠标位置的单词
+    let wordsChecked = 0;
     for (const rawRange of rawRanges) {
+      wordsChecked++;
+      
       // 跳过纯数字和标点符号（虽然它们不应该出现在rawRanges中，但双重保险）
       if (isNonLanguageSymbol(rawRange.word)) {
+        console.log('[WordExplosion] 跳过非语言符号:', rawRange.word);
         continue;
       }
 
@@ -3582,12 +3649,22 @@ function findWordAtPositionInTextNode(textNode, rawRanges, x, y) {
 
       // 获取单词的边界矩形
       const wordRects = wordRange.getClientRects();
+      console.log('[WordExplosion] 单词:', rawRange.word, '矩形数量:', wordRects.length);
 
       for (const wordRect of wordRects) {
         // 检查鼠标是否在这个单词的矩形范围内
-        if (x >= wordRect.left && x <= wordRect.right &&
-            y >= wordRect.top && y <= wordRect.bottom) {
+        const isInside = x >= wordRect.left && x <= wordRect.right &&
+                       y >= wordRect.top && y <= wordRect.bottom;
+        
+        console.log('[WordExplosion] 检查单词矩形:', {
+          word: rawRange.word,
+          rect: { left: wordRect.left, right: wordRect.right, top: wordRect.top, bottom: wordRect.bottom },
+          isInside: isInside,
+          mouse: { x, y }
+        });
 
+        if (isInside) {
+          console.log('[WordExplosion] 找到匹配的单词:', rawRange.word);
           return {
             word: rawRange.word,
             wordLower: rawRange.wordLower,
@@ -3599,6 +3676,7 @@ function findWordAtPositionInTextNode(textNode, rawRanges, x, y) {
       }
     }
 
+    console.log('[WordExplosion] 检查了', wordsChecked, '个单词，未找到匹配，返回null');
     return null;
   } catch (error) {
     console.error('[WordExplosion] 在文本节点中查找单词失败:', error);

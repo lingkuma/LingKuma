@@ -168,7 +168,8 @@ function isAllowedYouTubeElement(parent) {
     'caption-visual-line',
     'ytp-caption-segment',
     'above-the-fold',
-    'trancy-app'
+    'trancy-app',
+    'overlay-subtitle-text'
   ];
 
   // 检查元素是否属于允许的类或ID
@@ -215,9 +216,19 @@ function isAllowedYouTubeElement(parent) {
 // 新增辅助函数：根据单词所在 range 获取所在句子
 // =======================
 function getSentenceForWord(detail) {
+  console.log('[getSentenceForWord] 函数被调用');
+  console.log('[getSentenceForWord] 传入的 detail:', {
+    word: detail.word,
+    hasRange: !!detail.range,
+    hasStartContainer: !!(detail.range && detail.range.startContainer),
+    startContainerType: detail.range?.startContainer?.nodeType,
+    startContainerText: detail.range?.startContainer?.textContent?.substring(0, 50),
+    startOffset: detail.range?.startOffset
+  });
+  
   // 新增：检查 detail 和其必要属性是否有效
   if (!detail || !detail.range || !detail.range.startContainer) {
-    // console.error("getSentenceForWord: 传入的 detail 或其 range/startContainer 无效。", detail);
+    console.error('[getSentenceForWord] 传入的 detail 或其 range/startContainer 无效。', detail);
     return ""; // 无效则直接返回空字符串
   }
   // console.log("=== [Debug] 开始获取句子 for word:", detail.word, "Container:", detail.range.startContainer, "Offset:", detail.range.startOffset);
@@ -272,6 +283,9 @@ function getSentenceForWord(detail) {
   
   // 使用找到的父元素作为遍历起点
   const traversalParent = textNodeParent || parent;
+  console.log('[getSentenceForWord] TreeWalker 遍历起点元素:', traversalParent);
+  console.log('[getSentenceForWord] traversalParent 标签名:', traversalParent.tagName);
+  console.log('[getSentenceForWord] traversalParent 文本内容:', traversalParent.textContent?.substring(0, 100));
   
   const walker = document.createTreeWalker(
     traversalParent,
@@ -307,7 +321,8 @@ function getSentenceForWord(detail) {
   while (currentNode = walker.nextNode()) {
     rawFullTextBuilder += (currentNode.textContent || ""); // 获取原始文本
   }
-  // console.log("=== [Debug] TreeWalker 构建的 rawFullText:", rawFullTextBuilder);
+  console.log('[getSentenceForWord] TreeWalker 构建的 rawFullText:', rawFullTextBuilder.substring(0, 200));
+  console.log('[getSentenceForWord] rawFullText 总长度:', rawFullTextBuilder.length);
 
   // --- 步骤 2-5: 基于 Range 计算 Offset (在标准化和清理后) ---
   let offset = -1;
@@ -319,19 +334,19 @@ function getSentenceForWord(detail) {
     preRange.setEnd(detail.range.startContainer, detail.range.startOffset);
 
     let rawRangeText = preRange.toString();
-    // console.log("=== [Debug] Range.toString() 文本 (raw):", rawRangeText);
+    console.log('[getSentenceForWord] Range.toString() 原始文本:', rawRangeText.substring(0, 100));
 
     // --- 标准化 Range 文本 ---
     let normalizedRangeText = normalizeText(rawRangeText);
-    // console.log("=== [Debug] 标准化后的 Range 文本:", normalizedRangeText);
+    console.log('[getSentenceForWord] 标准化后的 Range 文本:', normalizedRangeText.substring(0, 100));
 
     // --- 清理标准化后的 Range 文本 (移除引用标记) ---
     let cleanedNormalizedRangeText = normalizedRangeText.replace(/\[\d+\]/g, '');
-    // console.log("=== [Debug] 清理并标准化后的 Range 文本:", cleanedNormalizedRangeText);
+    console.log('[getSentenceForWord] 清理并标准化后的 Range 文本:', cleanedNormalizedRangeText.substring(0, 100));
 
     // --- 计算精确 offset ---
     offset = cleanedNormalizedRangeText.length;
-    // console.log("=== [Debug] 标准化+清理后 Range 计算的 Offset:", offset);
+    console.log('[getSentenceForWord] 计算出的 offset:', offset);
 
   } catch (e) {
     console.error("使用 Range 计算 Offset 时出错:", e, "Parent:", parent, "Container:", detail.range.startContainer);
@@ -346,14 +361,16 @@ function getSentenceForWord(detail) {
 
   // --- 步骤 6: 标准化并清理 fullText ---
   normalizedFullText = normalizeText(rawFullTextBuilder); // 标准化原始 fullText
-  // console.log("=== [Debug] 标准化后的 fullText:", normalizedFullText);
+  console.log('[getSentenceForWord] 标准化后的 fullText:', normalizedFullText.substring(0, 200));
   let cleanedNormalizedFullText = normalizedFullText.replace(/\[\d+\]/g, ''); // 移除引用标记
-  // console.log("=== [Debug] 清理并标准化后的 fullText:", cleanedNormalizedFullText);
+  console.log('[getSentenceForWord] 清理并标准化后的 fullText:', cleanedNormalizedFullText.substring(0, 200));
+  console.log('[getSentenceForWord] cleanedNormalizedFullText 总长度:', cleanedNormalizedFullText.length);
 
 
   // --- 步骤 7: 提取句子 (使用清理并标准化的 fullText 和精确的 offset) ---
   let leftText = cleanedNormalizedFullText.slice(0, offset);
-  // console.log("=== [Debug] 用于查找开始标记的 leftText (来自标准化文本):", leftText);
+  console.log('[getSentenceForWord] 用于查找开始标记的 leftText:', leftText.substring(0, 100));
+  console.log('[getSentenceForWord] leftText 长度:', leftText.length);
   let sentenceStart = 0;
   let foundStartMarker = null;
   // 确保 startMarkers 使用标准空格
@@ -415,7 +432,7 @@ function getSentenceForWord(detail) {
      while (sentenceStart < cleanedNormalizedFullText.length && /\s/.test(cleanedNormalizedFullText[sentenceStart])) {
         sentenceStart++;
      }
-    //  console.log("=== [Debug] 未找到句首标记，将 sentenceStart 设为 (跳过空格后):", sentenceStart);
+    console.log('[getSentenceForWord] 未找到句首标记，将 sentenceStart 设为 (跳过空格后):', sentenceStart);
  } else {
     // 找到了标记，计算标记后的位置
     let tentativeStart = lastStartPos + foundMarkerLength;
@@ -426,7 +443,7 @@ function getSentenceForWord(detail) {
     sentenceStart = tentativeStart; // 最终的句子起始位置
 
     // Log the found marker and calculated start position
-    //  console.log("=== [Debug] 找到的句子开始标记:", foundStartMarker, "原始位置:", lastStartPos, "计算出的 sentenceStart (在标准化文本中，跳过空格后):", sentenceStart);
+    console.log('[getSentenceForWord] 找到的句子开始标记:', foundStartMarker, '原始位置:', lastStartPos, '计算出的 sentenceStart (在标准化文本中，跳过空格后):', sentenceStart);
  }
 
 
@@ -442,7 +459,8 @@ function getSentenceForWord(detail) {
 
   // 向右查找句子结束位置 (在标准化文本上)
   let rightText = cleanedNormalizedFullText.slice(offset);
-  // console.log("=== [Debug] 用于查找结束标记的 rightText (来自标准化文本):", rightText);
+  console.log('[getSentenceForWord] 用于查找结束标记的 rightText:', rightText.substring(0, 100));
+  console.log('[getSentenceForWord] rightText 长度:', rightText.length);
   let nextEnd = Infinity; // 在 rightText 中的索引
    // 确保 endMarkers 使用标准空格，并优化列表
   const endMarkers = [ // 同样，长/带空格的优先
@@ -468,7 +486,7 @@ function getSentenceForWord(detail) {
            foundEndMarkerLength = marker.length; // 记录标记长度
        }
   }
-  // console.log("=== [Debug] 找到的句子结束标记:", foundEndMarker, "在 rightText 中的起始位置:", nextEnd);
+  console.log('[getSentenceForWord] 找到的句子结束标记:', foundEndMarker, '在 rightText 中的起始位置:', nextEnd);
 
   // 优化句子长度处理逻辑 (基于标准化文本)
   const MAX_SENTENCE_LENGTH = 600; // 修改：从 300 提高到 600，支持更长的句子
@@ -478,21 +496,23 @@ function getSentenceForWord(detail) {
   if (nextEnd === Infinity) {
     // 未找到结束标记，从句子实际开始处计算最大长度
     sentenceEnd = Math.min(sentenceStart + MAX_SENTENCE_LENGTH, cleanedNormalizedFullText.length);
-    // console.log("=== [Debug] 未找到结束标记，使用 MAX_SENTENCE_LENGTH 限制，sentenceEnd:", sentenceEnd);
+    console.log('[getSentenceForWord] 未找到结束标记，使用 MAX_SENTENCE_LENGTH 限制，sentenceEnd:', sentenceEnd);
   } else {
     // 找到了标记，结束位置是 单词偏移量 + 标记在rightText的起始位置 + 标记长度
     sentenceEnd = offset + nextEnd + foundEndMarkerLength;
     // 确保不超过最大长度限制 (从句子实际开始处算)
     sentenceEnd = Math.min(sentenceEnd, sentenceStart + MAX_SENTENCE_LENGTH);
-    // console.log("=== [Debug] 找到结束标记，计算出的 sentenceEnd (标记后，有长度限制):", sentenceEnd);
+    console.log('[getSentenceForWord] 找到结束标记，计算出的 sentenceEnd (标记后，有长度限制):', sentenceEnd);
   }
   // 确保 sentenceEnd 不会小于 sentenceStart (非常边缘的情况)
   sentenceEnd = Math.max(sentenceStart, sentenceEnd);
-  // console.log("=== [Debug] 计算出的 sentenceEnd (在标准化文本中的索引):", sentenceEnd);
+  console.log('[getSentenceForWord] 计算出的 sentenceEnd (在标准化文本中的索引):', sentenceEnd);
+  console.log('[getSentenceForWord] 句子长度:', sentenceEnd - sentenceStart);
 
   // 提取句子 (从标准化文本中提取)
   let sentence = cleanedNormalizedFullText.slice(sentenceStart, sentenceEnd).trim(); // trim 再次确保
-  // console.log("=== [Debug] 初始提取的句子 (来自标准化文本):", sentence);
+  console.log('[getSentenceForWord] 初始提取的句子 (来自标准化文本):', sentence);
+  console.log('[getSentenceForWord] 初始句子长度:', sentence.length);
 
   // 判断是否需要扩展句子 (逻辑不变，但在标准化句子上操作)
   const needsExtension = () => {
@@ -518,18 +538,18 @@ function getSentenceForWord(detail) {
 
   if (needsExtension() && sentenceEnd < cleanedNormalizedFullText.length) {
       // 扩展逻辑 (基于标准化文本)
-      // console.log("=== [Debug] 句子需要扩展 (基于标准化文本)");
+      console.log('[getSentenceForWord] 句子需要扩展 (基于标准化文本)');
       const EXTENSION_LENGTH = 100;
       sentenceEnd = Math.min(sentenceEnd + EXTENSION_LENGTH, cleanedNormalizedFullText.length);
       sentence = cleanedNormalizedFullText.slice(sentenceStart, sentenceEnd).trim();
-      // console.log("=== [Debug] 扩展后的句子 (初步, 来自标准化文本):", sentence);
+      console.log('[getSentenceForWord] 扩展后的句子 (初步, 来自标准化文本):', sentence);
 
        // 在扩展后的标准化句子中找结束点
       const endMatch = sentence.match(/[。！？\.\!\?][」』）]?/); // 正则不需要改，因为它匹配的是字符本身
       if (endMatch) {
           const endPos = sentence.indexOf(endMatch[0]) + endMatch[0].length;
           sentence = sentence.slice(0, endPos);
-          // console.log("=== [Debug] 扩展后找到结束点，截取后的句子 (来自标准化文本):", sentence);
+          console.log('[getSentenceForWord] 扩展后找到结束点，截取后的句子 (来自标准化文本):', sentence);
       }
   }
 
@@ -541,7 +561,8 @@ function getSentenceForWord(detail) {
     .replace(/['']/g, "'")
     .trim(); // 最终 trim
 
-  // console.log("=== [Debug] 最终返回的句子:", sentence);
+  console.log('[getSentenceForWord] 最终返回的句子:', sentence);
+  console.log('[getSentenceForWord] 最终句子长度:', sentence.length);
   return sentence;
 }
 

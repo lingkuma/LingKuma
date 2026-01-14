@@ -822,6 +822,7 @@ class ScopeObserver {
 
     // 检查父元素是否在忽略列表中
 // 检查父元素是否在忽略列表中
+//注意isAllowedYouTubeElement函数！也要同步添加
 if (window.location.hostname.includes('youtube.com')) {
   // 定义YouTube上允许处理的元素类名和ID
   const allowedYoutubeIdentifiers = [
