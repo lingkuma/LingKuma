@@ -230,7 +230,7 @@ module.exports = {
         { from: 'src/service/image/lottie/tgs-balloon.js', to: 'src/service/image/lottie/tgs-balloon.js',info: { minimized: true }},
         { from: 'src/utils/tgs-player.min.js', to: 'src/utils/tgs-player.min.js',info: { minimized: true }},
         { from: '_locales', to: '_locales', noErrorOnMissing: true },
-        
+        { from: 'src/utils/lingqBlocker.js', to: 'src/utils/lingqBlocker.js' ,info: { minimized: true }},
         
         
         // { from: 'src/options/options.js', to: 'src/options/options.js' ,info: { minimized: true }},

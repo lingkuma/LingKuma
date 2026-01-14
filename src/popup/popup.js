@@ -451,6 +451,7 @@ function initializeSettings() {
       youtubeBionicReading: true, // 添加：YouTube 仿生阅读的默认值（默认开启）
       youtubeFontSize: 24, // 添加：YouTube 字幕字体大小的默认值
       youtubeFontFamily: 'Fanwood', // 添加：YouTube 字幕字体样式的默认值
+      youtubeVideoOverlay: false, // 添加：YouTube 视频覆盖层的默认值
       lingqBlocker: false, // 添加：LingqBlocker 的默认值（默认关闭）
 
       // 弹窗背景设置默认为开启，默认使用随机SVG背景
@@ -998,6 +999,30 @@ youtubeFontFamily.addEventListener('change', function(e) {
                     fontFamily: fontFamily
                 }).catch(error => {
                     // 忽略错误，可能 content script 未注入
+                });
+            }
+        });
+    });
+});
+
+// YouTube 视频覆盖层设置
+const youtubeVideoOverlay = document.getElementById('youtubeVideoOverlay');
+
+chrome.storage.local.get('youtubeVideoOverlay', function(result) {
+    youtubeVideoOverlay.checked = result.youtubeVideoOverlay || false;
+});
+
+youtubeVideoOverlay.addEventListener('change', function(e) {
+    const isEnabled = e.target.checked;
+    chrome.storage.local.set({ youtubeVideoOverlay: isEnabled });
+
+    chrome.tabs.query({}, function(tabs) {
+        tabs.forEach(tab => {
+            if (tab.url && tab.url.includes("youtube.com")) {
+                chrome.tabs.sendMessage(tab.id, {
+                    action: "toggleYoutubeVideoOverlay",
+                    enabled: isEnabled
+                }).catch(error => {
                 });
             }
         });

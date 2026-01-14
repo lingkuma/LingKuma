@@ -52,6 +52,7 @@
         "src/plugin/waifu/waifu.js",
         "src/plugin/youtubeCaptionGet.js",
         "src/plugin/youtubeCaptionFix.js",
+        "src/plugin/youtubeVideoOverlay.js",
         "src/service/a1_loadKnowWords.js",
         "src/service/a2_hightlight.js",
         "src/service/a3_aiFragen.js",
