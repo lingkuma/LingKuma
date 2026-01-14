@@ -451,6 +451,7 @@ function initializeSettings() {
       youtubeBionicReading: true, // 添加：YouTube 仿生阅读的默认值（默认开启）
       youtubeFontSize: 24, // 添加：YouTube 字幕字体大小的默认值
       youtubeFontFamily: 'Fanwood', // 添加：YouTube 字幕字体样式的默认值
+      lingqBlocker: false, // 添加：LingqBlocker 的默认值（默认关闭）
 
       // 弹窗背景设置默认为开启，默认使用随机SVG背景
       tooltipBackground: { enabled: true, useCustom: false, defaultType: 'svg' },
@@ -999,6 +1000,32 @@ youtubeFontFamily.addEventListener('change', function(e) {
                     // 忽略错误，可能 content script 未注入
                 });
             }
+        });
+    });
+});
+
+// LingqBlocker 设置
+const lingqBlocker = document.getElementById('lingqBlocker');
+
+// 加载状态 (默认关闭)
+chrome.storage.local.get('lingqBlocker', function(result) {
+    lingqBlocker.checked = result.lingqBlocker || false;
+});
+
+// 监听变化并保存
+lingqBlocker.addEventListener('change', function(e) {
+    const isEnabled = e.target.checked;
+    chrome.storage.local.set({ lingqBlocker: isEnabled });
+
+    // 通知所有标签页更新 LingqBlocker 状态
+    chrome.tabs.query({}, function(tabs) {
+        tabs.forEach(tab => {
+            chrome.tabs.sendMessage(tab.id, {
+                action: "toggleLingqBlocker",
+                enabled: isEnabled
+            }).catch(error => {
+                // 忽略错误，可能 content script 未注入
+            });
         });
     });
 });
