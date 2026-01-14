@@ -1141,6 +1141,7 @@
         if (rightContainer) rightContainer.remove();
 
         lastOverlaySubtitleText = '';
+        subtitleListInitialized = false;
 
         checkMobileMode();
 
