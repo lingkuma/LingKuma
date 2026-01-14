@@ -42,6 +42,7 @@
     let lastOverlaySubtitleText = '';
     let subtitleListInitialized = false;
     let subtitleListItems = [];
+    let subtitleOffsetMode = 'normal';
 
     function createFloatButton() {
         if (floatButton) return;
@@ -102,12 +103,14 @@
     chrome.storage.local.get({
         youtubeVideoOverlay: false,
         youtubeDisplayMode: 'theater',
-        youtubeCommaSentencing: false
+        youtubeCommaSentencing: false,
+        youtubeSubtitleOffset: 'normal'
     }, function(result) {
         if (result.youtubeVideoOverlay) {
             console.log("YouTube 视频覆盖层已启用");
             currentDisplayMode = result.youtubeDisplayMode || 'theater';
             window.youtubeCommaSentencingEnabled = result.youtubeCommaSentencing || false;
+            subtitleOffsetMode = result.youtubeSubtitleOffset || 'normal';
             initializeOverlay();
             setupUrlMonitoring();
         }
@@ -349,6 +352,10 @@
             } else {
                 initializeOverlay();
             }
+        } else if (request.action === "updateYoutubeSubtitleOffset") {
+            subtitleOffsetMode = request.offsetMode || 'normal';
+            lastOverlaySubtitleText = '';
+            console.log("字幕偏移模式已更新:", subtitleOffsetMode);
         }
     });
 
@@ -680,14 +687,176 @@
         }
 
         const currentTime = getYoutubeCurrentTime();
-        const currentSentence = getCurrentSentence(currentTime, rebuiltSubtitles);
-        currentSubtitleInheiten = currentSentence;
+        let currentSentence = getCurrentSentence(currentTime, rebuiltSubtitles);
 
         if (!currentSentence) {
             return null;
         }
 
+        if (subtitleOffsetMode === 'prev') {
+            const prevSentence = getPrevSentence(currentTime, rebuiltSubtitles);
+            if (prevSentence) {
+                currentSentence = prevSentence;
+            }
+        } else if (subtitleOffsetMode === 'next') {
+            const nextSentence = getNextSentence(currentTime, rebuiltSubtitles);
+            if (nextSentence) {
+                currentSentence = nextSentence;
+            }
+        }
+
+        currentSubtitleInheiten = currentSentence;
         return currentSentence;
+    }
+
+    function getPrevSentence(currentTime, subtitles) {
+        const wordsAround = getWordsAroundTimestamp(currentTime, subtitles);
+        if (!wordsAround || wordsAround.length === 0) {
+            return null;
+        }
+
+        const punctuationRegex = getPunctuationRegex();
+        let currentWordIndex = -1;
+        for (let i = 0; i < wordsAround.length; i++) {
+            const wordItem = wordsAround[i];
+            if (wordItem && wordItem.data && !Array.isArray(wordItem.data) &&
+                currentTime >= wordItem.data.tStartMs && currentTime <= wordItem.data.tEndMs) {
+                currentWordIndex = i;
+                break;
+            }
+        }
+
+        if (currentWordIndex === -1) {
+            return null;
+        }
+
+        let segmentStartIndex = 0;
+        for (let i = currentWordIndex - 1; i >= 0; i--) {
+            if (wordsAround[i] && Array.isArray(wordsAround[i].data) &&
+                wordsAround[i].data[0] && punctuationRegex.test(wordsAround[i].data[0])) {
+                segmentStartIndex = i + 1;
+                break;
+            }
+        }
+
+        if (segmentStartIndex === 0) {
+            return null;
+        }
+
+        let prevSegmentEndIndex = -1;
+        for (let i = segmentStartIndex - 1; i >= 0; i--) {
+            if (wordsAround[i] && Array.isArray(wordsAround[i].data) &&
+                wordsAround[i].data[0] && punctuationRegex.test(wordsAround[i].data[0])) {
+                prevSegmentEndIndex = i;
+                break;
+            }
+        }
+
+        if (prevSegmentEndIndex === -1) {
+            prevSegmentEndIndex = segmentStartIndex - 1;
+        }
+
+        let prevSegmentStartIndex = 0;
+        for (let i = prevSegmentEndIndex - 1; i >= 0; i--) {
+            if (wordsAround[i] && Array.isArray(wordsAround[i].data) &&
+                wordsAround[i].data[0] && punctuationRegex.test(wordsAround[i].data[0])) {
+                prevSegmentStartIndex = i + 1;
+                break;
+            }
+        }
+
+        const segmentWords = wordsAround.slice(prevSegmentStartIndex, prevSegmentEndIndex + 1);
+        const sentenceText = mergeWordsIntoSentences(segmentWords);
+
+        let startTime = 0;
+        let endTime = 0;
+        for (let i = 0; i < segmentWords.length; i++) {
+            const wordItem = segmentWords[i];
+            if (wordItem && wordItem.data && !Array.isArray(wordItem.data)) {
+                if (startTime === 0 || wordItem.data.tStartMs < startTime) {
+                    startTime = wordItem.data.tStartMs;
+                }
+                if (wordItem.data.tEndMs > endTime) {
+                    endTime = wordItem.data.tEndMs;
+                }
+            }
+        }
+
+        return {
+            text: sentenceText,
+            words: segmentWords,
+            startTime: startTime,
+            endTime: endTime
+        };
+    }
+
+    function getNextSentence(currentTime, subtitles) {
+        const wordsAround = getWordsAroundTimestamp(currentTime, subtitles);
+        if (!wordsAround || wordsAround.length === 0) {
+            return null;
+        }
+
+        const punctuationRegex = getPunctuationRegex();
+        let currentWordIndex = -1;
+        for (let i = 0; i < wordsAround.length; i++) {
+            const wordItem = wordsAround[i];
+            if (wordItem && wordItem.data && !Array.isArray(wordItem.data) &&
+                currentTime >= wordItem.data.tStartMs && currentTime <= wordItem.data.tEndMs) {
+                currentWordIndex = i;
+                break;
+            }
+        }
+
+        if (currentWordIndex === -1) {
+            return null;
+        }
+
+        let segmentEndIndex = wordsAround.length - 1;
+        for (let i = currentWordIndex; i < wordsAround.length; i++) {
+            if (wordsAround[i] && Array.isArray(wordsAround[i].data) &&
+                wordsAround[i].data[0] && punctuationRegex.test(wordsAround[i].data[0])) {
+                segmentEndIndex = i;
+                break;
+            }
+        }
+
+        if (segmentEndIndex >= wordsAround.length - 1) {
+            return null;
+        }
+
+        let nextSegmentStartIndex = segmentEndIndex + 1;
+        let nextSegmentEndIndex = wordsAround.length - 1;
+        for (let i = nextSegmentStartIndex; i < wordsAround.length; i++) {
+            if (wordsAround[i] && Array.isArray(wordsAround[i].data) &&
+                wordsAround[i].data[0] && punctuationRegex.test(wordsAround[i].data[0])) {
+                nextSegmentEndIndex = i;
+                break;
+            }
+        }
+
+        const segmentWords = wordsAround.slice(nextSegmentStartIndex, nextSegmentEndIndex + 1);
+        const sentenceText = mergeWordsIntoSentences(segmentWords);
+
+        let startTime = 0;
+        let endTime = 0;
+        for (let i = 0; i < segmentWords.length; i++) {
+            const wordItem = segmentWords[i];
+            if (wordItem && wordItem.data && !Array.isArray(wordItem.data)) {
+                if (startTime === 0 || wordItem.data.tStartMs < startTime) {
+                    startTime = wordItem.data.tStartMs;
+                }
+                if (wordItem.data.tEndMs > endTime) {
+                    endTime = wordItem.data.tEndMs;
+                }
+            }
+        }
+
+        return {
+            text: sentenceText,
+            words: segmentWords,
+            startTime: startTime,
+            endTime: endTime
+        };
     }
 
     function navigateSubtitles(direction) {
@@ -979,11 +1148,16 @@
             showModeSelector();
         });
 
+        const offsetBtn = createControlButton('⏱️', '字幕偏移', () => {
+            showSubtitleOffsetSelector();
+        });
+
         controlBar.appendChild(autoPauseBtn);
         controlBar.appendChild(prevBtn);
         controlBar.appendChild(replayBtn);
         controlBar.appendChild(nextBtn);
         controlBar.appendChild(modeBtn);
+        controlBar.appendChild(offsetBtn);
 
         return controlBar;
     }
@@ -1097,6 +1271,108 @@
                 currentDisplayMode = mode.id;
                 chrome.storage.local.set({ youtubeDisplayMode: mode.id });
                 updateDisplayMode();
+                selector.remove();
+            });
+
+            modeList.appendChild(modeBtn);
+        });
+
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = '关闭';
+        Object.assign(closeBtn.style, {
+            marginTop: '15px',
+            padding: '8px 16px',
+            backgroundColor: '#f44336',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            width: '100%'
+        });
+
+        closeBtn.addEventListener('click', () => {
+            selector.remove();
+        });
+
+        selector.appendChild(title);
+        selector.appendChild(modeList);
+        selector.appendChild(closeBtn);
+        document.body.appendChild(selector);
+    }
+
+    function showSubtitleOffsetSelector() {
+        const existingSelector = document.getElementById('subtitle-offset-selector');
+        if (existingSelector) {
+            existingSelector.remove();
+            return;
+        }
+
+        const selector = document.createElement('div');
+        selector.id = 'subtitle-offset-selector';
+        Object.assign(selector.style, {
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            backgroundColor: '#ffffff',
+            borderRadius: '10px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+            zIndex: '114515',
+            padding: '20px',
+            minWidth: '300px'
+        });
+
+        const title = document.createElement('h3');
+        title.textContent = '字幕偏移设置';
+        Object.assign(title.style, {
+            margin: '0 0 15px 0',
+            textAlign: 'center',
+            color: '#333333'
+        });
+
+        const modes = [
+            { id: 'normal', name: '正常', desc: '显示当前时间戳对应的字幕' },
+            { id: 'prev', name: '延迟一句', desc: '显示上一句字幕' },
+            { id: 'next', name: '提前一句', desc: '显示下一句字幕' }
+        ];
+
+        const modeList = document.createElement('div');
+        Object.assign(modeList.style, {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px'
+        });
+
+        modes.forEach(mode => {
+            const modeBtn = document.createElement('button');
+            modeBtn.innerHTML = `<strong>${mode.name}</strong><br><small>${mode.desc}</small>`;
+            Object.assign(modeBtn.style, {
+                padding: '10px',
+                border: '1px solid #e0e0e0',
+                borderRadius: '5px',
+                backgroundColor: subtitleOffsetMode === mode.id ? '#4CAF50' : '#ffffff',
+                color: subtitleOffsetMode === mode.id ? '#ffffff' : '#333333',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.2s ease'
+            });
+
+            modeBtn.addEventListener('mouseenter', () => {
+                if (subtitleOffsetMode !== mode.id) {
+                    modeBtn.style.backgroundColor = '#f5f5f5';
+                }
+            });
+
+            modeBtn.addEventListener('mouseleave', () => {
+                if (subtitleOffsetMode !== mode.id) {
+                    modeBtn.style.backgroundColor = '#ffffff';
+                }
+            });
+
+            modeBtn.addEventListener('click', () => {
+                subtitleOffsetMode = mode.id;
+                chrome.storage.local.set({ youtubeSubtitleOffset: mode.id });
+                lastOverlaySubtitleText = '';
                 selector.remove();
             });
 
