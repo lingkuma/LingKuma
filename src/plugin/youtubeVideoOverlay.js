@@ -1239,6 +1239,11 @@
             zIndex: '2147483648'
         });
 
+        const subtitleText = subtitleContainer.querySelector('#overlay-subtitle-text');
+        if (subtitleText) {
+            subtitleText.style.color = '#ffffff';
+        }
+
         overlay.appendChild(subtitleContainer);
     }
 
