@@ -1201,18 +1201,24 @@ async function showEnhancedTooltipForWord(word, sentence, wordRect, parent, orig
         }, 50);
       } else {
         console.log('Trancy不在top layer，使用CSS覆盖策略');
-        // 创建CSS样式来覆盖Trancy的z-index
         let trancyOverrideStyle = document.getElementById('trancy-override-style');
         if (!trancyOverrideStyle) {
           trancyOverrideStyle = document.createElement('style');
           trancyOverrideStyle.id = 'trancy-override-style';
           trancyOverrideStyle.textContent = `
-            trancy-app {
+            trancy-app,
+            #trancy-app {
               z-index: 114514 !important;
+            }
+            trancy-app.trancy-wrapper.mini,
+            #trancy-app.trancy-wrapper.mini {
+              height: auto !important;
+              max-height: 60vh !important;
+              min-height: auto !important;
             }
           `;
           document.head.appendChild(trancyOverrideStyle);
-          console.log('已插入Trancy z-index覆盖样式');
+          console.log('已插入Trancy z-index和高度覆盖样式');
         }
       }
     }
