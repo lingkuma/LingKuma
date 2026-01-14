@@ -39,6 +39,9 @@
     let isMobileMode = false;
     let keydownHandler = null;
     let playHandler = null;
+    let lastOverlaySubtitleText = '';
+    let subtitleListInitialized = false;
+    let subtitleListItems = [];
 
     function createFloatButton() {
         if (floatButton) return;
@@ -1463,7 +1466,10 @@
         const subtitleList = document.getElementById('overlay-subtitle-list');
 
         if (subtitleText && currentSentence) {
-            subtitleText.textContent = currentSentence.text;
+            if (currentSentence.text !== lastOverlaySubtitleText) {
+                lastOverlaySubtitleText = currentSentence.text;
+                subtitleText.textContent = currentSentence.text;
+            }
         }
 
         if (subtitleList && rebuiltSubtitles.length > 0) {
@@ -1473,68 +1479,83 @@
 
     function updateSubtitleList(subtitleList, currentSentence) {
         const currentTime = getYoutubeCurrentTime();
-        const sentences = extractAllSentences(rebuiltSubtitles);
 
-        subtitleList.innerHTML = '';
+        if (!subtitleListInitialized) {
+            const sentences = extractAllSentences(rebuiltSubtitles);
+            subtitleListItems = [];
 
-        sentences.forEach((sentence, index) => {
-            const item = document.createElement('div');
-            item.className = 'subtitle-item';
-            Object.assign(item.style, {
-                padding: '10px',
-                backgroundColor: currentTime >= sentence.startTime && currentTime <= sentence.endTime ? '#e3f2fd' : '#ffffff',
-                border: '1px solid #e0e0e0',
-                borderRadius: '5px',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
+            sentences.forEach((sentence, index) => {
+                const item = document.createElement('div');
+                item.className = 'subtitle-item';
+                item.dataset.startTime = sentence.startTime;
+                item.dataset.endTime = sentence.endTime;
+                Object.assign(item.style, {
+                    padding: '10px',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                });
+
+                const playBtn = document.createElement('button');
+                playBtn.innerHTML = '▶️';
+                Object.assign(playBtn.style, {
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '50%',
+                    border: 'none',
+                    backgroundColor: '#4CAF50',
+                    color: '#ffffff',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px'
+                });
+
+                playBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    setYoutubeTime(sentence.startTime);
+                    playVideo();
+                });
+
+                const text = document.createElement('div');
+                text.textContent = sentence.text;
+                Object.assign(text.style, {
+                    flex: '1',
+                    fontSize: '14px',
+                    lineHeight: '1.5',
+                    color: '#333333'
+                });
+
+                item.appendChild(playBtn);
+                item.appendChild(text);
+
+                item.addEventListener('click', () => {
+                    setYoutubeTime(sentence.startTime);
+                    playVideo();
+                });
+
+                subtitleList.appendChild(item);
+                subtitleListItems.push({
+                    element: item,
+                    sentence: sentence
+                });
             });
 
-            const playBtn = document.createElement('button');
-            playBtn.innerHTML = '▶️';
-            Object.assign(playBtn.style, {
-                width: '30px',
-                height: '30px',
-                borderRadius: '50%',
-                border: 'none',
-                backgroundColor: '#4CAF50',
-                color: '#ffffff',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '12px'
-            });
+            subtitleListInitialized = true;
+        }
 
-            playBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                setYoutubeTime(sentence.startTime);
-                playVideo();
-            });
+        subtitleListItems.forEach(({ element, sentence }) => {
+            const isActive = currentTime >= sentence.startTime && currentTime <= sentence.endTime;
+            element.style.backgroundColor = isActive ? '#e3f2fd' : '#ffffff';
 
-            const text = document.createElement('div');
-            text.textContent = sentence.text;
-            Object.assign(text.style, {
-                flex: '1',
-                fontSize: '14px',
-                lineHeight: '1.5',
-                color: '#333333'
-            });
-
-            item.appendChild(playBtn);
-            item.appendChild(text);
-
-            item.addEventListener('click', () => {
-                setYoutubeTime(sentence.startTime);
-                playVideo();
-            });
-
-            subtitleList.appendChild(item);
-
-            if (currentTime >= sentence.startTime && currentTime <= sentence.endTime) {
-                item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (isActive) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         });
     }

@@ -839,10 +839,20 @@ if (window.location.hostname.includes('youtube.com')) {
     // 'yt-core-attributed-string--white-space-pre-wrap',
 
     'above-the-fold',
-    'trancy-app'
+    'trancy-app',
     // 'video-title',
 
-
+    // YouTube 视频覆盖层相关元素
+    'youtube-overlay-float-button',
+    'youtube-video-overlay',
+    'overlay-video-container',
+    'overlay-subtitle-container',
+    'overlay-subtitle-text',
+    'overlay-subtitle-list-container',
+    'overlay-subtitle-list',
+    'overlay-control-bar',
+    'overlay-right-container',
+    'subtitle-item'
   ];
 
   // 检查元素是否属于允许的类或ID
