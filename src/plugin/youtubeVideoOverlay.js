@@ -37,6 +37,8 @@
     let autoPauseEnabled = false;
     let currentDisplayMode = 'theater';
     let isMobileMode = false;
+    let keydownHandler = null;
+    let playHandler = null;
 
     function createFloatButton() {
         if (floatButton) return;
@@ -126,6 +128,19 @@
         if (overlayContainer) {
             overlayContainer.remove();
             overlayContainer = null;
+        }
+
+        if (keydownHandler) {
+            document.removeEventListener('keydown', keydownHandler);
+            keydownHandler = null;
+        }
+
+        if (playHandler) {
+            const video = getVideoElement();
+            if (video) {
+                video.removeEventListener('play', playHandler);
+            }
+            playHandler = null;
         }
 
         if (originalVideo && originalParent) {
@@ -287,6 +302,41 @@
             updateDisplayMode();
             startSubtitleUpdate();
         });
+
+        keydownHandler = function(event) {
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            switch(event.code) {
+                case 'KeyA':
+                    event.preventDefault();
+                    navigateSubtitles('prev');
+                    break;
+                case 'KeyS':
+                    event.preventDefault();
+                    navigateSubtitles('current');
+                    break;
+                case 'KeyD':
+                    event.preventDefault();
+                    navigateSubtitles('next');
+                    break;
+            }
+        };
+        document.addEventListener('keydown', keydownHandler);
+
+        playHandler = function() {
+            if (!isProgramTriggeredPlay) {
+                console.log("用户手动播放，重播模式关闭");
+                isReplayMode = false;
+            } else {
+                console.log("程序触发的播放，保持重播模式");
+            }
+        };
+        const video = getVideoElement();
+        if (video) {
+            video.addEventListener('play', playHandler);
+        }
     }
 
     chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
@@ -647,69 +697,236 @@
             return;
         }
 
-        const currentWordIndex = currentSentence.words[0].originalIndex;
-        let targetTime = 0;
+        const punctuationRegex = getPunctuationRegex();
 
-        if (direction === 'prev') {
-            let prevSentenceEnd = currentSentence.startTime;
-            for (let i = currentWordIndex - 1; i >= 0; i--) {
-                const element = rebuiltSubtitles[i];
-                if (Array.isArray(element) && element.length > 0) {
-                    const punctuation = element[0];
-                    const punctuationRegex = getPunctuationRegex();
-                    if (punctuationRegex.test(punctuation)) {
-                        const word = rebuiltSubtitles[i - 1];
-                        if (word && word.tStartMs) {
-                            targetTime = word.tStartMs;
+        function findTargetSentence() {
+            if (direction === 'current') {
+                return currentSentence;
+            }
+
+            const firstWordItem = currentSentence.words[0];
+            const lastWordItem = currentSentence.words[currentSentence.words.length - 1];
+
+            if (!firstWordItem || !lastWordItem) return null;
+
+            const currentStartIndex = firstWordItem.originalIndex;
+            const currentEndIndex = lastWordItem.originalIndex;
+
+            if (direction === 'prev') {
+                let prevSentenceEndIndex = -1;
+
+                for (let i = currentStartIndex - 1; i >= 0; i--) {
+                    if (Array.isArray(rebuiltSubtitles[i]) &&
+                        rebuiltSubtitles[i][0] &&
+                        punctuationRegex.test(rebuiltSubtitles[i][0])) {
+                        prevSentenceEndIndex = i;
+                        break;
+                    }
+                }
+
+                if (prevSentenceEndIndex > 0) {
+                    let prevSentenceStartIndex = 0;
+                    for (let i = prevSentenceEndIndex - 1; i >= 0; i--) {
+                        if (Array.isArray(rebuiltSubtitles[i]) &&
+                            rebuiltSubtitles[i][0] &&
+                            punctuationRegex.test(rebuiltSubtitles[i][0])) {
+                            prevSentenceStartIndex = i + 1;
                             break;
                         }
                     }
+
+                    const prevSentenceWords = [];
+                    for (let i = prevSentenceStartIndex; i <= prevSentenceEndIndex; i++) {
+                        prevSentenceWords.push({
+                            originalIndex: i,
+                            data: rebuiltSubtitles[i]
+                        });
+                    }
+
+                    const prevSentenceText = mergeWordsIntoSentences(prevSentenceWords);
+                    let prevStartTime = 0;
+                    let prevEndTime = 0;
+                    for (let i = 0; i < prevSentenceWords.length; i++) {
+                        const wordItem = prevSentenceWords[i];
+                        if (wordItem && wordItem.data && !Array.isArray(wordItem.data)) {
+                            if (prevStartTime === 0 || wordItem.data.tStartMs < prevStartTime) {
+                                prevStartTime = wordItem.data.tStartMs;
+                            }
+                            if (wordItem.data.tEndMs > prevEndTime) {
+                                prevEndTime = wordItem.data.tEndMs;
+                            }
+                        }
+                    }
+
+                    return {
+                        text: prevSentenceText,
+                        words: prevSentenceWords,
+                        startTime: prevStartTime,
+                        endTime: prevEndTime,
+                        currentIndex: prevSentenceStartIndex
+                    };
                 }
-            }
-            if (targetTime === 0) {
-                targetTime = rebuiltSubtitles[0].tStartMs;
-            }
-        } else if (direction === 'next') {
-            let nextSentenceStart = currentSentence.endTime;
-            for (let i = currentWordIndex + 1; i < rebuiltSubtitles.length; i++) {
-                const element = rebuiltSubtitles[i];
-                if (Array.isArray(element) && element.length > 0) {
-                    const punctuation = element[0];
-                    const punctuationRegex = getPunctuationRegex();
-                    if (punctuationRegex.test(punctuation)) {
-                        const word = rebuiltSubtitles[i + 1];
-                        if (word && word.tStartMs) {
-                            targetTime = word.tStartMs;
+            } else if (direction === 'next') {
+                let nextSentenceStartIndex = -1;
+
+                for (let i = currentEndIndex + 1; i < rebuiltSubtitles.length; i++) {
+                    if (Array.isArray(rebuiltSubtitles[i-1]) &&
+                        rebuiltSubtitles[i-1][0] &&
+                        punctuationRegex.test(rebuiltSubtitles[i-1][0]) &&
+                        !Array.isArray(rebuiltSubtitles[i])) {
+                        nextSentenceStartIndex = i;
+                        break;
+                    }
+                }
+
+                if (nextSentenceStartIndex > 0) {
+                    let nextSentenceEndIndex = rebuiltSubtitles.length - 1;
+                    for (let i = nextSentenceStartIndex; i < rebuiltSubtitles.length; i++) {
+                        if (Array.isArray(rebuiltSubtitles[i]) &&
+                            rebuiltSubtitles[i][0] &&
+                            punctuationRegex.test(rebuiltSubtitles[i][0])) {
+                            nextSentenceEndIndex = i;
                             break;
                         }
                     }
+
+                    const nextSentenceWords = [];
+                    for (let i = nextSentenceStartIndex; i <= nextSentenceEndIndex; i++) {
+                        nextSentenceWords.push({
+                            originalIndex: i,
+                            data: rebuiltSubtitles[i]
+                        });
+                    }
+
+                    const nextSentenceText = mergeWordsIntoSentences(nextSentenceWords);
+                    let nextStartTime = 0;
+                    let nextEndTime = 0;
+                    for (let i = 0; i < nextSentenceWords.length; i++) {
+                        const wordItem = nextSentenceWords[i];
+                        if (wordItem && wordItem.data && !Array.isArray(wordItem.data)) {
+                            if (nextStartTime === 0 || wordItem.data.tStartMs < nextStartTime) {
+                                nextStartTime = wordItem.data.tStartMs;
+                            }
+                            if (wordItem.data.tEndMs > nextEndTime) {
+                                nextEndTime = wordItem.data.tEndMs;
+                            }
+                        }
+                    }
+
+                    return {
+                        text: nextSentenceText,
+                        words: nextSentenceWords,
+                        startTime: nextStartTime,
+                        endTime: nextEndTime,
+                        currentIndex: nextSentenceStartIndex
+                    };
                 }
+            } else if (direction === 'replay') {
+                return {
+                    text: currentSentence.text,
+                    words: currentSentence.words,
+                    startTime: currentSentence.startTime,
+                    endTime: currentSentence.endTime,
+                    currentIndex: currentStartIndex
+                };
             }
-            if (targetTime === 0) {
-                targetTime = rebuiltSubtitles[rebuiltSubtitles.length - 1].tStartMs;
-            }
-        } else if (direction === 'replay') {
-            targetTime = currentSentence.startTime;
+
+            return null;
         }
 
-        setYoutubeTime(targetTime);
-        isReplayMode = true;
-        setTimeout(() => {
-            isReplayMode = false;
-        }, 100);
-        playVideo();
+        const targetSentence = findTargetSentence();
+        if (!targetSentence || !targetSentence.words || targetSentence.words.length === 0) {
+            console.log("无法获取目标句子");
+            return;
+        }
 
-        if (autoPauseEnabled && direction !== 'replay') {
-            const video = getVideoElement();
-            if (video) {
-                const checkInterval = setInterval(() => {
-                    const currentTimeMs = getYoutubeCurrentTime();
-                    if (currentTimeMs >= currentSentence.endTime) {
-                        clearInterval(checkInterval);
-                        pauseVideo();
-                    }
-                }, 100);
+        currentSubtitleInheiten = targetSentence;
+
+        let firstValidWord = null;
+        let lastValidWord = null;
+
+        for (let i = 0; i < targetSentence.words.length; i++) {
+            const wordItem = targetSentence.words[i];
+            if (wordItem && wordItem.data && !Array.isArray(wordItem.data) &&
+                wordItem.data.tStartMs !== undefined && wordItem.data.tEndMs !== undefined) {
+                if (!firstValidWord) firstValidWord = wordItem.data;
+                lastValidWord = wordItem.data;
             }
+        }
+
+        if (!firstValidWord || !lastValidWord) {
+            console.log("无法确定目标句子的时间范围");
+            return;
+        }
+
+        console.log("重播模式开启");
+        isReplayMode = true;
+        currentSubtitleIndex = targetSentence.currentIndex;
+
+        const video = getVideoElement();
+
+        if (video) {
+            isProgramTriggeredPlay = true;
+
+            console.log(`导航到${direction}句，当前视频状态: ${video.paused ? '暂停' : '播放中'}`);
+
+            video.pause();
+
+            video.currentTime = firstValidWord.tStartMs / 1000;
+
+            setTimeout(() => {
+                console.log(`开始播放${direction}句`);
+                playVideo();
+            }, 50);
+
+            if (autoPauseEnabled) {
+                const checkInterval = setInterval(() => {
+                    const currentVideo = getVideoElement();
+
+                    if (currentVideo) {
+                        const now = currentVideo.currentTime * 1000;
+
+                        if (lastValidWord && now >= lastValidWord.tEndMs - 100) {
+                            clearInterval(checkInterval);
+                            pauseVideo();
+                            console.log("重播句子结束");
+                        }
+                    } else {
+                        clearInterval(checkInterval);
+                        console.warn("在 interval 中无法获取视频元素");
+                    }
+                }, 50);
+            } else {
+                const checkInterval = setInterval(() => {
+                    const currentVideo = getVideoElement();
+
+                    if (currentVideo) {
+                        const now = currentVideo.currentTime * 1000;
+
+                        if (lastValidWord && now >= lastValidWord.tEndMs - 100) {
+                            clearInterval(checkInterval);
+                            isReplayMode = false;
+                            console.log("句子播放结束，退出重播模式");
+                        }
+                    } else {
+                        clearInterval(checkInterval);
+                        console.warn("在 interval 中无法获取视频元素");
+                    }
+                }, 50);
+            }
+
+            setTimeout(() => {
+                isProgramTriggeredPlay = false;
+            }, 100);
+        } else {
+            console.warn("无法获取视频元素");
+        }
+
+        if (direction === 'current') {
+            skipSubtitleRefresh = true;
+            setTimeout(() => {
+                skipSubtitleRefresh = false;
+            }, 1000);
         }
     }
 
