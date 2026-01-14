@@ -37,6 +37,7 @@
         "<all_urls>"
       ],
       "js": [
+        "src/utils/lingqBlocker.js",
         "src/utils/cloudAPI.js",
         "src/utils/dataAccessLayer.js",
         "src/service/a0_afdian.js",
