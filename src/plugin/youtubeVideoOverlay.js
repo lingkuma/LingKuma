@@ -96,11 +96,13 @@
 
     chrome.storage.local.get({
         youtubeVideoOverlay: false,
-        youtubeDisplayMode: 'theater'
+        youtubeDisplayMode: 'theater',
+        youtubeCommaSentencing: false
     }, function(result) {
         if (result.youtubeVideoOverlay) {
             console.log("YouTube 视频覆盖层已启用");
             currentDisplayMode = result.youtubeDisplayMode || 'theater';
+            window.youtubeCommaSentencingEnabled = result.youtubeCommaSentencing || false;
             initializeOverlay();
             setupUrlMonitoring();
         }
@@ -299,7 +301,11 @@
     });
 
     function getPunctuationRegex() {
-        return /[,.!?:;。、？！]/;
+        if (window.youtubeCommaSentencingEnabled) {
+            return /[,.!?:;。、？！]/;
+        } else {
+            return /[.!?:;。？！]/;
+        }
     }
 
     function getVideoElement() {
@@ -506,6 +512,8 @@
                     result += ' ';
                 }
                 result += item.data.utf8;
+            } else if (Array.isArray(item.data) && item.data.length > 0) {
+                result += item.data[0];
             }
         }
         return result.trim();
