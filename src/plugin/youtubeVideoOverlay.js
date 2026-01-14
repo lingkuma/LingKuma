@@ -175,43 +175,38 @@
             overflow: 'hidden'
         });
 
-        const header = document.createElement('div');
-        Object.assign(header.style, {
-            width: '100%',
-            padding: '20px',
-            backgroundColor: '#f0f0f0',
-            borderBottom: '1px solid #ddd',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            boxSizing: 'border-box'
-        });
-
-        const title = document.createElement('h1');
-        title.textContent = 'YouTube 视频覆盖层';
-        Object.assign(title.style, {
-            margin: '0',
-            fontSize: '24px',
-            color: '#333'
-        });
-
         const closeButton = document.createElement('button');
-        closeButton.textContent = '关闭覆盖层';
+        closeButton.textContent = '✕';
         Object.assign(closeButton.style, {
-            padding: '10px 20px',
-            fontSize: '16px',
-            backgroundColor: '#ff0000',
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            width: '40px',
+            height: '40px',
+            fontSize: '24px',
+            backgroundColor: '#DCE2AF',
             color: '#ffffff',
             border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer'
+            borderRadius: '50%',
+            cursor: 'pointer',
+            zIndex: '2147483648',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.3)'
+        });
+        closeButton.addEventListener('mouseenter', () => {
+            closeButton.style.transform = 'scale(1.1)';
+            closeButton.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.4)';
+        });
+        closeButton.addEventListener('mouseleave', () => {
+            closeButton.style.transform = 'scale(1)';
+            closeButton.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.3)';
         });
         closeButton.addEventListener('click', () => {
             cleanupOverlay();
         });
-
-        header.appendChild(title);
-        header.appendChild(closeButton);
 
         videoContainer = document.createElement('div');
         videoContainer.id = 'overlay-video-container';
@@ -241,7 +236,7 @@
 
         videoWrapper.appendChild(originalVideo);
         videoContainer.appendChild(videoWrapper);
-        overlay.appendChild(header);
+        overlay.appendChild(closeButton);
         overlay.appendChild(videoContainer);
 
         document.body.appendChild(overlay);
