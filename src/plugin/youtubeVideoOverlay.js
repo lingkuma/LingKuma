@@ -214,7 +214,7 @@
             border: 'none',
             borderRadius: '50%',
             cursor: 'pointer',
-            zIndex: '2147483648',
+            zIndex: '2147483649',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -264,11 +264,10 @@
 
         const controlBar = createControlButtons();
 
-        overlay.appendChild(closeButton);
-        overlay.appendChild(videoContainer);
-        overlay.appendChild(controlBar);
-
         document.body.appendChild(overlay);
+        document.body.appendChild(closeButton);
+        document.body.appendChild(controlBar);
+        overlay.appendChild(videoContainer);
         document.body.style.overflow = 'hidden';
         overlayContainer = overlay;
         isOverlayActive = true;
@@ -723,13 +722,18 @@
         const controlBar = document.createElement('div');
         controlBar.id = 'overlay-control-bar';
         Object.assign(controlBar.style, {
+            position: 'fixed',
+            bottom: '0',
+            left: '0',
+            right: '0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '10px',
             padding: '15px',
             backgroundColor: '#f5f5f5',
-            borderBottom: '1px solid #e0e0e0'
+            borderBottom: '1px solid #e0e0e0',
+            zIndex: '2147483648'
         });
 
         const autoPauseBtn = createControlButton('⏸️', '自动暂停', () => {
@@ -907,37 +911,40 @@
         if (!overlay) return;
 
         const videoContainer = document.getElementById('overlay-video-container');
+        const controlBar = document.getElementById('overlay-control-bar');
         const subtitleContainer = document.getElementById('overlay-subtitle-container');
         const subtitleListContainer = document.getElementById('overlay-subtitle-list-container');
+        const rightContainer = document.getElementById('overlay-right-container');
 
         if (subtitleContainer) subtitleContainer.remove();
         if (subtitleListContainer) subtitleListContainer.remove();
+        if (rightContainer) rightContainer.remove();
 
         checkMobileMode();
 
         switch (currentDisplayMode) {
             case 'theater':
-                applyTheaterMode(overlay, videoContainer);
+                applyTheaterMode(overlay, videoContainer, controlBar);
                 break;
             case 'cinema':
-                applyCinemaMode(overlay, videoContainer);
+                applyCinemaMode(overlay, videoContainer, controlBar);
                 break;
             case 'reading':
-                applyReadingMode(overlay, videoContainer);
+                applyReadingMode(overlay, videoContainer, controlBar);
                 break;
             case 'hybrid':
-                applyHybridMode(overlay, videoContainer);
+                applyHybridMode(overlay, videoContainer, controlBar);
                 break;
             case 'mobile-theater':
-                applyMobileTheaterMode(overlay, videoContainer);
+                applyMobileTheaterMode(overlay, videoContainer, controlBar);
                 break;
             case 'mobile-reading':
-                applyMobileReadingMode(overlay, videoContainer);
+                applyMobileReadingMode(overlay, videoContainer, controlBar);
                 break;
         }
     }
 
-    function applyTheaterMode(overlay, videoContainer) {
+    function applyTheaterMode(overlay, videoContainer, controlBar) {
         Object.assign(overlay.style, {
             flexDirection: 'column',
             alignItems: 'center',
@@ -950,6 +957,16 @@
             padding: '20px'
         });
 
+        if (controlBar) {
+            Object.assign(controlBar.style, {
+                position: 'fixed',
+                bottom: '0',
+                left: '0',
+                right: '0',
+                zIndex: '2147483648'
+            });
+        }
+
         const subtitleContainer = createSubtitleContainer();
         Object.assign(subtitleContainer.style, {
             flex: '1',
@@ -959,13 +976,14 @@
             boxSizing: 'border-box',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            marginBottom: '80px'
         });
 
         overlay.appendChild(subtitleContainer);
     }
 
-    function applyCinemaMode(overlay, videoContainer) {
+    function applyCinemaMode(overlay, videoContainer, controlBar) {
         Object.assign(overlay.style, {
             flexDirection: 'column',
             alignItems: 'center',
@@ -978,6 +996,16 @@
             maxWidth: '100%',
             padding: '0'
         });
+
+        if (controlBar) {
+            Object.assign(controlBar.style, {
+                position: 'fixed',
+                bottom: '0',
+                left: '0',
+                right: '0',
+                zIndex: '2147483648'
+            });
+        }
 
         const subtitleContainer = createSubtitleContainer();
         Object.assign(subtitleContainer.style, {
@@ -997,7 +1025,7 @@
         overlay.appendChild(subtitleContainer);
     }
 
-    function applyReadingMode(overlay, videoContainer) {
+    function applyReadingMode(overlay, videoContainer, controlBar) {
         Object.assign(overlay.style, {
             flexDirection: 'row',
             alignItems: 'flex-start',
@@ -1010,21 +1038,32 @@
             padding: '20px'
         });
 
+        if (controlBar) {
+            Object.assign(controlBar.style, {
+                position: 'fixed',
+                bottom: '0',
+                left: '0',
+                right: '0',
+                zIndex: '2147483648'
+            });
+        }
+
         const subtitleListContainer = createSubtitleListContainer();
         Object.assign(subtitleListContainer.style, {
             flex: '0 0 50%',
             maxWidth: '50%',
-            height: '100vh',
+            height: 'calc(100vh - 80px)',
             overflow: 'auto',
             padding: '20px',
             boxSizing: 'border-box',
-            backgroundColor: '#f9f9f9'
+            backgroundColor: '#f9f9f9',
+            marginBottom: '80px'
         });
 
         overlay.appendChild(subtitleListContainer);
     }
 
-    function applyHybridMode(overlay, videoContainer) {
+    function applyHybridMode(overlay, videoContainer, controlBar) {
         Object.assign(overlay.style, {
             flexDirection: 'row',
             alignItems: 'flex-start',
@@ -1037,15 +1076,26 @@
             padding: '20px'
         });
 
+        if (controlBar) {
+            Object.assign(controlBar.style, {
+                position: 'fixed',
+                bottom: '0',
+                left: '0',
+                right: '0',
+                zIndex: '2147483648'
+            });
+        }
+
         const rightContainer = document.createElement('div');
         rightContainer.id = 'overlay-right-container';
         Object.assign(rightContainer.style, {
             flex: '0 0 40%',
             maxWidth: '40%',
-            height: '100vh',
+            height: 'calc(100vh - 80px)',
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            marginBottom: '80px'
         });
 
         const subtitleContainer = createSubtitleContainer();
@@ -1071,7 +1121,7 @@
         overlay.appendChild(rightContainer);
     }
 
-    function applyMobileTheaterMode(overlay, videoContainer) {
+    function applyMobileTheaterMode(overlay, videoContainer, controlBar) {
         Object.assign(overlay.style, {
             flexDirection: 'column',
             alignItems: 'center',
@@ -1083,6 +1133,16 @@
             width: '100%',
             padding: '10px'
         });
+
+        if (controlBar) {
+            Object.assign(controlBar.style, {
+                position: 'fixed',
+                bottom: '0',
+                left: '0',
+                right: '0',
+                zIndex: '2147483648'
+            });
+        }
 
         const subtitleContainer = createSubtitleContainer();
         Object.assign(subtitleContainer.style, {
@@ -1093,13 +1153,14 @@
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: '#f5f5f5'
+            backgroundColor: '#f5f5f5',
+            marginBottom: '80px'
         });
 
         overlay.appendChild(subtitleContainer);
     }
 
-    function applyMobileReadingMode(overlay, videoContainer) {
+    function applyMobileReadingMode(overlay, videoContainer, controlBar) {
         Object.assign(overlay.style, {
             flexDirection: 'column',
             alignItems: 'center',
@@ -1112,14 +1173,26 @@
             padding: '10px'
         });
 
+        if (controlBar) {
+            Object.assign(controlBar.style, {
+                position: 'fixed',
+                bottom: '0',
+                left: '0',
+                right: '0',
+                zIndex: '2147483648'
+            });
+        }
+
         const subtitleListContainer = createSubtitleListContainer();
         Object.assign(subtitleListContainer.style, {
             flex: '1',
             width: '100%',
+            height: 'calc(100vh - 80px)',
             overflow: 'auto',
             padding: '15px',
             boxSizing: 'border-box',
-            backgroundColor: '#f9f9f9'
+            backgroundColor: '#f9f9f9',
+            marginBottom: '80px'
         });
 
         overlay.appendChild(subtitleListContainer);
