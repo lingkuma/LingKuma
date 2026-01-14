@@ -1140,6 +1140,8 @@
         if (subtitleListContainer) subtitleListContainer.remove();
         if (rightContainer) rightContainer.remove();
 
+        lastOverlaySubtitleText = '';
+
         checkMobileMode();
 
         switch (currentDisplayMode) {
