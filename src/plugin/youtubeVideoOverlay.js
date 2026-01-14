@@ -1070,12 +1070,6 @@
             justifyContent: 'flex-start'
         });
 
-        Object.assign(videoContainer.style, {
-            flex: '0 0 60%',
-            maxWidth: '60%',
-            padding: '20px'
-        });
-
         if (controlBar) {
             Object.assign(controlBar.style, {
                 position: 'fixed',
@@ -1086,38 +1080,51 @@
             });
         }
 
+        const leftContainer = document.createElement('div');
+        leftContainer.id = 'overlay-left-container';
+        Object.assign(leftContainer.style, {
+            flex: '0 0 60%',
+            maxWidth: '60%',
+            height: 'calc(100vh - 80px)',
+            display: 'flex',
+            flexDirection: 'column',
+            marginBottom: '80px'
+        });
+
+        Object.assign(videoContainer.style, {
+            flex: '0 0 auto',
+            padding: '20px'
+        });
+
+        const subtitleContainer = createSubtitleContainer();
+        Object.assign(subtitleContainer.style, {
+            flex: '1',
+            padding: '20px',
+            minHeight: '100px',
+            backgroundColor: '#f5f5f5',
+            borderTop: '1px solid #e0e0e0'
+        });
+
         const rightContainer = document.createElement('div');
         rightContainer.id = 'overlay-right-container';
         Object.assign(rightContainer.style, {
             flex: '0 0 40%',
             maxWidth: '40%',
             height: 'calc(100vh - 80px)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            marginBottom: '80px'
-        });
-
-        const subtitleContainer = createSubtitleContainer();
-        Object.assign(subtitleContainer.style, {
-            flex: '0 0 auto',
-            padding: '20px',
-            minHeight: '100px',
-            backgroundColor: '#f5f5f5',
-            borderBottom: '1px solid #e0e0e0'
-        });
-
-        const subtitleListContainer = createSubtitleListContainer();
-        Object.assign(subtitleListContainer.style, {
-            flex: '1',
             overflow: 'auto',
             padding: '20px',
             boxSizing: 'border-box',
-            backgroundColor: '#f9f9f9'
+            backgroundColor: '#f9f9f9',
+            marginBottom: '80px'
         });
 
-        rightContainer.appendChild(subtitleContainer);
+        const subtitleListContainer = createSubtitleListContainer();
         rightContainer.appendChild(subtitleListContainer);
+
+        leftContainer.appendChild(videoContainer);
+        leftContainer.appendChild(subtitleContainer);
+
+        overlay.appendChild(leftContainer);
         overlay.appendChild(rightContainer);
     }
 
