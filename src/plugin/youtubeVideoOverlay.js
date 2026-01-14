@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube 视频覆盖层
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2
 // @description  在 YouTube 页面上创建白色覆盖层，并在其中显示原视频
 // @author       You
 // @match        https://www.youtube.com/watch*
@@ -18,6 +18,63 @@
     let originalParent = null;
     let isOverlayActive = false;
     let currentUrl = window.location.href;
+    let floatButton = null;
+
+    function createFloatButton() {
+        if (floatButton) return;
+
+        floatButton = document.createElement('button');
+        floatButton.id = 'youtube-overlay-float-button';
+        const iconUrl = chrome.runtime.getURL('src/icons/icon48.png');
+        floatButton.innerHTML = `<img src="${iconUrl}" alt="覆盖层" style="width: 100%; height: 100%; object-fit: contain;">`;
+        Object.assign(floatButton.style, {
+            position: 'fixed',
+            right: '20px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            backgroundColor: '#ffffff',
+            border: '2px solid #ff0000',
+            cursor: 'pointer',
+            zIndex: '2147483646',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.3)',
+            transition: 'all 0.3s ease',
+            padding: '4px'
+        });
+
+        floatButton.addEventListener('mouseenter', () => {
+            floatButton.style.transform = 'translateY(-50%) scale(1.1)';
+            floatButton.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.4)';
+        });
+
+        floatButton.addEventListener('mouseleave', () => {
+            floatButton.style.transform = 'translateY(-50%) scale(1)';
+            floatButton.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.3)';
+        });
+
+        floatButton.addEventListener('click', () => {
+            if (isOverlayActive) {
+                cleanupOverlay();
+            } else {
+                initializeOverlay();
+            }
+        });
+
+        document.body.appendChild(floatButton);
+    }
+
+    function updateFloatButtonState() {
+        if (!floatButton) return;
+        if (isOverlayActive) {
+            floatButton.style.backgroundColor = '#ff0000';
+            floatButton.style.borderColor = '#ffffff';
+        } else {
+            floatButton.style.backgroundColor = '#ffffff';
+            floatButton.style.borderColor = '#ff0000';
+        }
+    }
 
     chrome.storage.local.get({
         youtubeVideoOverlay: false
@@ -27,10 +84,11 @@
             initializeOverlay();
             setupUrlMonitoring();
         }
+        createFloatButton();
     });
 
     function initializeOverlay() {
-        if (!window.location.href.includes('/watch?v=')) {
+        if (!window.location.href.includes('/watch') || !window.location.href.includes('v=')) {
             console.log("不是视频页面，跳过初始化");
             return;
         }
@@ -54,6 +112,8 @@
         }
 
         isOverlayActive = false;
+        chrome.storage.local.set({ youtubeVideoOverlay: false });
+        updateFloatButtonState();
     }
 
     function setupUrlMonitoring() {
@@ -187,6 +247,8 @@
         document.body.appendChild(overlay);
         overlayContainer = overlay;
         isOverlayActive = true;
+        chrome.storage.local.set({ youtubeVideoOverlay: true });
+        updateFloatButtonState();
 
         Object.assign(originalVideo.style, {
             width: '100%',
