@@ -61,7 +61,7 @@
             backgroundColor: '#ffffff',
             border: '2px solid #ff0000',
             cursor: 'pointer',
-            zIndex: '2147483646',
+            zIndex: '114512',
             boxShadow: '0 2px 10px rgba(0, 0, 0, 0.3)',
             transition: 'all 0.3s ease',
             padding: '4px'
@@ -210,7 +210,7 @@
             width: '100vw',
             height: '100vh',
             backgroundColor: '#ffffff',
-            zIndex: '2147483647',
+            zIndex: '114513',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -232,7 +232,7 @@
             border: 'none',
             borderRadius: '50%',
             cursor: 'pointer',
-            zIndex: '2147483649',
+            zIndex: '114515',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -953,7 +953,7 @@
             padding: '15px',
             backgroundColor: '#f5f5f5',
             borderBottom: '1px solid #e0e0e0',
-            zIndex: '2147483648'
+            zIndex: '114514'
         });
 
         const autoPauseBtn = createControlButton('⏸️', '自动暂停', () => {
@@ -1038,7 +1038,7 @@
             backgroundColor: '#ffffff',
             borderRadius: '10px',
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-            zIndex: '2147483649',
+            zIndex: '114515',
             padding: '20px',
             minWidth: '300px'
         });
@@ -1183,7 +1183,7 @@
                 bottom: '0',
                 left: '0',
                 right: '0',
-                zIndex: '2147483648'
+                zIndex: '114514'
             });
         }
 
@@ -1223,7 +1223,7 @@
                 bottom: '0',
                 left: '0',
                 right: '0',
-                zIndex: '2147483648'
+                zIndex: '114514'
             });
         }
 
@@ -1239,7 +1239,7 @@
             borderRadius: '10px',
             maxWidth: '80%',
             textAlign: 'center',
-            zIndex: '2147483648'
+            zIndex: '114514'
         });
 
         const subtitleText = subtitleContainer.querySelector('#overlay-subtitle-text');
@@ -1269,7 +1269,7 @@
                 bottom: '0',
                 left: '0',
                 right: '0',
-                zIndex: '2147483648'
+                zIndex: '114514'
             });
         }
 
@@ -1301,7 +1301,7 @@
                 bottom: '0',
                 left: '0',
                 right: '0',
-                zIndex: '2147483648'
+                zIndex: '114514'
             });
         }
 
@@ -1372,7 +1372,7 @@
                 bottom: '0',
                 left: '0',
                 right: '0',
-                zIndex: '2147483648'
+                zIndex: '114514'
             });
         }
 
@@ -1411,7 +1411,7 @@
                 bottom: '0',
                 left: '0',
                 right: '0',
-                zIndex: '2147483648'
+                zIndex: '114514'
             });
         }
 
