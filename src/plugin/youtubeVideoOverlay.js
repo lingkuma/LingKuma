@@ -111,6 +111,7 @@
             originalParent = null;
         }
 
+        document.body.style.overflow = '';
         isOverlayActive = false;
         chrome.storage.local.set({ youtubeVideoOverlay: false });
         updateFloatButtonState();
@@ -240,6 +241,7 @@
         overlay.appendChild(videoContainer);
 
         document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
         overlayContainer = overlay;
         isOverlayActive = true;
         chrome.storage.local.set({ youtubeVideoOverlay: true });
