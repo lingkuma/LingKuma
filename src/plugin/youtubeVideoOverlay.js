@@ -44,8 +44,17 @@
     let subtitleListItems = [];
     let subtitleOffsetMode = 'normal';
 
+    function isYouTubePage() {
+        return window.location.hostname.includes('youtube.com');
+    }
+
     function createFloatButton() {
         if (floatButton) return;
+
+        if (!isYouTubePage()) {
+            console.log('不是YouTube页面，不创建右侧按钮');
+            return;
+        }
 
         floatButton = document.createElement('button');
         floatButton.id = 'youtube-overlay-float-button';
@@ -87,6 +96,16 @@
         });
 
         document.body.appendChild(floatButton);
+    }
+
+    function updateFloatButtonVisibility() {
+        if (!floatButton) return;
+
+        if (isYouTubePage()) {
+            floatButton.style.display = 'block';
+        } else {
+            floatButton.style.display = 'none';
+        }
     }
 
     function updateFloatButtonState() {
@@ -172,6 +191,7 @@
                     initializeOverlay();
                 }, 1500);
             }
+            updateFloatButtonVisibility();
         }, 1000);
     }
 
