@@ -841,6 +841,7 @@ if (window.location.hostname.includes('youtube.com')) {
 
     'above-the-fold',
     'trancy-app',
+    'trancy-container',
     // 'video-title',
 
     // YouTube 视频覆盖层相关元素
