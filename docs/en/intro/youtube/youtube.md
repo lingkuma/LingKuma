@@ -1,5 +1,8 @@
 # YouTube Subtitles Tutorial
 
+>[!tip]
+LingKuma is compatible with the original Trancy on desktop and Android. On mobile, you must use the built-in LingKuma Trancy because Safari seems to have some issues that prevent highlighting and other features on Trancy elements. If you know how to fix this, please share in the issues. Thank you very much.
+
 ## Immersive Subtitles (Desktop/Mobile Support)
 
 1. Manually select the target language subtitles and enable the default subtitles.
