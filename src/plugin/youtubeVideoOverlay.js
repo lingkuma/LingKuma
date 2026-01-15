@@ -1783,7 +1783,6 @@
                     backgroundColor: '#ffffff',
                     border: '1px solid #e0e0e0',
                     borderRadius: '5px',
-                    cursor: 'pointer',
                     transition: 'all 0.2s ease',
                     display: 'flex',
                     alignItems: 'center',
@@ -1823,11 +1822,6 @@
 
                 item.appendChild(playBtn);
                 item.appendChild(text);
-
-                item.addEventListener('click', () => {
-                    setYoutubeTime(sentence.startTime);
-                    playVideo();
-                });
 
                 subtitleList.appendChild(item);
                 subtitleListItems.push({

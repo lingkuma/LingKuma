@@ -2139,7 +2139,12 @@ function isAllowedYouTubeElement(parent) {
     // 'yt-core-attributed-string--white-space-pre-wrap',
     'above-the-fold',
     'trancy-app',
-    'overlay-subtitle-text'
+    'overlay-subtitle-text',
+    'youtube-video-overlay',
+    'overlay-subtitle-container',
+    'overlay-subtitle-list-container',
+    'overlay-subtitle-list',
+    'subtitle-item'
     // 'video-title',
   ];
 

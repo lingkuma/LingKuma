@@ -169,7 +169,12 @@ function isAllowedYouTubeElement(parent) {
     'ytp-caption-segment',
     'above-the-fold',
     'trancy-app',
-    'overlay-subtitle-text'
+    'overlay-subtitle-text',
+    'youtube-video-overlay',
+    'overlay-subtitle-container',
+    'overlay-subtitle-list-container',
+    'overlay-subtitle-list',
+    'subtitle-item'
   ];
 
   // 检查元素是否属于允许的类或ID
