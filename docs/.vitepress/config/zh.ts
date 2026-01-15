@@ -92,7 +92,7 @@ export const zh = defineConfig({
                     { text: '上手指南', link: '/zh/intro/start/start' },
                     { text: '电子书', link: '/zh/intro/ebook/ebook' },
                     { text: '软件推荐', link: '/zh/intro/supportList/supportList' },
-
+                    { text: 'Youtube 字幕', link: '/zh/intro/youtube/youtube' },
                 
                 ]       
             },

@@ -90,6 +90,7 @@ export const ja = defineConfig({
                     { text: 'スタートガイド', link: '/ja/intro/start/start' },
                     { text: '電子書籍', link: '/ja/intro/ebook/ebook' },
                     { text: 'ソフトウェア推奨', link: '/ja/intro/supportList/supportList' },
+                    { text: 'YouTube 字幕', link: '/ja/intro/youtube/youtube' },
 
 
                 ]

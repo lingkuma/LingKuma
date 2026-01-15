@@ -92,6 +92,7 @@ export const en = defineConfig({
                     { text: 'User Guide', link: '/en/intro/start/start' },
                     { text: 'E-books', link: '/en/intro/ebook/ebook' },
                     { text: 'Recommended Software', link: '/en/intro/supportList/supportList' },
+                    { text: 'YouTube Subtitles', link: '/en/intro/youtube/youtube' },
 
 
                 ]

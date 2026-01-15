@@ -92,6 +92,7 @@ export const cht = defineConfig({
                     { text: '入門指南', link: '/cht/intro/start/start' },
                     { text: '電子書使用教學', link: '/cht/intro/ebook/ebook' },
                     { text: '特別支援的第三方外掛或網站', link: '/cht/intro/supportList/supportList' },
+                    { text: 'YouTube 字幕', link: '/cht/intro/youtube/youtube' },
 
 
                 ]
