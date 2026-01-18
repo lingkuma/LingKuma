@@ -2995,9 +2995,37 @@ function updateWordStatus(word, status, language) {
       const store = transaction.objectStore("wordDetails");
       const getReq = store.get(word);
       getReq.onsuccess = function(e) {
-        let record = e.target.result || { word: word };
-        record.status = status;
-        record.language = language;
+        let record = e.target.result || {
+          word: word,
+          term: word,
+          statusHistory: {},
+          isCustom: false
+        };
+
+        // 确保 status 是数字类型
+        const numStatus = parseInt(status);
+        record.status = numStatus;
+
+        // 只有当 language 有值时才更新
+        if (language !== undefined && language !== null && language !== '') {
+          record.language = language;
+        }
+
+        // 初始化 statusHistory 如果不存在
+        if (!record.statusHistory) {
+          record.statusHistory = {};
+        }
+
+        // 更新状态历史记录
+        if (!record.statusHistory[numStatus]) {
+          record.statusHistory[numStatus] = {
+            createTime: Date.now(),
+            updateTime: Date.now()
+          };
+        } else {
+          record.statusHistory[numStatus].updateTime = Date.now();
+        }
+
         const putReq = store.put(record);
         putReq.onsuccess = function() {
           resolve();
@@ -3648,7 +3676,9 @@ function importWords() {
         return;
       }
     }
-    const status = document.getElementById('wordStatus').value;
+    const status = parseInt(document.getElementById('wordStatus').value);
+
+    console.log('[importWords] 导入参数:', { language, status, separator });
 
     // 根据选择的分隔符分割单词
     let words = [];
@@ -3727,7 +3757,10 @@ function importWordsParallel(words, language, status, batchSize, parallelBatches
     const promises = currentBatch.map(word => {
       return new Promise((resolve) => {
         // 只需更新 wordDetails，不再需要添加到 knownWords
-        updateWordStatus(word, status, language).then(resolve);
+        updateWordStatus(word, status, language).then(() => {
+          console.log(`[importWordsParallel] 已导入单词: ${word}, status: ${status} (${typeof status}), language: ${language}`);
+          resolve();
+        });
       });
     });
 
