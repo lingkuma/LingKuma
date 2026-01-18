@@ -163,10 +163,13 @@ async function orion_getWordAudioUrl(word, lang, urlType = 1) {
         return `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(word)}&tl=${lang}&client=tw-ob`;
     }
 
-    // 简单的模板替换
-    let url = urlTemplate
-        .replace('{word}', encodeURIComponent(word))
-        .replace('{lang}', lang);
+    // 使用 parseTemplateAll 进行完整的表达式解析（支持复杂函数调用）
+    const context = {
+        lang,
+        word
+    };
+
+    let url = parseTemplateAll(urlTemplate, context);
 
     // 检查URL是否有效
     if (!url) {
