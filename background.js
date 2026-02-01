@@ -1901,26 +1901,14 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
           let apiBaseURL = responseConfig.apiBaseURL;
           let apiModel = responseConfig.apiModel;
 
-          // 如果用户配置了多个 API Key（用逗号或换行分隔）
-          if (apiKey && (apiKey.includes(',') || apiKey.includes('\n'))) {
-            const apiKeys = apiKey.split(/[,\n]/).map(k => k.trim()).filter(k => k);
-            if (apiKeys.length > 0) {
-              const selectedKey = await selectValidApiKey(apiKeys);
-              if (selectedKey) {
-                apiKey = selectedKey;
-                console.log(`[background.js] 从用户配置中选择有效 API Key (${apiKeys.length} 个可用)`);
-              } else {
-                console.error('[background.js] 用户配置的所有 API Keys 都已被屏蔽');
-                reject(new Error("所有配置的 API Keys 都已失效，请检查设置或联系管理员"));
-                return;
-              }
-            }
-            // 使用用户配置的 baseURL 和 model
-            config.apiBaseURL = apiBaseURL || "https://open.bigmodel.cn/api/paas/v4/chat/completions";
-            config.apiModel = apiModel || "GLM-4-Flash";
-            config.apiKey = apiKey;
-          } else if (!apiKey) {
-            // 默认的多平台 API 池配置
+          // 如果用户配置了 baseurl，使用用户配置（key 和 model 都可以为空）
+          if (apiBaseURL) {
+            config.apiBaseURL = apiBaseURL;
+            config.apiModel = apiModel || "";
+            config.apiKey = apiKey || "";
+            console.log("[background.js] 使用用户配置的 baseURL:", config.apiBaseURL);
+          } else {
+            // 用户没有配置 baseurl，使用默认的多平台 API 池配置
             const defaultApiPools = {
               bigmodel: {
                 baseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions",
@@ -1946,28 +1934,29 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
               reject(new Error("所有默认 API Keys 都已失效，请配置新的 API Key"));
               return;
             }
-          } else {
-            // 用户配置了单个 API Key
-            config.apiBaseURL = apiBaseURL || "https://open.bigmodel.cn/api/paas/v4/chat/completions";
-            config.apiModel = apiModel || "GLM-4-Flash";
-            config.apiKey = apiKey;
           }
         }
-        // 检查 API Key 是否配置
-        if (!config.apiKey) {
+        // 检查 API Key 是否配置（如果用户配置了 baseurl，允许 key 为空）
+        if (!config.apiKey && !config.apiBaseURL) {
           reject(new Error("AI API Key 或 Token 未配置，请在插件设置中填写"));
           return;
         }
 
         console.log("[background.js] 发起 AI 请求到:", config.apiBaseURL);
 
+        const headers = {
+          "Content-Type": "application/json",
+          "x-gemini-legacy-support": "true",
+        };
+        
+        // 只有当 key 不为空时才添加 Authorization header
+        if (config.apiKey) {
+          headers["Authorization"] = `Bearer ${config.apiKey}`;
+        }
+
         const response = await fetch(config.apiBaseURL, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${config.apiKey}`,
-            "x-gemini-legacy-support": "true",
-          },
+          headers: headers,
           body: JSON.stringify({
             model: model || config.apiModel,
             messages: messages,
