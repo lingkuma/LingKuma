@@ -4098,6 +4098,7 @@ chrome.storage.local.get('aiConfig', function(result) {
     }
     // //ohmygpt model
     document.getElementById('ohmygptModel').value = result.aiConfig.ohmygptModel || 'gemini-2.5-flash'; // 新增：加载 OhMyGpt 模型，若无则默认为 gpt-4o-mini
+    document.getElementById('ohmygptTemperature').value = result.aiConfig.ohmygptTemperature !== undefined ? result.aiConfig.ohmygptTemperature : 1;
 
     //如果ohmygptModel为空，则设置为gemini-2.5-flash
     if (!result.aiConfig.ohmygptModel) {
@@ -4130,6 +4131,7 @@ chrome.storage.local.get('aiConfig', function(result) {
     });
 
     document.getElementById('apiModel').value = result.aiConfig.apiModel || '';
+    document.getElementById('apiTemperature').value = result.aiConfig.apiTemperature !== undefined ? result.aiConfig.apiTemperature : 1;
 
     // 新增：设置 minimaxi API 配置
     document.getElementById('minimaxiGroupId').value = result.aiConfig.minimaxiGroupId || '';
