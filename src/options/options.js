@@ -4340,6 +4340,7 @@ function renderCustomApiTabs() {
       border-radius: 4px 4px 0 0; cursor: pointer; font-size: 13px;
       border: 1px solid var(--border-color, #ddd); border-bottom: none;
       background: ${isEditing ? 'var(--bg-primary, #fff)' : 'var(--bg-secondary, #f5f5f5)'};
+      color: var(--text-primary, #333);
       ${isActive ? 'border-bottom: 2px solid var(--primary-color, #4CAF50);' : ''}
     `;
     
