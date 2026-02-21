@@ -1894,18 +1894,21 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
           config.apiBaseURL = responseConfig.ohmygptBaseUrl || "https://c-z0-api-01.hash070.com/v1/chat/completions";
           config.apiModel = responseConfig.ohmygptModel || "gemini-2.5-flash";
           config.apiKey = responseConfig.ohmygptToken || "";
+          config.temperature = responseConfig.ohmygptTemperature !== undefined ? parseFloat(responseConfig.ohmygptTemperature) : temperature;
           console.log("使用 OhMyGPT 配置:", config);
         } else {
           // 否则，使用默认的 API 配置项
           let apiKey = responseConfig.apiKey;
           let apiBaseURL = responseConfig.apiBaseURL;
           let apiModel = responseConfig.apiModel;
+          let apiTemperature = responseConfig.apiTemperature !== undefined ? parseFloat(responseConfig.apiTemperature) : temperature;
 
           // 如果用户配置了 baseurl，使用用户配置（key 和 model 都可以为空）
           if (apiBaseURL) {
             config.apiBaseURL = apiBaseURL;
             config.apiModel = apiModel || "";
             config.apiKey = apiKey || "";
+            config.temperature = apiTemperature;
             console.log("[background.js] 使用用户配置的 baseURL:", config.apiBaseURL);
           } else {
             // 用户没有配置 baseurl，使用默认的多平台 API 池配置
@@ -1928,6 +1931,7 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
               config.apiBaseURL = selectedConfig.baseURL;
               config.apiModel = selectedConfig.model;
               config.apiKey = selectedConfig.apiKey;
+              config.temperature = apiTemperature;
               console.log(`[background.js] 使用平台: ${selectedConfig.platform}`);
             } else {
               console.error('[background.js] 所有平台的 API Keys 都已被屏蔽');
@@ -1961,7 +1965,7 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
             model: model || config.apiModel,
             messages: messages,
             stream: stream,
-            temperature: temperature
+            temperature: config.temperature !== undefined ? config.temperature : temperature
           })
         });
 
