@@ -3493,25 +3493,49 @@
 
 
     <div id="customApiSettings" class="settings-section" style="padding: 10px;  border-radius: 5px;">
-      <div class="setting-item" style="margin-bottom: 10px;">
-        <label for="apiBaseURL" style="display: block; margin-bottom: 5px;" data-i18n="apiBaseUrl">Custom API Base URL: example: https://api.chatgpt.com/v1/chat/completions </label>
-        <input type="text" id="apiBaseURL" data-auto-save="true" data-storage-key="apiBaseURL" data-storage-area="aiConfig" placeholder="https://api.example.com/v1/chat/completions" style="width: 100%; padding: 8px;">
-        <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+      <!-- 多配置管理区域 -->
+      <div id="customApiProfilesManager" style="margin-bottom: 15px;">
+        <!-- Tab 栏 -->
+        <div id="customApiTabs" style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; border-bottom: 1px solid var(--border-color, #ddd); padding-bottom: 10px;">
+          <!-- Tab 项将通过 JS 动态生成 -->
+        </div>
+        <!-- 操作栏：下拉框激活 + 添加按钮 -->
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 5px;">
+            <label for="activeProfileSelect" style="font-size: 12px; white-space: nowrap;" data-i18n="activeProfileLabel">Active Config:</label>
+            <select id="activeProfileSelect" style="padding: 5px 10px; border-radius: 4px; border: 1px solid var(--border-color, #ddd); min-width: 150px;">
+              <!-- 选项将通过 JS 动态生成 -->
+            </select>
+          </div>
+          <button id="addCustomProfileBtn" type="button" style="padding: 5px 15px; border-radius: 4px; border: 1px solid var(--border-color, #ddd); background: var(--bg-secondary, #f5f5f5); cursor: pointer; font-size: 12px;" data-i18n="addProfileBtn">+ Add Config</button>
+        </div>
       </div>
-      <div class="setting-item" style="margin-bottom: 10px;">
-        <label for="apiKey" style="display: block; margin-bottom: 5px;" data-i18n="apiKey">API Key:</label>
-        <input type="text" id="apiKey" data-auto-save="true" data-storage-key="apiKey" data-storage-area="aiConfig" placeholder="sk-xxxxxxxx" style="width: 100%; padding: 8px;">
-        <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
-      </div>
-      <div class="setting-item" style="margin-bottom: 10px;">
-        <label for="apiModel" style="display: block; margin-bottom: 5px;" data-i18n="model">Modell:</label>
-        <input type="text" id="apiModel" data-auto-save="true" data-storage-key="apiModel" data-storage-area="aiConfig" placeholder="gemini-2.5-flash" style="width: 100%; padding: 8px;">
-        <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
-      </div>
-      <div class="setting-item" style="margin-bottom: 10px;">
-        <label for="apiTemperature" style="display: block; margin-bottom: 5px;" data-i18n="apiTemperature">Temperature (0-2):</label>
-        <input type="number" id="apiTemperature" data-auto-save="true" data-storage-key="apiTemperature" data-storage-area="aiConfig" placeholder="1" min="0" max="2" step="0.1" value="1" style="width: 100%; padding: 8px;">
-        <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+      <!-- 配置内容区域 -->
+      <div id="customApiProfileContent">
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="profileName" style="display: block; margin-bottom: 5px;" data-i18n="profileName">Config Name:</label>
+          <input type="text" id="profileName" placeholder="My API Config" style="width: 100%; padding: 8px;">
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="apiBaseURL" style="display: block; margin-bottom: 5px;" data-i18n="apiBaseUrl">Custom API Base URL: example: https://api.chatgpt.com/v1/chat/completions </label>
+          <input type="text" id="apiBaseURL" placeholder="https://api.example.com/v1/chat/completions" style="width: 100%; padding: 8px;">
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="apiKey" style="display: block; margin-bottom: 5px;" data-i18n="apiKey">API Key:</label>
+          <input type="text" id="apiKey" placeholder="sk-xxxxxxxx" style="width: 100%; padding: 8px;">
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="apiModel" style="display: block; margin-bottom: 5px;" data-i18n="model">Modell:</label>
+          <input type="text" id="apiModel" placeholder="gemini-2.5-flash" style="width: 100%; padding: 8px;">
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="apiTemperature" style="display: block; margin-bottom: 5px;" data-i18n="apiTemperature">Temperature (0-2):</label>
+          <input type="number" id="apiTemperature" placeholder="1" min="0" max="2" step="0.1" value="1" style="width: 100%; padding: 8px;">
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
       </div>
     </div>
 

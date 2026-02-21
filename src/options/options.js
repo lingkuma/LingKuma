@@ -616,6 +616,9 @@ const i18n = {
     'apiBaseUrl': 'Custom API Base URL:  https://api.chatgpt.com/v1/chat/completions',
     'apiKey': 'API Key:',
     'model': 'Modell:',
+    'activeProfileLabel': '激活配置:',
+    'addProfileBtn': '+ 添加配置',
+    'profileName': '配置名称:',
     'languageDetectionPrompt': '语言检测AI提示词:',
     'tagAnalysisPrompt': '词性标签分析提示词:',
     'wordExplanationPrompt': '单词解释AI提示词:',
@@ -978,6 +981,9 @@ Lingkuma完全开源免费，软件维护不易，如果您感觉该软件对你
     'apiBaseUrl': 'Custom API Base URL:  https://api.chatgpt.com/v1/chat/completions',
     'apiKey': 'API Key:',
     'model': 'Modell:',
+    'activeProfileLabel': '啟用設定:',
+    'addProfileBtn': '+ 新增設定',
+    'profileName': '設定名稱:',
     'languageDetectionPrompt': '語言偵測AI提示詞:',
     'tagAnalysisPrompt': '詞性標籤分析提示詞:',
     'wordExplanationPrompt': '單字解釋AI提示詞:',
@@ -1389,6 +1395,9 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'apiBaseUrl': 'Custom API Base URL: example: https://api.chatgpt.com/v1/chat/completions',
     'apiKey': 'API Key:',
     'model': 'Model:',
+    'activeProfileLabel': 'Active Config:',
+    'addProfileBtn': '+ Add Config',
+    'profileName': 'Config Name:',
     'languageDetectionPrompt': 'Language Detection AI Prompt:',
     'tagAnalysisPrompt': 'Part of Speech Analysis Prompt:',
     'wordExplanationPrompt': 'Word Explanation AI Prompt:',
@@ -1615,6 +1624,9 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'apiBaseUrl': 'API-Basis-URL: Beispiel: https://api.chatgpt.com/v1/chat/completions',
     'apiKey': 'API-Schlüssel:',
     'model': 'Modell:',
+    'activeProfileLabel': 'Aktive Konfiguration:',
+    'addProfileBtn': '+ Konfiguration hinzufügen',
+    'profileName': 'Konfigurationsname:',
     'languageDetectionPrompt': 'KI-Eingabeaufforderung zur Spracherkennung:',
     'tagAnalysisPrompt': 'Stichwortanalyse-Eingabeaufforderung:',
     'wordExplanationPrompt': 'KI-Eingabeaufforderung zur Worterklärung:',
@@ -1833,6 +1845,9 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'apiBaseUrl': 'URL de base de l\'API : exemple : https://api.chatgpt.com/v1/chat/completions',
     'apiKey': 'Clé API :',
     'model': 'Modèle :',
+    'activeProfileLabel': 'Configuration active :',
+    'addProfileBtn': '+ Ajouter une configuration',
+    'profileName': 'Nom de la configuration :',
     'languageDetectionPrompt': 'Invite IA de détection de la langue :',
     'tagAnalysisPrompt': 'Invite d\'analyse des parties du discours :',
     'wordExplanationPrompt': 'Invite IA d\'explication des mots :',
@@ -2023,6 +2038,9 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'apiBaseUrl': 'URL base de la API: ejemplo: https://api.chatgpt.com/v1/chat/completions',
     'apiKey': 'Clave de la API:',
     'model': 'Modelo:',
+    'activeProfileLabel': 'Configuración activa:',
+    'addProfileBtn': '+ Agregar configuración',
+    'profileName': 'Nombre de la configuración:',
     'languageDetectionPrompt': 'Indicación de IA de detección de idioma:',
     'tagAnalysisPrompt': 'Indicación de análisis de partes del discurso:',
     'wordExplanationPrompt': 'Indicación de IA de explicación de palabras:',
@@ -2065,6 +2083,9 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'apiBaseUrl': 'API 기본 URL: 예: https://api.chatgpt.com/v1/chat/completions',
     'apiKey': 'API 키:',
     'model': '모델:',
+    'activeProfileLabel': '활성 구성:',
+    'addProfileBtn': '+ 구성 추가',
+    'profileName': '구성 이름:',
     'languageDetectionPrompt': '언어 감지 AI 프롬프트:',
     'tagAnalysisPrompt': '품사 분석 프롬프트:',
     'wordExplanationPrompt': '단어 설명 AI 프롬프트:',
@@ -2235,6 +2256,9 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'apiBaseUrl': 'Базовый URL API: пример: https://api.chatgpt.com/v1/chat/completions',
     'apiKey': 'Ключ API:',
     'model': 'Модель:',
+    'activeProfileLabel': 'Активная конфигурация:',
+    'addProfileBtn': '+ Добавить конфигурацию',
+    'profileName': 'Имя конфигурации:',
     'languageDetectionPrompt': 'Подсказка AI для определения языка:',
     'tagAnalysisPrompt': 'Подсказка для анализа частей речи:',
     'wordExplanationPrompt': 'Подсказка AI для объяснения слов:',
@@ -4257,17 +4281,308 @@ chrome.storage.local.get('aiConfig', function(result) {
   }, 100);
 });
 
+let customApiProfiles = {
+  profiles: [],
+  activeProfileId: null,
+  currentEditingId: null
+};
+
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+function loadCustomApiProfiles(callback) {
+  chrome.storage.local.get('customApiProfiles', function(result) {
+    if (result.customApiProfiles) {
+      customApiProfiles = result.customApiProfiles;
+    } else {
+      customApiProfiles = {
+        profiles: [],
+        activeProfileId: null,
+        currentEditingId: null
+      };
+    }
+    if (callback) callback();
+  });
+}
+
+function saveCustomApiProfiles(callback) {
+  chrome.storage.local.set({ customApiProfiles: customApiProfiles }, function() {
+    console.log('Custom API profiles saved:', customApiProfiles);
+    if (callback) callback();
+  });
+}
+
+function renderCustomApiTabs() {
+  const tabsContainer = document.getElementById('customApiTabs');
+  if (!tabsContainer) return;
+  
+  tabsContainer.innerHTML = '';
+  
+  customApiProfiles.profiles.forEach(profile => {
+    const tab = document.createElement('div');
+    tab.className = 'custom-api-tab';
+    tab.dataset.profileId = profile.id;
+    
+    const isActive = profile.id === customApiProfiles.activeProfileId;
+    const isEditing = profile.id === customApiProfiles.currentEditingId;
+    
+    tab.style.cssText = `
+      display: flex; align-items: center; gap: 5px; padding: 6px 12px;
+      border-radius: 4px 4px 0 0; cursor: pointer; font-size: 13px;
+      border: 1px solid var(--border-color, #ddd); border-bottom: none;
+      background: ${isEditing ? 'var(--bg-primary, #fff)' : 'var(--bg-secondary, #f5f5f5)'};
+      ${isActive ? 'border-bottom: 2px solid var(--primary-color, #4CAF50);' : ''}
+    `;
+    
+    tab.innerHTML = `
+      <span class="tab-name">${profile.name || 'Unnamed'}</span>
+      ${isActive ? '<span style="color: var(--primary-color, #4CAF50); font-size: 10px;">●</span>' : ''}
+      <button class="delete-tab-btn" data-profile-id="${profile.id}" style="
+        background: none; border: none; cursor: pointer; padding: 0 2px;
+        color: var(--text-secondary, #666); font-size: 14px; margin-left: 5px;
+      " title="Delete">×</button>
+    `;
+    
+    tab.querySelector('.tab-name').addEventListener('click', function(e) {
+      e.stopPropagation();
+      switchToProfile(profile.id);
+    });
+    
+    tab.querySelector('.delete-tab-btn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      deleteProfile(profile.id);
+    });
+    
+    tabsContainer.appendChild(tab);
+  });
+}
+
+function renderActiveProfileSelect() {
+  const select = document.getElementById('activeProfileSelect');
+  if (!select) return;
+  
+  select.innerHTML = '';
+  
+  if (customApiProfiles.profiles.length === 0) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = '-- No config --';
+    select.appendChild(option);
+    return;
+  }
+  
+  customApiProfiles.profiles.forEach(profile => {
+    const option = document.createElement('option');
+    option.value = profile.id;
+    option.textContent = profile.name || 'Unnamed';
+    if (profile.id === customApiProfiles.activeProfileId) {
+      option.selected = true;
+    }
+    select.appendChild(option);
+  });
+}
+
+function loadProfileToForm(profileId) {
+  const profile = customApiProfiles.profiles.find(p => p.id === profileId);
+  if (!profile) return;
+  
+  customApiProfiles.currentEditingId = profileId;
+  
+  document.getElementById('profileName').value = profile.name || '';
+  document.getElementById('apiBaseURL').value = profile.apiBaseURL || '';
+  document.getElementById('apiKey').value = profile.apiKey || '';
+  document.getElementById('apiModel').value = profile.apiModel || '';
+  document.getElementById('apiTemperature').value = profile.apiTemperature !== undefined ? profile.apiTemperature : 1;
+  
+  renderCustomApiTabs();
+}
+
+function switchToProfile(profileId) {
+  saveCurrentProfile();
+  loadProfileToForm(profileId);
+}
+
+function saveCurrentProfile() {
+  if (!customApiProfiles.currentEditingId) return;
+  
+  const profile = customApiProfiles.profiles.find(p => p.id === customApiProfiles.currentEditingId);
+  if (!profile) return;
+  
+  profile.name = document.getElementById('profileName').value || 'Unnamed';
+  profile.apiBaseURL = document.getElementById('apiBaseURL').value;
+  profile.apiKey = document.getElementById('apiKey').value;
+  profile.apiModel = document.getElementById('apiModel').value;
+  profile.apiTemperature = parseFloat(document.getElementById('apiTemperature').value) || 1;
+  
+  saveCustomApiProfiles();
+  renderCustomApiTabs();
+  renderActiveProfileSelect();
+}
+
+function addNewProfile() {
+  saveCurrentProfile();
+  
+  const newProfile = {
+    id: generateUUID(),
+    name: `Config ${customApiProfiles.profiles.length + 1}`,
+    apiBaseURL: '',
+    apiKey: '',
+    apiModel: '',
+    apiTemperature: 1
+  };
+  
+  customApiProfiles.profiles.push(newProfile);
+  customApiProfiles.currentEditingId = newProfile.id;
+  
+  saveCustomApiProfiles();
+  renderCustomApiTabs();
+  renderActiveProfileSelect();
+  loadProfileToForm(newProfile.id);
+}
+
+function deleteProfile(profileId) {
+  if (customApiProfiles.profiles.length <= 1) {
+    alert('Cannot delete the last config');
+    return;
+  }
+  
+  const index = customApiProfiles.profiles.findIndex(p => p.id === profileId);
+  if (index === -1) return;
+  
+  customApiProfiles.profiles.splice(index, 1);
+  
+  if (customApiProfiles.activeProfileId === profileId) {
+    customApiProfiles.activeProfileId = customApiProfiles.profiles[0]?.id || null;
+    syncActiveProfileToAiConfig();
+  }
+  
+  if (customApiProfiles.currentEditingId === profileId) {
+    customApiProfiles.currentEditingId = customApiProfiles.profiles[0]?.id || null;
+    if (customApiProfiles.currentEditingId) {
+      loadProfileToForm(customApiProfiles.currentEditingId);
+    }
+  }
+  
+  saveCustomApiProfiles();
+  renderCustomApiTabs();
+  renderActiveProfileSelect();
+}
+
+function activateProfile(profileId) {
+  if (!profileId) return;
+  
+  const profile = customApiProfiles.profiles.find(p => p.id === profileId);
+  if (!profile) return;
+  
+  customApiProfiles.activeProfileId = profileId;
+  saveCustomApiProfiles();
+  renderCustomApiTabs();
+  renderActiveProfileSelect();
+  syncActiveProfileToAiConfig();
+}
+
+function syncActiveProfileToAiConfig() {
+  if (!customApiProfiles.activeProfileId) return;
+  
+  const profile = customApiProfiles.profiles.find(p => p.id === customApiProfiles.activeProfileId);
+  if (!profile) return;
+  
+  chrome.storage.local.get('aiConfig', function(result) {
+    const aiConfig = result.aiConfig || {};
+    aiConfig.apiBaseURL = profile.apiBaseURL || '';
+    aiConfig.apiKey = profile.apiKey || '';
+    aiConfig.apiModel = profile.apiModel || '';
+    aiConfig.apiTemperature = profile.apiTemperature !== undefined ? profile.apiTemperature : 1;
+    
+    chrome.storage.local.set({ aiConfig: aiConfig }, function() {
+      console.log('Active profile synced to aiConfig:', profile.name);
+    });
+  });
+}
+
+function initCustomApiProfilesManager() {
+  loadCustomApiProfiles(function() {
+    if (customApiProfiles.profiles.length === 0) {
+      chrome.storage.local.get('aiConfig', function(result) {
+        const aiConfig = result.aiConfig || {};
+        const defaultProfile = {
+          id: generateUUID(),
+          name: 'Default',
+          apiBaseURL: aiConfig.apiBaseURL || '',
+          apiKey: aiConfig.apiKey || '',
+          apiModel: aiConfig.apiModel || '',
+          apiTemperature: aiConfig.apiTemperature !== undefined ? aiConfig.apiTemperature : 1
+        };
+        
+        customApiProfiles.profiles.push(defaultProfile);
+        customApiProfiles.activeProfileId = defaultProfile.id;
+        customApiProfiles.currentEditingId = defaultProfile.id;
+        
+        saveCustomApiProfiles();
+        renderCustomApiTabs();
+        renderActiveProfileSelect();
+        loadProfileToForm(defaultProfile.id);
+      });
+    } else {
+      if (!customApiProfiles.currentEditingId && customApiProfiles.profiles.length > 0) {
+        customApiProfiles.currentEditingId = customApiProfiles.profiles[0].id;
+      }
+      renderCustomApiTabs();
+      renderActiveProfileSelect();
+      if (customApiProfiles.currentEditingId) {
+        loadProfileToForm(customApiProfiles.currentEditingId);
+      }
+    }
+  });
+  
+  const addBtn = document.getElementById('addCustomProfileBtn');
+  if (addBtn) {
+    addBtn.addEventListener('click', addNewProfile);
+    console.log('addCustomProfileBtn event listener attached');
+  } else {
+    console.warn('addCustomProfileBtn not found');
+  }
+  
+  const selectEl = document.getElementById('activeProfileSelect');
+  if (selectEl) {
+    selectEl.addEventListener('change', function() {
+      activateProfile(this.value);
+    });
+  }
+  
+  const inputs = ['profileName', 'apiBaseURL', 'apiKey', 'apiModel', 'apiTemperature'];
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', debounce(function() {
+        saveCurrentProfile();
+      }, 500));
+    }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(initCustomApiProfilesManager, 100);
+  });
+} else {
+  setTimeout(initCustomApiProfilesManager, 100);
+}
+
 // 根据AI渠道更新UI显示状态
 function updateApiChannelUI(channel) {
   const customApiSettings = document.getElementById('customApiSettings');
   const ohmygptSettings = document.getElementById('ohmygptSettings');
   
   if (channel === 'ohmygpt') {
-    // 选中OhMyGpt时，隐藏自定义API设置，显示OhMyGpt设置
     if (customApiSettings) customApiSettings.style.display = 'none';
     if (ohmygptSettings) ohmygptSettings.style.display = 'flex';
   } else {
-    // 选中自定义时，显示自定义API设置，隐藏OhMyGpt设置
     if (customApiSettings) customApiSettings.style.display = 'block';
     if (ohmygptSettings) ohmygptSettings.style.display = 'none';
   }
