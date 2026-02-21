@@ -4087,6 +4087,9 @@ chrome.storage.local.get('aiConfig', function(result) {
       radioToCheck.checked = true;
     }
 
+    // 根据渠道设置UI显示状态
+    updateApiChannelUI(savedChannel);
+
     // 新增：设置 OhMyGpt Base URL 单选按钮状态
     const savedOhmygptBaseUrl = result.aiConfig.ohmygptBaseUrl || 'https://api.ohmygpt.com/v1/chat/completions'; // 默认选中推荐 URL
     const ohmygptRadioToCheck = document.querySelector(`input[name="ohmygptBaseUrl"][value="${savedOhmygptBaseUrl}"]`);
@@ -4178,6 +4181,9 @@ chrome.storage.local.get('aiConfig', function(result) {
     // 新增：如果没有保存过配置，默认选中 'diy'
     document.getElementById('aiChannelDiy').checked = true;
 
+    // 根据渠道设置UI显示状态
+    updateApiChannelUI('diy');
+
 
     // 如果没有保存过配置，也设置API Key为密码形式
     const apiKeyInput = document.getElementById('apiKey');
@@ -4249,6 +4255,31 @@ chrome.storage.local.get('aiConfig', function(result) {
       textarea.style.height = textarea.scrollHeight + 'px';
     });
   }, 100);
+});
+
+// 根据AI渠道更新UI显示状态
+function updateApiChannelUI(channel) {
+  const customApiSettings = document.getElementById('customApiSettings');
+  const ohmygptSettings = document.getElementById('ohmygptSettings');
+  
+  if (channel === 'ohmygpt') {
+    // 选中OhMyGpt时，隐藏自定义API设置，显示OhMyGpt设置
+    if (customApiSettings) customApiSettings.style.display = 'none';
+    if (ohmygptSettings) ohmygptSettings.style.display = 'flex';
+  } else {
+    // 选中自定义时，显示自定义API设置，隐藏OhMyGpt设置
+    if (customApiSettings) customApiSettings.style.display = 'block';
+    if (ohmygptSettings) ohmygptSettings.style.display = 'none';
+  }
+}
+
+// 监听AI渠道切换
+document.querySelectorAll('input[name="aiChannel"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    if (this.checked) {
+      updateApiChannelUI(this.value);
+    }
+  });
 });
 
 chrome.storage.local.get('subscriptionConfig', function(result) {
