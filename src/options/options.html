@@ -3503,12 +3503,8 @@
     <div id="customApiSettings" class="settings-section" style="padding: 10px;  border-radius: 5px;">
       <!-- 多配置管理区域 -->
       <div id="customApiProfilesManager" style="margin-bottom: 15px;">
-        <!-- Tab 栏 -->
-        <div id="customApiTabs" style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; border-bottom: 1px solid var(--border-color, #ddd); padding-bottom: 10px;">
-          <!-- Tab 项将通过 JS 动态生成 -->
-        </div>
         <!-- 操作栏：下拉框激活 + 添加按钮 -->
-        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
           <div style="display: flex; align-items: center; gap: 5px;">
             <label for="activeProfileSelect" style="font-size: 12px; white-space: nowrap;" data-i18n="activeProfileLabel">Active Config:</label>
             <select id="activeProfileSelect" style="padding: 5px 10px; border-radius: 4px; border: 1px solid var(--border-color, #ddd); min-width: 150px;">
@@ -3520,6 +3516,12 @@
             <label for="enableApiPolling" style="font-size: 12px; white-space: nowrap; margin: 0;" data-i18n="enableApiPollingLabel">Enable Polling</label>
           </div>
           <button id="addCustomProfileBtn" type="button" style="padding: 5px 15px; border-radius: 4px; border: 1px solid var(--border-color, #ddd); background: var(--bg-secondary, #f5f5f5); color: var(--text-primary, #333); cursor: pointer; font-size: 12px;" data-i18n="addProfileBtn">+ Add Config</button>
+        </div>
+        <!-- 分隔线 -->
+        <div style="border-bottom: 1px solid var(--border-color, #ddd); margin-bottom: 10px;"></div>
+        <!-- Tab 栏 -->
+        <div id="customApiTabs" style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; padding-bottom: 10px;">
+          <!-- Tab 项将通过 JS 动态生成 -->
         </div>
       </div>
       <!-- 配置内容区域 -->
