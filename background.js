@@ -14,6 +14,9 @@ let customPhrasesDBReady = false;
 let pendingRequests = [];
 let customPhrasesPendingRequests = [];
 
+// API 轮询索引
+let apiPollingIndex = 0;
+
 // ============================================
 // 云端数据库配置和 API
 // ============================================
@@ -1873,13 +1876,14 @@ async function selectValidApiConfig(apiPools) {
 // ============================
 async function handleAIRequest({ word, sentence, stream = false, messages, model = null, temperature = 1, tabId = null, isSidebarRequest = false }) {
   return new Promise((resolve, reject) => {
-    chrome.storage.local.get(['aiConfig'], async (result) => {
+    chrome.storage.local.get(['aiConfig', 'customApiProfiles'], async (result) => {
       try {
         // 提供一个默认的空配置对象，以防 result 或 result.aiConfig 不存在
         const responseConfig = result?.aiConfig || {};
 
         // 获取 AI 通道，默认为 'default' 或其他非 'ohmygpt' 的值
         const aiChannel = responseConfig.aiChannel;
+        const enablePolling = responseConfig.enableApiPolling === true;
 
         // 初始化最终使用的配置对象
         let config = {
@@ -1897,50 +1901,62 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
           config.temperature = responseConfig.ohmygptTemperature !== undefined ? parseFloat(responseConfig.ohmygptTemperature) : temperature;
           console.log("使用 OhMyGPT 配置:", config);
         } else {
-          // 否则，使用默认的 API 配置项
-          let apiKey = responseConfig.apiKey;
-          let apiBaseURL = responseConfig.apiBaseURL;
-          let apiModel = responseConfig.apiModel;
-          let apiTemperature = responseConfig.apiTemperature !== undefined ? parseFloat(responseConfig.apiTemperature) : temperature;
+          // 如果不是 ohmygpt 通道，判断是否轮询
+          if (enablePolling && customProfiles?.profiles?.length > 1) {
+            const profiles = customProfiles.profiles;
+            const selectedProfile = profiles[apiPollingIndex % profiles.length];
+            apiPollingIndex = (apiPollingIndex + 1) % profiles.length;
+            
+            config.apiBaseURL = selectedProfile.apiBaseURL || "";
+            config.apiModel = selectedProfile.apiModel || "";
+            config.apiKey = selectedProfile.apiKey || "";
+            config.temperature = selectedProfile.apiTemperature !== undefined ? selectedProfile.apiTemperature : temperature;
+            console.log(`[background.js] 轮询使用配置 [${apiPollingIndex}/${profiles.length}]: ${selectedProfile.name}`);
+          } else {
+            // 否则，使用默认的 API 配置项
+            let apiKey = responseConfig.apiKey;
+            let apiBaseURL = responseConfig.apiBaseURL;
+            let apiModel = responseConfig.apiModel;
+            let apiTemperature = responseConfig.apiTemperature !== undefined ? parseFloat(responseConfig.apiTemperature) : temperature;
 
           // 如果用户配置了 baseurl，使用用户配置（key 和 model 都可以为空）
-          if (apiBaseURL) {
-            config.apiBaseURL = apiBaseURL;
-            config.apiModel = apiModel || "";
-            config.apiKey = apiKey || "";
-            config.temperature = apiTemperature;
-            console.log("[background.js] 使用用户配置的 baseURL:", config.apiBaseURL);
-          } else {
-            // 用户没有配置 baseurl，使用默认的多平台 API 池配置
-            const defaultApiPools = {
-              bigmodel: {
-                baseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-                model: "GLM-4-Flash",
-                keys: [
-                  atob("YmFlMjdlNDQyODgyNGZlOGExNjFlZTc0ZDYyZWIzM2YubW5uOEVoNEplVG9kcmY0bg=="),
-                  atob("ODUwZTNlMmEzYmVkNDg2N2I2MGIzZWI2NmUyMDAyNjMuYWhSOGhxYkJvaG1wRG81eg=="),
-                  atob("MGZmMDYwNTZlODhhNGNlMmI1ZTA4NzIxZTNjNGNkNmQuMnV0djhRaDVlZU1jcnJHcA=="),
-                  atob("YzZhYzJlYjllMTJiNGJiNWEwZDczYzliNzZkODEzNzAuRnpITlNoZnFteEx4MHV4WA=="),
-                  atob("ZjAwMmZlNTUzNGQ4NDYxNWEyM2VjOTlhODM1ZDZiM2UuR2h1NVRrSmVDS0xiSGhMZA=="),
-                ]
-              }
-            };
-
-            const selectedConfig = await selectValidApiConfig(defaultApiPools);
-            if (selectedConfig) {
-              config.apiBaseURL = selectedConfig.baseURL;
-              config.apiModel = selectedConfig.model;
-              config.apiKey = selectedConfig.apiKey;
+            if (apiBaseURL) {
+              config.apiBaseURL = apiBaseURL;
+              config.apiModel = apiModel || "";
+              config.apiKey = apiKey || "";
               config.temperature = apiTemperature;
-              console.log(`[background.js] 使用平台: ${selectedConfig.platform}`);
+              console.log("[background.js] 使用用户配置的 baseURL:", config.apiBaseURL);
             } else {
-              console.error('[background.js] 所有平台的 API Keys 都已被屏蔽');
-              reject(new Error("所有默认 API Keys 都已失效，请配置新的 API Key"));
-              return;
+            // 用户没有配置 baseurl，使用默认的多平台 API 池配置
+              const defaultApiPools = {
+                bigmodel: {
+                  baseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+                  model: "GLM-4-Flash",
+                  keys: [
+                    atob("YmFlMjdlNDQyODgyNGZlOGExNjFlZTc0ZDYyZWIzM2YubW5uOEVoNEplVG9kcmY0bg=="),
+                    atob("ODUwZTNlMmEzYmVkNDg2N2I2MGIzZWI2NmUyMDAyNjMuYWhSOGhxYkJvaG1wRG81eg=="),
+                    atob("MGZmMDYwNTZlODhhNGNlMmI1ZTA4NzIxZTNjNGNkNmQuMnV0djhRaDVlZU1jcnJHcA=="),
+                    atob("YzZhYzJlYjllMTJiNGJiNWEwZDczYzliNzZkODEzNzAuRnpITlNoZnFteEx4MHV4WA=="),
+                    atob("ZjAwMmZlNTUzNGQ4NDYxNWEyM2VjOTlhODM1ZDZiM2UuR2h1NVRrSmVDS0xiSGhMZA=="),
+                  ]
+                }
+              };
+
+              const selectedConfig = await selectValidApiConfig(defaultApiPools);
+              if (selectedConfig) {
+                config.apiBaseURL = selectedConfig.baseURL;
+                config.apiModel = selectedConfig.model;
+                config.apiKey = selectedConfig.apiKey;
+                config.temperature = apiTemperature;
+                console.log(`[background.js] 使用平台: ${selectedConfig.platform}`);
+              } else {
+                console.error('[background.js] 所有平台的 API Keys 都已被屏蔽');
+                reject(new Error("所有默认 API Keys 都已失效，请配置新的 API Key"));
+                return;
+              }
             }
           }
         }
-        // 检查 API Key 是否配置（如果用户配置了 baseurl，允许 key 为空）
         if (!config.apiKey && !config.apiBaseURL) {
           reject(new Error("AI API Key 或 Token 未配置，请在插件设置中填写"));
           return;
@@ -1953,7 +1969,6 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
           "x-gemini-legacy-support": "true",
         };
         
-        // 只有当 key 不为空时才添加 Authorization header
         if (config.apiKey) {
           headers["Authorization"] = `Bearer ${config.apiKey}`;
         }

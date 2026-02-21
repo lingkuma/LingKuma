@@ -619,6 +619,7 @@ const i18n = {
     'activeProfileLabel': '激活配置:',
     'addProfileBtn': '+ 添加配置',
     'profileName': '配置名称:',
+    'enableApiPollingLabel': '启用轮询',
     'languageDetectionPrompt': '语言检测AI提示词:',
     'tagAnalysisPrompt': '词性标签分析提示词:',
     'wordExplanationPrompt': '单词解释AI提示词:',
@@ -1398,6 +1399,7 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'activeProfileLabel': 'Active Config:',
     'addProfileBtn': '+ Add Config',
     'profileName': 'Config Name:',
+    'enableApiPollingLabel': 'Enable Polling',
     'languageDetectionPrompt': 'Language Detection AI Prompt:',
     'tagAnalysisPrompt': 'Part of Speech Analysis Prompt:',
     'wordExplanationPrompt': 'Word Explanation AI Prompt:',
@@ -2086,6 +2088,7 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'activeProfileLabel': '활성 구성:',
     'addProfileBtn': '+ 구성 추가',
     'profileName': '구성 이름:',
+    'enableApiPollingLabel': '폴링 활성화',
     'languageDetectionPrompt': '언어 감지 AI 프롬프트:',
     'tagAnalysisPrompt': '품사 분석 프롬프트:',
     'wordExplanationPrompt': '단어 설명 AI 프롬프트:',
@@ -2259,6 +2262,7 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'activeProfileLabel': 'Активная конфигурация:',
     'addProfileBtn': '+ Добавить конфигурацию',
     'profileName': 'Имя конфигурации:',
+    'enableApiPollingLabel': 'Включить опрос',
     'languageDetectionPrompt': 'Подсказка AI для определения языка:',
     'tagAnalysisPrompt': 'Подсказка для анализа частей речи:',
     'wordExplanationPrompt': 'Подсказка AI для объяснения слов:',
@@ -4564,6 +4568,22 @@ function initCustomApiProfilesManager() {
       }, 500));
     }
   });
+  
+  const pollingCheckbox = document.getElementById('enableApiPolling');
+  if (pollingCheckbox) {
+    chrome.storage.local.get('aiConfig', function(result) {
+      pollingCheckbox.checked = result.aiConfig?.enableApiPolling === true;
+    });
+    pollingCheckbox.addEventListener('change', function() {
+      chrome.storage.local.get('aiConfig', function(result) {
+        const aiConfig = result.aiConfig || {};
+        aiConfig.enableApiPolling = pollingCheckbox.checked;
+        chrome.storage.local.set({ aiConfig: aiConfig }, function() {
+          console.log('API Polling setting saved:', pollingCheckbox.checked);
+        });
+      });
+    });
+  }
 }
 
 if (document.readyState === 'loading') {
