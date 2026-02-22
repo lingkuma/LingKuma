@@ -620,6 +620,7 @@ const i18n = {
     'addProfileBtn': '+ 添加配置',
     'profileName': '配置名称:',
     'enableApiPollingLabel': '启用轮询',
+    'profileEnablePollingLabel': '参与轮询',
     'languageDetectionPrompt': '语言检测AI提示词:',
     'tagAnalysisPrompt': '词性标签分析提示词:',
     'wordExplanationPrompt': '单词解释AI提示词:',
@@ -985,6 +986,7 @@ Lingkuma完全开源免费，软件维护不易，如果您感觉该软件对你
     'activeProfileLabel': '啟用設定:',
     'addProfileBtn': '+ 新增設定',
     'profileName': '設定名稱:',
+    'profileEnablePollingLabel': '參與輪詢',
     'languageDetectionPrompt': '語言偵測AI提示詞:',
     'tagAnalysisPrompt': '詞性標籤分析提示詞:',
     'wordExplanationPrompt': '單字解釋AI提示詞:',
@@ -1400,6 +1402,7 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'addProfileBtn': '+ Add Config',
     'profileName': 'Config Name:',
     'enableApiPollingLabel': 'Enable Polling',
+    'profileEnablePollingLabel': 'Participate in Polling',
     'languageDetectionPrompt': 'Language Detection AI Prompt:',
     'tagAnalysisPrompt': 'Part of Speech Analysis Prompt:',
     'wordExplanationPrompt': 'Word Explanation AI Prompt:',
@@ -1629,6 +1632,7 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'activeProfileLabel': 'Aktive Konfiguration:',
     'addProfileBtn': '+ Konfiguration hinzufügen',
     'profileName': 'Konfigurationsname:',
+    'profileEnablePollingLabel': 'An der Umfrage teilnehmen',
     'languageDetectionPrompt': 'KI-Eingabeaufforderung zur Spracherkennung:',
     'tagAnalysisPrompt': 'Stichwortanalyse-Eingabeaufforderung:',
     'wordExplanationPrompt': 'KI-Eingabeaufforderung zur Worterklärung:',
@@ -1850,6 +1854,7 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'activeProfileLabel': 'Configuration active :',
     'addProfileBtn': '+ Ajouter une configuration',
     'profileName': 'Nom de la configuration :',
+    'profileEnablePollingLabel': 'Participer au sondage',
     'languageDetectionPrompt': 'Invite IA de détection de la langue :',
     'tagAnalysisPrompt': 'Invite d\'analyse des parties du discours :',
     'wordExplanationPrompt': 'Invite IA d\'explication des mots :',
@@ -2043,6 +2048,7 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'activeProfileLabel': 'Configuración activa:',
     'addProfileBtn': '+ Agregar configuración',
     'profileName': 'Nombre de la configuración:',
+    'profileEnablePollingLabel': 'Participar en el sondeo',
     'languageDetectionPrompt': 'Indicación de IA de detección de idioma:',
     'tagAnalysisPrompt': 'Indicación de análisis de partes del discurso:',
     'wordExplanationPrompt': 'Indicación de IA de explicación de palabras:',
@@ -2089,6 +2095,7 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'addProfileBtn': '+ 구성 추가',
     'profileName': '구성 이름:',
     'enableApiPollingLabel': '폴링 활성화',
+    'profileEnablePollingLabel': '폴링 참여',
     'languageDetectionPrompt': '언어 감지 AI 프롬프트:',
     'tagAnalysisPrompt': '품사 분석 프롬프트:',
     'wordExplanationPrompt': '단어 설명 AI 프롬프트:',
@@ -2263,6 +2270,7 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'addProfileBtn': '+ Добавить конфигурацию',
     'profileName': 'Имя конфигурации:',
     'enableApiPollingLabel': 'Включить опрос',
+    'profileEnablePollingLabel': 'Участвовать в опросе',
     'languageDetectionPrompt': 'Подсказка AI для определения языка:',
     'tagAnalysisPrompt': 'Подсказка для анализа частей речи:',
     'wordExplanationPrompt': 'Подсказка AI для объяснения слов:',
@@ -2500,6 +2508,14 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'apiSentenceTranslationSettings': '文の翻訳設定',
     'apiAnalysisSettings': '文の分析設定',
     'apiSidebarSettings': 'サイドバー分析設定',
+    'apiBaseUrl': 'APIベースURL: 例: https://api.chatgpt.com/v1/chat/completions',
+    'apiKey': 'APIキー:',
+    'model': 'モデル:',
+    'activeProfileLabel': 'アクティブ設定:',
+    'addProfileBtn': '+ 設定を追加',
+    'profileName': '設定名:',
+    'enableApiPollingLabel': 'ポーリングを有効にする',
+    'profileEnablePollingLabel': 'ポーリングに参加',
     'ohmygptBaseUrlLabel': 'OhMyGpt Base URL:',
     'ohmygptBaseUrlRecommended': '推奨',
     'ohmygptBaseUrlRecommendedDesc': 'US Direct | Enterprise',
@@ -2689,6 +2705,14 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'apiSentenceTranslationSettings': 'Impostazioni Traduzione Frase',
     'apiAnalysisSettings': 'Impostazioni Analisi Frase',
     'apiSidebarSettings': 'Impostazioni Analisi Barra Laterale',
+    'apiBaseUrl': 'URL base API: esempio: https://api.chatgpt.com/v1/chat/completions',
+    'apiKey': 'Chiave API:',
+    'model': 'Modello:',
+    'activeProfileLabel': 'Configurazione attiva:',
+    'addProfileBtn': '+ Aggiungi configurazione',
+    'profileName': 'Nome configurazione:',
+    'enableApiPollingLabel': 'Abilita polling',
+    'profileEnablePollingLabel': 'Partecipa al polling',
     'ohmygptBaseUrlLabel': 'OhMyGpt Base URL:',
     'ohmygptBaseUrlRecommended': 'Raccomandato',
     'ohmygptBaseUrlRecommendedDesc': 'US Direct | Enterprise',
@@ -4334,6 +4358,7 @@ function renderCustomApiTabs() {
     
     const isActive = profile.id === customApiProfiles.activeProfileId;
     const isEditing = profile.id === customApiProfiles.currentEditingId;
+    const enablePolling = profile.enablePolling !== false;
     
     tab.style.cssText = `
       display: flex; align-items: center; gap: 5px; padding: 6px 12px;
@@ -4347,6 +4372,7 @@ function renderCustomApiTabs() {
     tab.innerHTML = `
       <span class="tab-name">${profile.name || 'Unnamed'}</span>
       ${isActive ? '<span style="color: var(--primary-color, #4CAF50); font-size: 10px;">●</span>' : ''}
+      ${enablePolling ? '<span style="color: var(--success-color, #34c759); font-size: 10px;">✓</span>' : ''}
       <button class="delete-tab-btn" data-profile-id="${profile.id}" style="
         background: none; border: none; cursor: pointer; padding: 0 2px;
         color: var(--text-secondary, #666); font-size: 14px; margin-left: 5px;
@@ -4403,6 +4429,7 @@ function loadProfileToForm(profileId) {
   document.getElementById('apiKey').value = profile.apiKey || '';
   document.getElementById('apiModel').value = profile.apiModel || '';
   document.getElementById('apiTemperature').value = profile.apiTemperature !== undefined ? profile.apiTemperature : 1;
+  document.getElementById('profileEnablePolling').checked = profile.enablePolling !== false;
   
   renderCustomApiTabs();
 }
@@ -4423,6 +4450,7 @@ function saveCurrentProfile() {
   profile.apiKey = document.getElementById('apiKey').value;
   profile.apiModel = document.getElementById('apiModel').value;
   profile.apiTemperature = parseFloat(document.getElementById('apiTemperature').value) || 1;
+  profile.enablePolling = document.getElementById('profileEnablePolling').checked;
   
   saveCustomApiProfiles();
   renderCustomApiTabs();
@@ -4438,7 +4466,8 @@ function addNewProfile() {
     apiBaseURL: '',
     apiKey: '',
     apiModel: '',
-    apiTemperature: 1
+    apiTemperature: 1,
+    enablePolling: true
   };
   
   customApiProfiles.profiles.push(newProfile);
@@ -4521,7 +4550,8 @@ function initCustomApiProfilesManager() {
           apiBaseURL: aiConfig.apiBaseURL || '',
           apiKey: aiConfig.apiKey || '',
           apiModel: aiConfig.apiModel || '',
-          apiTemperature: aiConfig.apiTemperature !== undefined ? aiConfig.apiTemperature : 1
+          apiTemperature: aiConfig.apiTemperature !== undefined ? aiConfig.apiTemperature : 1,
+          enablePolling: true
         };
         
         customApiProfiles.profiles.push(defaultProfile);
@@ -4569,6 +4599,13 @@ function initCustomApiProfilesManager() {
       }, 500));
     }
   });
+  
+  const profilePollingCheckbox = document.getElementById('profileEnablePolling');
+  if (profilePollingCheckbox) {
+    profilePollingCheckbox.addEventListener('change', function() {
+      saveCurrentProfile();
+    });
+  }
   
   const pollingCheckbox = document.getElementById('enableApiPolling');
   if (pollingCheckbox) {

@@ -1871,6 +1871,48 @@ async function selectValidApiConfig(apiPools) {
   return selectedConfig;
 }
 
+async function applyDefaultConfig(config, responseConfig, temperature, reject) {
+  let apiKey = responseConfig.apiKey;
+  let apiBaseURL = responseConfig.apiBaseURL;
+  let apiModel = responseConfig.apiModel;
+  let apiTemperature = responseConfig.apiTemperature !== undefined ? parseFloat(responseConfig.apiTemperature) : temperature;
+
+  if (apiBaseURL) {
+    config.apiBaseURL = apiBaseURL;
+    config.apiModel = apiModel || "";
+    config.apiKey = apiKey || "";
+    config.temperature = apiTemperature;
+    console.log("[background.js] 使用用户配置的 baseURL:", config.apiBaseURL);
+  } else {
+    const defaultApiPools = {
+      bigmodel: {
+        baseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+        model: "GLM-4-Flash",
+        keys: [
+          atob("YmFlMjdlNDQyODgyNGZlOGExNjFlZTc0ZDYyZWIzM2YubW5uOEVoNEplVG9kcmY0bg=="),
+          atob("ODUwZTNlMmEzYmVkNDg2N2I2MGIzZWI2NmUyMDAyNjMuYWhSOGhxYkJvaG1wRG81eg=="),
+          atob("MGZmMDYwNTZlODhhNGNlMmI1ZTA4NzIxZTNjNGNkNmQuMnV0djhRaDVlZU1jcnJHcA=="),
+          atob("YzZhYzJlYjllMTJiNGJiNWEwZDczYzliNzZkODEzNzAuRnpITlNoZnFteEx4MHV4WA=="),
+          atob("ZjAwMmZlNTUzNGQ4NDYxNWEyM2VjOTlhODM1ZDZiM2UuR2h1NVRrSmVDS0xiSGhMZA=="),
+        ]
+      }
+    };
+
+    const selectedConfig = await selectValidApiConfig(defaultApiPools);
+    if (selectedConfig) {
+      config.apiBaseURL = selectedConfig.baseURL;
+      config.apiModel = selectedConfig.model;
+      config.apiKey = selectedConfig.apiKey;
+      config.temperature = apiTemperature;
+      console.log(`[background.js] 使用平台: ${selectedConfig.platform}`);
+    } else {
+      console.error('[background.js] 所有平台的 API Keys 都已被屏蔽');
+      reject(new Error("所有默认 API Keys 都已失效，请配置新的 API Key"));
+      return;
+    }
+  }
+}
+
 // ============================
 // AI 请求处理函数（避免 Firefox CSP 限制）
 // ============================
@@ -1902,59 +1944,26 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
           console.log("使用 OhMyGPT 配置:", config);
         } else {
           // 如果不是 ohmygpt 通道，判断是否轮询
-          if (enablePolling && customProfiles?.profiles?.length > 1) {
-            const profiles = customProfiles.profiles;
-            const selectedProfile = profiles[apiPollingIndex % profiles.length];
-            apiPollingIndex = (apiPollingIndex + 1) % profiles.length;
+          if (enablePolling && result.customApiProfiles?.profiles?.length > 1) {
+            const profiles = result.customApiProfiles.profiles;
+            const pollingProfiles = profiles.filter(p => p.enablePolling !== false);
             
-            config.apiBaseURL = selectedProfile.apiBaseURL || "";
-            config.apiModel = selectedProfile.apiModel || "";
-            config.apiKey = selectedProfile.apiKey || "";
-            config.temperature = selectedProfile.apiTemperature !== undefined ? selectedProfile.apiTemperature : temperature;
-            console.log(`[background.js] 轮询使用配置 [${apiPollingIndex}/${profiles.length}]: ${selectedProfile.name}`);
+            if (pollingProfiles.length > 0) {
+              const selectedProfile = pollingProfiles[apiPollingIndex % pollingProfiles.length];
+              apiPollingIndex = (apiPollingIndex + 1) % pollingProfiles.length;
+              
+              config.apiBaseURL = selectedProfile.apiBaseURL || "";
+              config.apiModel = selectedProfile.apiModel || "";
+              config.apiKey = selectedProfile.apiKey || "";
+              config.temperature = selectedProfile.apiTemperature !== undefined ? selectedProfile.apiTemperature : temperature;
+              console.log(`[background.js] 轮询使用配置 [${apiPollingIndex}/${pollingProfiles.length}]: ${selectedProfile.name}`);
+            } else {
+              // 没有启用轮询的profile，使用默认配置
+              await applyDefaultConfig(config, responseConfig, temperature, reject);
+            }
           } else {
             // 否则，使用默认的 API 配置项
-            let apiKey = responseConfig.apiKey;
-            let apiBaseURL = responseConfig.apiBaseURL;
-            let apiModel = responseConfig.apiModel;
-            let apiTemperature = responseConfig.apiTemperature !== undefined ? parseFloat(responseConfig.apiTemperature) : temperature;
-
-          // 如果用户配置了 baseurl，使用用户配置（key 和 model 都可以为空）
-            if (apiBaseURL) {
-              config.apiBaseURL = apiBaseURL;
-              config.apiModel = apiModel || "";
-              config.apiKey = apiKey || "";
-              config.temperature = apiTemperature;
-              console.log("[background.js] 使用用户配置的 baseURL:", config.apiBaseURL);
-            } else {
-            // 用户没有配置 baseurl，使用默认的多平台 API 池配置
-              const defaultApiPools = {
-                bigmodel: {
-                  baseURL: "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-                  model: "GLM-4-Flash",
-                  keys: [
-                    atob("YmFlMjdlNDQyODgyNGZlOGExNjFlZTc0ZDYyZWIzM2YubW5uOEVoNEplVG9kcmY0bg=="),
-                    atob("ODUwZTNlMmEzYmVkNDg2N2I2MGIzZWI2NmUyMDAyNjMuYWhSOGhxYkJvaG1wRG81eg=="),
-                    atob("MGZmMDYwNTZlODhhNGNlMmI1ZTA4NzIxZTNjNGNkNmQuMnV0djhRaDVlZU1jcnJHcA=="),
-                    atob("YzZhYzJlYjllMTJiNGJiNWEwZDczYzliNzZkODEzNzAuRnpITlNoZnFteEx4MHV4WA=="),
-                    atob("ZjAwMmZlNTUzNGQ4NDYxNWEyM2VjOTlhODM1ZDZiM2UuR2h1NVRrSmVDS0xiSGhMZA=="),
-                  ]
-                }
-              };
-
-              const selectedConfig = await selectValidApiConfig(defaultApiPools);
-              if (selectedConfig) {
-                config.apiBaseURL = selectedConfig.baseURL;
-                config.apiModel = selectedConfig.model;
-                config.apiKey = selectedConfig.apiKey;
-                config.temperature = apiTemperature;
-                console.log(`[background.js] 使用平台: ${selectedConfig.platform}`);
-              } else {
-                console.error('[background.js] 所有平台的 API Keys 都已被屏蔽');
-                reject(new Error("所有默认 API Keys 都已失效，请配置新的 API Key"));
-                return;
-              }
-            }
+            await applyDefaultConfig(config, responseConfig, temperature, reject);
           }
         }
         if (!config.apiKey && !config.apiBaseURL) {
