@@ -1594,15 +1594,15 @@ async function extractUnknownWords(sentence, shouldTriggerQuery = true) {
       results.forEach(({ wordLower, details }) => {
         console.log(`[extractUnknownWords] 异步查询结果: ${wordLower}`, details);
         
+        // 获取缓存中当前的状态（可能在第二个循环中已被更新为1）
+        const existingStatus = highlightManager?.wordDetailsFromDB?.[wordLower]?.status;
+        const existingStatusNum = existingStatus !== undefined ? parseInt(existingStatus, 10) : undefined;
+        
         // 检查数据库返回的是否为有效数据（有word字段或status字段）
         const hasValidData = details && (details.word || details.status !== undefined);
-        console.log(`[extractUnknownWords] hasValidData: ${hasValidData}, 当前缓存状态: ${highlightManager?.wordDetailsFromDB?.[wordLower]?.status}`);
+        console.log(`[extractUnknownWords] hasValidData: ${hasValidData}, 当前缓存状态: ${existingStatus}`);
         
         if (hasValidData) {
-          // 检查缓存中是否已经有更新的状态（比如已被设置为1）
-          const existingStatus = highlightManager?.wordDetailsFromDB?.[wordLower]?.status;
-          const existingStatusNum = existingStatus !== undefined ? parseInt(existingStatus, 10) : undefined;
-          
           // 如果缓存中的状态已经是1-4，而数据库返回的状态是undefined或0，保留缓存中的状态
           if (existingStatusNum >= 1 && existingStatusNum <= 4 && 
               (details.status === undefined || details.status === '0' || details.status === 0)) {
@@ -1630,6 +1630,20 @@ async function extractUnknownWords(sentence, shouldTriggerQuery = true) {
                 hasTranslations, hasTags, hasLanguage
               });
               triggerMissingDataQuery(details.word || wordLower, sentence, details);
+            }
+          }
+        } else {
+          // 数据库返回空数据时，检查缓存中是否已有有效状态（如已被设置为1）
+          // 如果有，保留缓存中的状态，不要被空数据覆盖
+          if (existingStatusNum >= 1 && existingStatusNum <= 4) {
+            console.log(`[WordExplosion] 数据库返回空数据，但缓存中已有状态 ${existingStatus}，保留缓存状态:`, wordLower);
+            // 确保缓存条目存在且状态正确
+            if (highlightManager && highlightManager.wordDetailsFromDB) {
+              if (!highlightManager.wordDetailsFromDB[wordLower]) {
+                highlightManager.wordDetailsFromDB[wordLower] = { word: wordLower, status: existingStatus };
+              } else {
+                highlightManager.wordDetailsFromDB[wordLower].status = existingStatus;
+              }
             }
           }
         }
@@ -2653,12 +2667,22 @@ async function getWordTranslations(wordInfo, forceRefresh = false) {
           const dbTranslations = dbDetails.translations;
           const currentCachedDetails = highlightManager?.wordDetailsFromDB?.[wordInfo.wordLower];
           const currentCachedTranslations = currentCachedDetails?.translations;
+          const currentCachedStatus = currentCachedDetails?.status;
+
+          // 检查数据库返回的数据是否有效（有translations或status）
+          const hasDbTranslations = Array.isArray(dbTranslations) && dbTranslations.length > 0;
+          const hasDbStatus = dbDetails.status !== undefined;
 
           // 如果数据库返回的translations不为空，或者缓存中也没有translations，才更新
-          if ((Array.isArray(dbTranslations) && dbTranslations.length > 0) ||
+          if (hasDbTranslations ||
               !currentCachedTranslations ||
               !Array.isArray(currentCachedTranslations) ||
               currentCachedTranslations.length === 0) {
+            // 合并数据：如果缓存中有status但数据库没有，保留缓存中的status
+            if (currentCachedStatus !== undefined && dbDetails.status === undefined) {
+              dbDetails.status = currentCachedStatus;
+              console.log(`[WordExplosion] 数据库返回空状态，保留缓存中的状态: ${currentCachedStatus}`);
+            }
             wordDetails = dbDetails;
             wordInfo.details = wordDetails;
             // 同时更新highlightManager缓存
@@ -2670,6 +2694,23 @@ async function getWordTranslations(wordInfo, forceRefresh = false) {
             console.log('[WordExplosion] 数据库返回空数组，保留缓存中的翻译:', currentCachedTranslations);
             wordDetails = currentCachedDetails;
             wordInfo.details = wordDetails;
+          }
+        } else {
+          // 数据库返回null/undefined，检查缓存中是否已有有效状态
+          const currentCachedDetails = highlightManager?.wordDetailsFromDB?.[wordInfo.wordLower];
+          const currentCachedStatus = currentCachedDetails?.status;
+          const currentCachedStatusNum = currentCachedStatus !== undefined ? parseInt(currentCachedStatus, 10) : undefined;
+          
+          if (currentCachedStatusNum >= 1 && currentCachedStatusNum <= 4) {
+            console.log(`[WordExplosion] 数据库返回空数据，保留缓存中的状态: ${currentCachedStatus}`);
+            // 确保缓存条目存在且状态正确
+            if (highlightManager && highlightManager.wordDetailsFromDB) {
+              if (!highlightManager.wordDetailsFromDB[wordInfo.wordLower]) {
+                highlightManager.wordDetailsFromDB[wordInfo.wordLower] = { word: wordInfo.wordLower, status: currentCachedStatus };
+              } else {
+                highlightManager.wordDetailsFromDB[wordInfo.wordLower].status = currentCachedStatus;
+              }
+            }
           }
         }
       } catch (error) {
