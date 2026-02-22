@@ -4455,6 +4455,10 @@ function saveCurrentProfile() {
   saveCustomApiProfiles();
   renderCustomApiTabs();
   renderActiveProfileSelect();
+  
+  if (customApiProfiles.activeProfileId === customApiProfiles.currentEditingId) {
+    syncActiveProfileToAiConfig();
+  }
 }
 
 function addNewProfile() {
