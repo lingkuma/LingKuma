@@ -1491,6 +1491,8 @@ function isNonLanguageSymbol(word) {
 
 // 从句子中提取未知单词和词组（状态0-4）
 async function extractUnknownWords(sentence, shouldTriggerQuery = true) {
+  console.log(`[extractUnknownWords] 开始提取未知单词, shouldTriggerQuery: ${shouldTriggerQuery}`);
+  
   if (!sentence || !sentence.trim()) return [];
 
   // 使用 Map 进行去重，key 为 wordLower，value 为单词/词组信息
@@ -1564,6 +1566,7 @@ async function extractUnknownWords(sentence, shouldTriggerQuery = true) {
         wordDetails = { word: word, status: undefined };
         if (highlightManager && highlightManager.wordDetailsFromDB) {
           highlightManager.wordDetailsFromDB[wordLower] = wordDetails;
+          console.log(`[extractUnknownWords] 第一个循环创建临时缓存: ${wordLower}, status: undefined`);
         }
       }
       wordDetailsCache.set(wordLower, wordDetails);
@@ -1589,7 +1592,25 @@ async function extractUnknownWords(sentence, shouldTriggerQuery = true) {
     ).then(results => {
       // 查询完成后，更新缓存，并检查状态1-4的单词是否需要补充数据
       results.forEach(({ wordLower, details }) => {
-        if (details) {
+        console.log(`[extractUnknownWords] 异步查询结果: ${wordLower}`, details);
+        
+        // 检查数据库返回的是否为有效数据（有word字段或status字段）
+        const hasValidData = details && (details.word || details.status !== undefined);
+        console.log(`[extractUnknownWords] hasValidData: ${hasValidData}, 当前缓存状态: ${highlightManager?.wordDetailsFromDB?.[wordLower]?.status}`);
+        
+        if (hasValidData) {
+          // 检查缓存中是否已经有更新的状态（比如已被设置为1）
+          const existingStatus = highlightManager?.wordDetailsFromDB?.[wordLower]?.status;
+          const existingStatusNum = existingStatus !== undefined ? parseInt(existingStatus, 10) : undefined;
+          
+          // 如果缓存中的状态已经是1-4，而数据库返回的状态是undefined或0，保留缓存中的状态
+          if (existingStatusNum >= 1 && existingStatusNum <= 4 && 
+              (details.status === undefined || details.status === '0' || details.status === 0)) {
+            console.log(`[WordExplosion] 保留缓存中的状态 ${existingStatus}，不使用数据库返回的状态:`, wordLower);
+            // 合并数据：保留缓存中的状态，但使用数据库中的其他数据
+            details.status = existingStatus;
+          }
+          
           // 更新缓存
           if (highlightManager && highlightManager.wordDetailsFromDB) {
             highlightManager.wordDetailsFromDB[wordLower] = details;
@@ -1657,14 +1678,20 @@ async function extractUnknownWords(sentence, shouldTriggerQuery = true) {
         status === 0
       );
 
+      console.log(`[extractUnknownWords] 单词 ${wordLower}, status: ${status}, needsFullQuery: ${needsFullQuery}`);
+
       if (needsFullQuery) {
         // 立即更新本地缓存中的状态为1，避免UI显示延迟
         if (highlightManager && highlightManager.wordDetailsFromDB) {
+          console.log(`[extractUnknownWords] 更新前缓存状态: ${wordLower} = ${highlightManager.wordDetailsFromDB[wordLower]?.status}`);
           if (!highlightManager.wordDetailsFromDB[wordLower]) {
             highlightManager.wordDetailsFromDB[wordLower] = { word: word, status: '1' };
+            console.log(`[extractUnknownWords] 创建缓存条目: ${wordLower} -> status: 1`);
           } else {
             highlightManager.wordDetailsFromDB[wordLower].status = '1';
+            console.log(`[extractUnknownWords] 更新缓存状态: ${wordLower} -> status: 1`);
           }
+          console.log(`[extractUnknownWords] 更新后缓存状态: ${wordLower} = ${highlightManager.wordDetailsFromDB[wordLower]?.status}`);
         }
 
         // 同时更新wordMap中的status为1

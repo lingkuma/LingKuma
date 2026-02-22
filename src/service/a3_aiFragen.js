@@ -292,7 +292,8 @@ function addTranslationToLocalCache(word, translation) {
   if (!highlightManager.wordDetailsFromDB[lowerCaseWord]) {
     highlightManager.wordDetailsFromDB[lowerCaseWord] = {
       word: word,
-      translations: []
+      translations: [],
+      status: '1' // 新单词默认状态为1（学习中）
     };
   }
 

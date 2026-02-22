@@ -491,7 +491,7 @@ function getSentenceForWord(detail) {
            foundEndMarkerLength = marker.length; // 记录标记长度
        }
   }
-  console.log('[getSentenceForWord] 找到的句子结束标记:', foundEndMarker, '在 rightText 中的起始位置:', nextEnd);
+  // console.log('[getSentenceForWord] 找到的句子结束标记:', foundEndMarker, '在 rightText 中的起始位置:', nextEnd);
 
   // 优化句子长度处理逻辑 (基于标准化文本)
   const MAX_SENTENCE_LENGTH = 600; // 修改：从 300 提高到 600，支持更长的句子
@@ -501,23 +501,23 @@ function getSentenceForWord(detail) {
   if (nextEnd === Infinity) {
     // 未找到结束标记，从句子实际开始处计算最大长度
     sentenceEnd = Math.min(sentenceStart + MAX_SENTENCE_LENGTH, cleanedNormalizedFullText.length);
-    console.log('[getSentenceForWord] 未找到结束标记，使用 MAX_SENTENCE_LENGTH 限制，sentenceEnd:', sentenceEnd);
+    // console.log('[getSentenceForWord] 未找到结束标记，使用 MAX_SENTENCE_LENGTH 限制，sentenceEnd:', sentenceEnd);
   } else {
     // 找到了标记，结束位置是 单词偏移量 + 标记在rightText的起始位置 + 标记长度
     sentenceEnd = offset + nextEnd + foundEndMarkerLength;
     // 确保不超过最大长度限制 (从句子实际开始处算)
     sentenceEnd = Math.min(sentenceEnd, sentenceStart + MAX_SENTENCE_LENGTH);
-    console.log('[getSentenceForWord] 找到结束标记，计算出的 sentenceEnd (标记后，有长度限制):', sentenceEnd);
+    // console.log('[getSentenceForWord] 找到结束标记，计算出的 sentenceEnd (标记后，有长度限制):', sentenceEnd);
   }
   // 确保 sentenceEnd 不会小于 sentenceStart (非常边缘的情况)
   sentenceEnd = Math.max(sentenceStart, sentenceEnd);
-  console.log('[getSentenceForWord] 计算出的 sentenceEnd (在标准化文本中的索引):', sentenceEnd);
-  console.log('[getSentenceForWord] 句子长度:', sentenceEnd - sentenceStart);
+  // console.log('[getSentenceForWord] 计算出的 sentenceEnd (在标准化文本中的索引):', sentenceEnd);
+  // console.log('[getSentenceForWord] 句子长度:', sentenceEnd - sentenceStart);
 
   // 提取句子 (从标准化文本中提取)
   let sentence = cleanedNormalizedFullText.slice(sentenceStart, sentenceEnd).trim(); // trim 再次确保
-  console.log('[getSentenceForWord] 初始提取的句子 (来自标准化文本):', sentence);
-  console.log('[getSentenceForWord] 初始句子长度:', sentence.length);
+  // console.log('[getSentenceForWord] 初始提取的句子 (来自标准化文本):', sentence);
+  // console.log('[getSentenceForWord] 初始句子长度:', sentence.length);
 
   // 判断是否需要扩展句子 (逻辑不变，但在标准化句子上操作)
   const needsExtension = () => {

@@ -310,6 +310,7 @@ class ScopeObserver {
   setWordDetails(details) {
     console.log("更新词典数据");
     console.log("更新前:", this.wordDetailsFromDB);
+    console.log("[setWordDetails] 调用堆栈:", new Error().stack);
     this.wordDetailsFromDB = details;
     console.log("更新后:", this.wordDetailsFromDB);
   }
@@ -1732,23 +1733,23 @@ if (window.location.hostname.includes('youtube.com')) {
               // console.log("raw新单词：",raw);
               // 检查该单词是否需要高亮（状态可能更新）
               // 跳过你马勒戈壁，艾玛真香
-              if (this.isWordKnown(raw.wordLower)) continue;
-              // console.log("raw新单词需要高亮：",raw);
-              // 可能需要更新高亮组
+              if (this.isWordKnown(raw.wordLower)) {
+                console.log(`[handleIntersecting] 跳过已知单词: ${raw.wordLower}`);
+                continue;
+              }
               let group = darkModePrefix + "default";
               if (this.wordDetailsFromDB[raw.wordLower]) {
                 const status = this.wordDetailsFromDB[raw.wordLower].status;
-                // console.log("raw新单词状态：",status);
-                //好像用不到LOL
-                if (status === "5") { // 只有状态5才隐藏
-                  console.log("状态5单词不高亮：", status);
+                console.log(`[handleIntersecting] 滚动渲染单词 ${raw.wordLower}, 状态: ${status}, 缓存来源: wordDetailsFromDB`);
+                if (status === "5") {
+                  console.log("[handleIntersecting] 状态5单词不高亮：", raw.wordLower);
                   group = darkModePrefix + "hidden";
                 }
                 if (["1", "2", "3", "4"].includes(status)) {
-                  // console.log("单词有状态：", status);
                   group = darkModePrefix + "state" + status;
                 }
-                // 状态0和其他状态都显示为默认蓝色高亮
+              } else {
+                console.log(`[handleIntersecting] 滚动渲染单词 ${raw.wordLower}, 缓存中无此单词, 使用默认蓝色`);
               }
 
               // 创建 Range
@@ -2328,6 +2329,17 @@ if (window.location.hostname.includes('youtube.com')) {
   updateWordHighlight(word, status,parent,shouldReGroup = false) {
     console.log(`更新单词 ${word} 的高亮状态为 ${status}`);
 
+    const wordLower = word.toLowerCase();
+    
+    // // 更新 wordDetailsFromDB 缓存
+    // if (this.wordDetailsFromDB[wordLower]) {
+    //   this.wordDetailsFromDB[wordLower].status = status;
+    //   console.log(`[updateWordHighlight] 已更新 wordDetailsFromDB 缓存: ${wordLower} -> ${status}`);
+    // } else {
+    //   this.wordDetailsFromDB[wordLower] = { word: word, status: status };
+    //   console.log(`[updateWordHighlight] 已创建 wordDetailsFromDB 缓存条目: ${wordLower} -> ${status}`);
+    // }
+
     // 更新包含该单词的缓存条目状态，而不是删除缓存
     this.updateCacheForWord(word, status);
 
@@ -2351,7 +2363,6 @@ if (window.location.hostname.includes('youtube.com')) {
     //这里占据性能嘛也不知道。哎。。。
     // 新增：彻底清除所有CSS.highlights中包含该单词的Range，防止孤儿Range残留
     console.log(`开始彻底清除单词 "${word}" 的所有高亮Range`);
-    const wordLower = word.toLowerCase();
     const allGroups = [
       darkModePrefix + "default",
       darkModePrefix + "state1",
