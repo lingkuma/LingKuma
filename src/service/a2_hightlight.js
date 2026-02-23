@@ -2331,14 +2331,14 @@ if (window.location.hostname.includes('youtube.com')) {
 
     const wordLower = word.toLowerCase();
     
-    // // 更新 wordDetailsFromDB 缓存
-    // if (this.wordDetailsFromDB[wordLower]) {
-    //   this.wordDetailsFromDB[wordLower].status = status;
-    //   console.log(`[updateWordHighlight] 已更新 wordDetailsFromDB 缓存: ${wordLower} -> ${status}`);
-    // } else {
-    //   this.wordDetailsFromDB[wordLower] = { word: word, status: status };
-    //   console.log(`[updateWordHighlight] 已创建 wordDetailsFromDB 缓存条目: ${wordLower} -> ${status}`);
-    // }
+    // 更新 wordDetailsFromDB 缓存
+    if (this.wordDetailsFromDB[wordLower]) {
+      this.wordDetailsFromDB[wordLower].status = status;
+      console.log(`[updateWordHighlight] 已更新 wordDetailsFromDB 缓存: ${wordLower} -> ${status}`);
+    } else {
+      this.wordDetailsFromDB[wordLower] = { word: word, status: status };
+      console.log(`[updateWordHighlight] 已创建 wordDetailsFromDB 缓存条目: ${wordLower} -> ${status}`);
+    }
 
     // 更新包含该单词的缓存条目状态，而不是删除缓存
     this.updateCacheForWord(word, status);
