@@ -310,7 +310,7 @@ class ScopeObserver {
   setWordDetails(details) {
     console.log("更新词典数据");
     console.log("更新前:", this.wordDetailsFromDB);
-    console.log("[setWordDetails] 调用堆栈:", new Error().stack);
+    // console.log("[setWordDetails] 调用堆栈:", new Error().stack);
     this.wordDetailsFromDB = details;
     console.log("更新后:", this.wordDetailsFromDB);
   }
@@ -1734,22 +1734,22 @@ if (window.location.hostname.includes('youtube.com')) {
               // 检查该单词是否需要高亮（状态可能更新）
               // 跳过你马勒戈壁，艾玛真香
               if (this.isWordKnown(raw.wordLower)) {
-                console.log(`[handleIntersecting] 跳过已知单词: ${raw.wordLower}`);
+                // console.log(`[handleIntersecting] 跳过已知单词: ${raw.wordLower}`);
                 continue;
               }
               let group = darkModePrefix + "default";
               if (this.wordDetailsFromDB[raw.wordLower]) {
                 const status = this.wordDetailsFromDB[raw.wordLower].status;
-                console.log(`[handleIntersecting] 滚动渲染单词 ${raw.wordLower}, 状态: ${status}, 缓存来源: wordDetailsFromDB`);
+                // console.log(`[handleIntersecting] 滚动渲染单词 ${raw.wordLower}, 状态: ${status}, 缓存来源: wordDetailsFromDB`);
                 if (status === "5") {
-                  console.log("[handleIntersecting] 状态5单词不高亮：", raw.wordLower);
+                  // console.log("[handleIntersecting] 状态5单词不高亮：", raw.wordLower);
                   group = darkModePrefix + "hidden";
                 }
                 if (["1", "2", "3", "4"].includes(status)) {
                   group = darkModePrefix + "state" + status;
                 }
               } else {
-                console.log(`[handleIntersecting] 滚动渲染单词 ${raw.wordLower}, 缓存中无此单词, 使用默认蓝色`);
+                // console.log(`[handleIntersecting] 滚动渲染单词 ${raw.wordLower}, 缓存中无此单词, 使用默认蓝色`);
               }
 
               // 创建 Range

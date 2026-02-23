@@ -1491,7 +1491,7 @@ function isNonLanguageSymbol(word) {
 
 // 从句子中提取未知单词和词组（状态0-4）
 async function extractUnknownWords(sentence, shouldTriggerQuery = true) {
-  console.log(`[extractUnknownWords] 开始提取未知单词, shouldTriggerQuery: ${shouldTriggerQuery}`);
+  // console.log(`[extractUnknownWords] 开始提取未知单词, shouldTriggerQuery: ${shouldTriggerQuery}`);
   
   if (!sentence || !sentence.trim()) return [];
 
@@ -1692,7 +1692,7 @@ async function extractUnknownWords(sentence, shouldTriggerQuery = true) {
         status === 0
       );
 
-      console.log(`[extractUnknownWords] 单词 ${wordLower}, status: ${status}, needsFullQuery: ${needsFullQuery}`);
+      // console.log(`[extractUnknownWords] 单词 ${wordLower}, status: ${status}, needsFullQuery: ${needsFullQuery}`);
 
       if (needsFullQuery) {
         // 立即更新本地缓存中的状态为1，避免UI显示延迟
@@ -1731,7 +1731,7 @@ async function extractUnknownWords(sentence, shouldTriggerQuery = true) {
       // 使用 Aho-Corasick 算法搜索句子中的词组
       const phraseMatches = customWordTrie.search(sentence);
 
-      console.log('[WordExplosion] 在句子中找到词组:', phraseMatches.length, '个');
+      // console.log('[WordExplosion] 在句子中找到词组:', phraseMatches.length, '个');
 
       // 收集需要查询的词组
       const phrasesToQuery = [];
