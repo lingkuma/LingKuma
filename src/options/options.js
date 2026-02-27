@@ -7615,6 +7615,19 @@ function callOhMyGptGetToken(code) {
       });
   }
 
+  // 为 WebDAV 密码输入框设置密码类型和鼠标悬浮显示功能
+  if (webdavPasswordInput) {
+      webdavPasswordInput.type = 'password';
+      // 添加鼠标悬浮事件显示明文
+      webdavPasswordInput.addEventListener('mouseenter', function() {
+          this.type = 'text';
+      });
+      // 鼠标离开时恢复为密码形式
+      webdavPasswordInput.addEventListener('mouseleave', function() {
+          this.type = 'password';
+      });
+  }
+
 
 
     // ... (保留现有的 DOMContentLoaded 结束部分) ...
