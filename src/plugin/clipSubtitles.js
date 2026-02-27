@@ -146,14 +146,15 @@ function initClipSubtitles() {
             padding: '10px 20px',
             borderRadius: '5px',
             fontSize: '24px',
-            maxWidth: '1000px',
+            maxWidth: '80vw',
             transition: 'opacity 0.3s',
             pointerEvents: 'auto', // 恢复点击事件
-            display: 'inline-block',
-            width: 'auto',         // 内容自适应
-            minWidth: '300px',
+            display: 'block',
+            width: 'max-content',
+            minWidth: '100px',
             wordBreak: 'break-word',
             whiteSpace: 'pre-wrap',
+            overflowWrap: 'break-word',
             fontFamily: '"Fanwood", "LXGWWenKai", "PingFang SC", "Segoe UI Variable Display", "Segoe UI", Helvetica, "Microsoft YaHei", "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"'
         });
 
@@ -162,8 +163,8 @@ function initClipSubtitles() {
         contentWrapper.style.cssText = `
             display: flex;
             justify-content: center;
-            width: max-content;
-            max-width: 80vw;
+            width: 100%;
+            max-width: 100%;
             margin: 0 auto;
         `;
 
@@ -173,8 +174,10 @@ function initClipSubtitles() {
         textElement.style.cssText = `
             word-break: break-word;
             white-space: pre-wrap;
-            display: inline-block;
+            display: block;
             font-size: 30px;
+            width: 100%;
+            max-width: 100%;
         `;
 
         contentWrapper.appendChild(textElement);
