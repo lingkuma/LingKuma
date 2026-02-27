@@ -41,6 +41,66 @@ let backgroundImageUrl = chrome.runtime.getURL("src/service/image/pattern.png");
 let isBackgroundVideo = false; // 是否使用视频背景
 let backgroundVideoUrl = null; // 视频背景URL
 
+// =======================
+// 版本更新提示相关函数
+// =======================
+
+// 检查并显示版本更新提示
+function checkUpdateNotification() {
+  chrome.storage.local.get(['updateNotification'], function(result) {
+    const notification = result.updateNotification;
+    
+    // 如果存在更新通知且需要显示
+    if (notification && notification.showNotification) {
+      showUpdateNotification(notification.newVersion, notification.updateUrl);
+    }
+  });
+}
+
+// 显示更新提示栏
+function showUpdateNotification(version, updateUrl) {
+  const notificationEl = document.getElementById('update-notification');
+  const updateTextEl = document.getElementById('update-text');
+  const updateLinkEl = document.getElementById('update-link');
+  const closeBtn = document.getElementById('update-close-btn');
+
+  if (!notificationEl) return;
+
+  // 设置版本号文本
+  updateTextEl.textContent = `update: ${version}`;
+
+  // 设置更新链接点击事件
+  updateLinkEl.onclick = function(e) {
+    e.preventDefault();
+    chrome.tabs.create({ url: updateUrl });
+  };
+
+  // 设置关闭按钮点击事件
+  closeBtn.onclick = function() {
+    hideUpdateNotification();
+  };
+
+  // 显示提示栏
+  notificationEl.style.display = 'flex';
+}
+
+// 隐藏更新提示栏并标记为已读
+function hideUpdateNotification() {
+  const notificationEl = document.getElementById('update-notification');
+  if (notificationEl) {
+    notificationEl.style.display = 'none';
+  }
+
+  // 清除更新通知状态，标记为已读
+  chrome.storage.local.remove(['updateNotification'], function() {
+    console.log('更新通知已标记为已读');
+  });
+}
+
+// =======================
+// 背景设置相关
+// =======================
+
 // 添加缓存变量，用于存储背景设置
 let cachedBackgroundSettings = null; // 缓存的背景设置
 let lastBackgroundSettingsUpdate = 0; // 上次更新缓存的时间戳
@@ -596,6 +656,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // 初始化设置
   initializeSettings();
+
+  // 检查并显示版本更新提示
+  checkUpdateNotification();
 
   // 加载背景设置
   loadBackgroundSettings().then(() => {

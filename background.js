@@ -4191,9 +4191,9 @@ chrome.runtime.onInstalled.addListener((details) => {
     console.log("之前版本:", details.previousVersion);
     console.log("当前版本:", chrome.runtime.getManifest().version);
 
-    // 只有当版本号真的发生变化时才打开更新页面
+    // 只有当版本号真的发生变化时才保存更新状态
     if (details.previousVersion && details.previousVersion !== chrome.runtime.getManifest().version) {
-      console.log("版本号确实发生了变化，准备打开更新详情页面");
+      console.log("版本号确实发生了变化，保存更新状态");
 
       // 从 chrome.storage.local 获取用户语言设置
       chrome.storage.local.get('userLanguage', function(result) {
@@ -4217,15 +4217,24 @@ chrome.runtime.onInstalled.addListener((details) => {
           updateUrl = "https://docs.lingkuma.org/en/init/new/new.html";
         }
 
-        console.log("打开更新详情页面:", updateUrl);
-
-        // 打开更新详情页面
-        chrome.tabs.create({
-          url: updateUrl
+        // 保存更新状态到 storage，供 popup 读取显示更新提示
+        chrome.storage.local.set({
+          updateNotification: {
+            newVersion: chrome.runtime.getManifest().version,
+            updateUrl: updateUrl,
+            showNotification: true
+          }
         });
+        console.log("已保存更新通知状态，新版本:", chrome.runtime.getManifest().version);
+     
+        //   // 打开更新详情页面
+        // chrome.tabs.create({
+        //   url: updateUrl
+        // });
+     
       });
     } else {
-      console.log("版本号未变化，跳过打开更新页面");
+      console.log("版本号未变化，跳过更新通知");
     }
   }
 });

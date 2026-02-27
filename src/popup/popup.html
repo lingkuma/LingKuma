@@ -758,6 +758,84 @@
       transform: scale(1);
     }
 
+    /* 版本更新提示栏样式 */
+    .update-notification {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, rgba(0, 122, 255, 0.15) 0%, rgba(52, 199, 89, 0.15) 100%);
+      border: 1px solid rgba(0, 122, 255, 0.3);
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .update-notification-content {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      flex-wrap: wrap;
+    }
+
+    .update-icon {
+      font-size: 16px;
+    }
+
+    .update-text {
+      font-size: 13px;
+      color: var(--ios-text);
+      font-weight: 500;
+    }
+
+    .update-link {
+      font-size: 13px;
+      color: var(--ios-blue);
+      text-decoration: none;
+      font-weight: 500;
+      margin-left: 4px;
+    }
+
+    .update-link:hover {
+      text-decoration: underline;
+    }
+
+    .update-close-btn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: var(--ios-secondary);
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+
+    .update-close-btn:hover {
+      opacity: 1;
+    }
+
+    /* 暗色模式下的更新提示栏 */
+    [data-theme="dark"] .update-notification {
+      background: linear-gradient(135deg, rgba(10, 132, 255, 0.2) 0%, rgba(48, 209, 88, 0.2) 100%);
+      border: 1px solid rgba(10, 132, 255, 0.4);
+    }
+
     /* 为所有使用CSS变量的元素添加通用过渡 - 更精确的选择器 */
     body,
     .settings-group,
@@ -793,6 +871,15 @@
   </style>
 </head>
 <body>
+  <!-- 版本更新提示栏 -->
+  <div id="update-notification" class="update-notification" style="display: none;">
+    <div class="update-notification-content">
+      <span class="update-icon">🎉</span>
+      <span class="update-text" id="update-text">版本已更新</span>
+      <a href="#" id="update-link" class="update-link">what's new?</a>
+    </div>
+    <button id="update-close-btn" class="update-close-btn" title="关闭">×</button>
+  </div>
   <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 16px;">
     <div class="theme-buttons">
       <select id="ui-language" class="language-selector">
