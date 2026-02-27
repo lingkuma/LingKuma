@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
   "icons": {
@@ -19,7 +19,8 @@
     "downloads",
     "sidePanel",
     "clipboardRead",
-    "contextMenus"
+    "contextMenus",
+    "declarativeNetRequest"
   ],
   "host_permissions": [
     "<all_urls>"

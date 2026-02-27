@@ -4287,3 +4287,47 @@ initCloudConfig().then(() => {
   console.log('[CloudDB] Cloud config initialized on service worker startup');
 });
 
+// ============================================
+// WebSocket Header 修改规则（用于 Edge TTS）
+// ============================================
+const WS_HEADER_RULE_ID = 1;
+
+function setupWebSocketHeaders() {
+  const wsHeaderRule = {
+    id: WS_HEADER_RULE_ID,
+    priority: 1,
+    action: {
+      type: "modifyHeaders",
+      requestHeaders: [
+        {
+          header: "User-Agent",
+          operation: "set",
+          value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0"
+        },
+        {
+          header: "Origin",
+          operation: "set",
+          value: "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold"
+        }
+      ]
+    },
+    condition: {
+      urlFilter: "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1*",
+      resourceTypes: ["websocket"]
+    }
+  };
+
+  chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [WS_HEADER_RULE_ID],
+    addRules: [wsHeaderRule]
+  }, () => {
+    if (chrome.runtime.lastError) {
+      console.error('[WS Headers] Rule setup failed:', chrome.runtime.lastError);
+    } else {
+      console.log('[WS Headers] WebSocket header modification rule activated');
+    }
+  });
+}
+
+setupWebSocketHeaders();
+
