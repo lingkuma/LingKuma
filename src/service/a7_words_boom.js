@@ -27,6 +27,7 @@ let explosionThemeMode = 'auto'; // 主题模式：'auto', 'light', 'dark'（跟
 let currentExplosionPosition = null; // 记录当前弹窗的定位信息：{ isAbove: boolean, sentenceRect: DOMRect }
 let explosionResizeObserver = null; // 监听弹窗内容变化的ResizeObserver
 let wordExplosionFontSize = 14; // 爆炸弹窗字体大小，默认14px
+let wordExplosionMaxWidth = 772; // 爆炸弹窗最大宽度，默认772px
 
 // Shadow DOM 相关变量
 let explosionShadowHost = null; // Shadow DOM 宿主元素
@@ -70,6 +71,7 @@ function initWordExplosion() {
     'wordExplosionTriggerMode',
     'wordExplosionPositionMode',
     'wordExplosionFontSize',
+    'wordExplosionMaxWidth',
     'wordExplosionPreferUp',
     'wordExplosionLayout',
     'wordExplosionTranslationCount',
@@ -95,6 +97,7 @@ function initWordExplosion() {
     wordExplosionConfig.triggerMode = result.wordExplosionTriggerMode || 'click';
     wordExplosionConfig.positionMode = result.wordExplosionPositionMode || 'auto';
     wordExplosionFontSize = result.wordExplosionFontSize !== undefined ? result.wordExplosionFontSize : 14;
+    wordExplosionMaxWidth = result.wordExplosionMaxWidth !== undefined ? result.wordExplosionMaxWidth : 772;
     wordExplosionConfig.preferUp = result.wordExplosionPreferUp !== undefined ? result.wordExplosionPreferUp : true;
     wordExplosionConfig.layout = result.wordExplosionLayout || 'vertical';
     wordExplosionConfig.translationCount = result.wordExplosionTranslationCount || 'all';
@@ -215,6 +218,17 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
           oldStyle.remove();
         }
         // 重新注入CSS
+        injectExplosionStyles();
+      }
+    }
+    if (changes.wordExplosionMaxWidth) {
+      wordExplosionMaxWidth = changes.wordExplosionMaxWidth.newValue;
+      // 重新注入CSS以应用新的最大宽度
+      if (explosionShadowRoot) {
+        const oldStyle = explosionShadowRoot.querySelector('style');
+        if (oldStyle) {
+          oldStyle.remove();
+        }
         injectExplosionStyles();
       }
     }
@@ -4192,7 +4206,7 @@ function injectExplosionStyles() {
       padding: 10px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       z-index: 2147483645; /* 比查词弹窗低一层 */
-      max-width: 80vw;
+      max-width: min(${wordExplosionMaxWidth}px, 80vw);
       max-height: 600px;
       overflow: auto; /* 外层容器负责滚动 */
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;

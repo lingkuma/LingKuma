@@ -2183,6 +2183,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const wordExplosionTriggerMode = document.getElementById('wordExplosionTriggerMode');
     const wordExplosionPositionMode = document.getElementById('wordExplosionPositionMode');
     const wordExplosionFontSize = document.getElementById('wordExplosionFontSize');
+    const wordExplosionMaxWidth = document.getElementById('wordExplosionMaxWidth');
     const wordExplosionPreferUp = document.getElementById('wordExplosionPreferUp');
     const wordExplosionLayout = document.getElementById('wordExplosionLayout');
     const wordExplosionTranslationCount = document.getElementById('wordExplosionTranslationCount');
@@ -2212,6 +2213,7 @@ document.addEventListener('DOMContentLoaded', function() {
         wordExplosionTriggerMode: 'click',
         wordExplosionPositionMode: 'auto',
         wordExplosionFontSize: 14,
+        wordExplosionMaxWidth: 772,
         wordExplosionPreferUp: true,
         wordExplosionLayout: 'vertical',
         wordExplosionTranslationCount: 'all',
@@ -2228,6 +2230,7 @@ document.addEventListener('DOMContentLoaded', function() {
         wordExplosionTriggerMode.value = result.wordExplosionTriggerMode;
         wordExplosionPositionMode.value = result.wordExplosionPositionMode;
         wordExplosionFontSize.value = result.wordExplosionFontSize;
+        wordExplosionMaxWidth.value = result.wordExplosionMaxWidth;
         wordExplosionPreferUp.checked = result.wordExplosionPreferUp;
         wordExplosionLayout.value = result.wordExplosionLayout;
         wordExplosionTranslationCount.value = result.wordExplosionTranslationCount;
@@ -2299,6 +2302,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     wordExplosionFontSize.addEventListener('change', function(e) {
         chrome.storage.local.set({ wordExplosionFontSize: parseInt(e.target.value) });
+    });
+
+    wordExplosionMaxWidth.addEventListener('change', function(e) {
+        chrome.storage.local.set({ wordExplosionMaxWidth: parseInt(e.target.value) });
     });
 
     wordExplosionPreferUp.addEventListener('change', function(e) {
