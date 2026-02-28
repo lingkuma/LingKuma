@@ -3054,9 +3054,9 @@ function updateWordStatus(word, status, language) {
           isCustom: false
         };
 
-        // 确保 status 是数字类型
-        const numStatus = parseInt(status);
-        record.status = numStatus;
+        // 确保 status 是字符串类型
+        const strStatus = String(status);
+        record.status = strStatus;
 
         // 只有当 language 有值时才更新
         if (language !== undefined && language !== null && language !== '') {
@@ -3068,14 +3068,14 @@ function updateWordStatus(word, status, language) {
           record.statusHistory = {};
         }
 
-        // 更新状态历史记录
-        if (!record.statusHistory[numStatus]) {
-          record.statusHistory[numStatus] = {
+        // 更新状态历史记录（使用字符串作为键）
+        if (!record.statusHistory[strStatus]) {
+          record.statusHistory[strStatus] = {
             createTime: Date.now(),
             updateTime: Date.now()
           };
         } else {
-          record.statusHistory[numStatus].updateTime = Date.now();
+          record.statusHistory[strStatus].updateTime = Date.now();
         }
 
         const putReq = store.put(record);
