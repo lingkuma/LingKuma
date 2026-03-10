@@ -1145,30 +1145,30 @@
             zIndex: '114514'
         });
 
-        const autoPauseBtn = createControlButton('⏸️', '自动暂停', () => {
+        const autoPauseBtn = createControlButton('🚦', 'Auto Pause', () => {
             autoPauseEnabled = !autoPauseEnabled;
             autoPauseBtn.style.backgroundColor = autoPauseEnabled ? '#4CAF50' : '#ffffff';
             autoPauseBtn.style.color = autoPauseEnabled ? '#ffffff' : '#333333';
             console.log('自动暂停:', autoPauseEnabled);
-        });
+        }); 
 
-        const prevBtn = createControlButton('⏮️', '上一句', () => {
+        const prevBtn = createControlButton('⏮️', 'Previous', () => {
             navigateSubtitles('prev');
         });
 
-        const replayBtn = createControlButton('🔄', '重播', () => {
+        const replayBtn = createControlButton('🔄', 'Replay', () => {
             navigateSubtitles('replay');
         });
 
-        const nextBtn = createControlButton('⏭️', '下一句', () => {
+        const nextBtn = createControlButton('⏭️', 'Next', () => {
             navigateSubtitles('next');
         });
 
-        const modeBtn = createControlButton('🎬', '显示模式', () => {
+        const modeBtn = createControlButton('🎬', 'Display Mode', () => {
             showModeSelector();
         });
 
-        const offsetBtn = createControlButton('⏱️', '字幕偏移', () => {
+        const offsetBtn = createControlButton('⏱️', 'Subtitle Offset', () => {
             showSubtitleOffsetSelector();
         });
 
@@ -1351,9 +1351,9 @@
         });
 
         const modes = [
-            { id: 'normal', name: '正常', desc: '显示当前时间戳对应的字幕' },
-            { id: 'prev', name: '延迟一句', desc: '显示上一句字幕' },
-            { id: 'next', name: '提前一句', desc: '显示下一句字幕' }
+            { id: 'normal', name: 'Normal', desc: 'Show subtitle for current timestamp' },
+            { id: 'prev', name: 'Delay One', desc: 'Show previous subtitle' },
+            { id: 'next', name: 'Advance One', desc: 'Show next subtitle' }
         ];
 
         const modeList = document.createElement('div');
