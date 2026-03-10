@@ -1152,6 +1152,18 @@
             console.log('自动暂停:', autoPauseEnabled);
         }); 
 
+        // 播放/暂停切换按钮
+        const playPauseBtn = createControlButton('▶️', 'Play/Pause', () => {
+            const video = getVideoElement();
+            if (video) {
+                if (video.paused) {
+                    playVideo();
+                } else {
+                    pauseVideo();
+                }
+            }
+        });
+
         const prevBtn = createControlButton('⏮️', 'Previous', () => {
             navigateSubtitles('prev');
         });
@@ -1173,6 +1185,7 @@
         });
 
         controlBar.appendChild(autoPauseBtn);
+        controlBar.appendChild(playPauseBtn);
         controlBar.appendChild(prevBtn);
         controlBar.appendChild(replayBtn);
         controlBar.appendChild(nextBtn);
