@@ -2288,7 +2288,7 @@ async function showEnhancedTooltipForWord(word, sentence, wordRect, parent, orig
                           });
                       } else {
                           // 处理单个单词的标签（原有逻辑）
-                          if (aiTags.pos !== "null") {
+                          if (aiTags.pos !== "null" && aiTags.pos !== null) {
                               const posTags = Array.isArray(aiTags.pos) ? aiTags.pos : [aiTags.pos];
                               posTags.forEach(pos => {
                               tagPromises.push(
@@ -2305,7 +2305,7 @@ async function showEnhancedTooltipForWord(word, sentence, wordRect, parent, orig
                       }
 
                           // 处理单个单词的其他标签（德语性别、复数、动词变位等）
-                          if (aiTags.gender !== "null") {
+                          if (aiTags.gender !== "null" && aiTags.gender !== null) {
                               tagPromises.push(
                               new Promise((resolve) => {
                                   chrome.runtime.sendMessage({
@@ -2325,7 +2325,7 @@ async function showEnhancedTooltipForWord(word, sentence, wordRect, parent, orig
                           }
 
                           // 处理复数形式
-                          if (aiTags.plural !== "null") {
+                          if (aiTags.plural !== "null" && aiTags.plural !== null) {
                               tagPromises.push(
                               new Promise((resolve) => {
                                   chrome.runtime.sendMessage({
@@ -2338,7 +2338,7 @@ async function showEnhancedTooltipForWord(word, sentence, wordRect, parent, orig
                           }
 
                           // 处理动词变位
-                          if (aiTags.conjugation !== "null" && aiTags.conjugation !== word) {
+                          if (aiTags.conjugation !== "null" && aiTags.conjugation !== null && aiTags.conjugation !== word) {
                               tagPromises.push(
                               new Promise((resolve) => {
                                   chrome.runtime.sendMessage({
