@@ -7806,7 +7806,8 @@ function callOhMyGptGetToken(code) {
           await client.stat(directoryPath);
           // 目录已存在
       } catch (error) {
-          if (error.status === 404) {
+          // 404: 目录不存在; 409: 父目录不存在 (如坚果云返回 AncestorsNotFound)
+          if (error.status === 404 || error.status === 409) {
               // 目录不存在，尝试创建
               try {
                   // 逐级创建目录
@@ -7817,7 +7818,8 @@ function callOhMyGptGetToken(code) {
                       try {
                           await client.stat(currentPath);
                       } catch (statError) {
-                           if (statError.status === 404) {
+                           // 404 或 409 都表示需要创建目录
+                           if (statError.status === 404 || statError.status === 409) {
                                 console.log(`尝试创建目录: ${currentPath}`);
                                 await client.createDirectory(currentPath);
                            } else {
