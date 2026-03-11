@@ -323,8 +323,24 @@ function getSentenceForWord(detail) {
     false
   );
   let currentNode;
+  let lastParentElement = null; // 记录上一个文本节点的父元素
   while (currentNode = walker.nextNode()) {
+    const currentParentElement = currentNode.parentElement;
+    
+    // 检查是否跨越了块级元素边界
+    if (lastParentElement && currentParentElement !== lastParentElement) {
+      // 检查两个父元素是否都是块级元素
+      const isLastBlock = isBlockElement(lastParentElement);
+      const isCurrentBlock = isBlockElement(currentParentElement);
+      
+      // 如果跨越了块级元素边界，添加空格
+      if (isLastBlock || isCurrentBlock) {
+        rawFullTextBuilder += ' ';
+      }
+    }
+    
     rawFullTextBuilder += (currentNode.textContent || ""); // 获取原始文本
+    lastParentElement = currentParentElement; // 更新上一个父元素
   }
   //console.log('[getSentenceForWord] TreeWalker 构建的 rawFullText:', rawFullTextBuilder.substring(0, 200));
   //console.log('[getSentenceForWord] rawFullText 总长度:', rawFullTextBuilder.length);
