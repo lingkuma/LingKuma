@@ -324,23 +324,26 @@ function getSentenceForWord(detail) {
   );
   let currentNode;
   let lastParentElement = null; // 记录上一个文本节点的父元素
+  let lastBlockAncestor = null; // 记录上一个文本节点的最近块级祖先元素
+  
   while (currentNode = walker.nextNode()) {
     const currentParentElement = currentNode.parentElement;
     
+    // 查找当前文本节点的最近块级祖先元素
+    let currentBlockAncestor = currentParentElement;
+    while (currentBlockAncestor && currentBlockAncestor !== traversalParent && !isBlockElement(currentBlockAncestor)) {
+      currentBlockAncestor = currentBlockAncestor.parentElement;
+    }
+    
     // 检查是否跨越了块级元素边界
-    if (lastParentElement && currentParentElement !== lastParentElement) {
-      // 检查两个父元素是否都是块级元素
-      const isLastBlock = isBlockElement(lastParentElement);
-      const isCurrentBlock = isBlockElement(currentParentElement);
-      
+    if (lastBlockAncestor && currentBlockAncestor && currentBlockAncestor !== lastBlockAncestor) {
       // 如果跨越了块级元素边界，添加空格
-      if (isLastBlock || isCurrentBlock) {
-        rawFullTextBuilder += ' ';
-      }
+      rawFullTextBuilder += ' ';
     }
     
     rawFullTextBuilder += (currentNode.textContent || ""); // 获取原始文本
     lastParentElement = currentParentElement; // 更新上一个父元素
+    lastBlockAncestor = currentBlockAncestor; // 更新上一个块级祖先元素
   }
   //console.log('[getSentenceForWord] TreeWalker 构建的 rawFullText:', rawFullTextBuilder.substring(0, 200));
   //console.log('[getSentenceForWord] rawFullText 总长度:', rawFullTextBuilder.length);
