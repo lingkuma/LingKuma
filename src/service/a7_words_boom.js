@@ -4369,8 +4369,8 @@ function injectExplosionStyles() {
     /* 拖动手柄 */
     .word-explosion-drag-handle {
       position: absolute;
-      top: 8px;
-      left: 8px;
+      top: 6px;
+      left: 6px;
       width: 24px;
       height: 24px;
       cursor: move;
@@ -4723,11 +4723,11 @@ function injectExplosionStyles() {
 
     /* 暗色主题 - 拖动手柄 */
     .word-explosion-container.dark-mode .word-explosion-drag-handle {
-      color: #666;
+      color: #4FC3F7;
     }
 
     .word-explosion-container.dark-mode .word-explosion-drag-handle:hover {
-      color: #999;
+      color: #4FC3F7;
     }
 
     /* 暗色主题 - 原句 */
