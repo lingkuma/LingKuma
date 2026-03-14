@@ -1045,6 +1045,7 @@ function createSentenceRange(sentence, sentenceInfo) {
         sentenceRange.setStart(sentenceInfo.range.startContainer, sentenceInfo.range.startOffset);
         sentenceRange.setEnd(sentenceInfo.range.endContainer, sentenceInfo.range.endOffset);
       } else {
+        console.log('[WordExplosion] 正常句子高亮，无跨越元素');
         // 找到了句子，需要将规范化后的位置映射回原始文本的位置
         const sentenceStart = mapNormalizedPositionToOriginal(fullText, sentenceStartInNormalized);
         const sentenceEnd = mapNormalizedPositionToOriginal(fullText, sentenceStartInNormalized + normalizedSentence.length);
@@ -1096,7 +1097,8 @@ function createSentenceRange(sentence, sentenceInfo) {
         return null;
       }
     } else {
-      // 找到了句子，需要将规范化后的位置映射回原始文本的位置
+      // 找到了句子，正常高亮路径（无跨越元素）
+      console.log('[WordExplosion] 正常句子高亮，无跨越元素');
       const sentenceStart = mapNormalizedPositionToOriginal(fullText, sentenceStartInNormalized);
       const sentenceEnd = mapNormalizedPositionToOriginal(fullText, sentenceStartInNormalized + normalizedSentence.length);
 
@@ -1908,7 +1910,7 @@ async function extractUnknownWords(sentence, shouldTriggerQuery = true) {
     ).then(results => {
       // 查询完成后，更新缓存，并检查状态1-4的单词是否需要补充数据
       results.forEach(({ wordLower, details }) => {
-        console.log(`[extractUnknownWords] 异步查询结果: ${wordLower}`, details);
+        // console.log(`[extractUnknownWords] 异步查询结果: ${wordLower}`, details);
         
         // 获取缓存中当前的状态（可能在第二个循环中已被更新为1）
         const existingStatus = highlightManager?.wordDetailsFromDB?.[wordLower]?.status;
@@ -1916,7 +1918,7 @@ async function extractUnknownWords(sentence, shouldTriggerQuery = true) {
         
         // 检查数据库返回的是否为有效数据（有word字段或status字段）
         const hasValidData = details && (details.word || details.status !== undefined);
-        console.log(`[extractUnknownWords] hasValidData: ${hasValidData}, 当前缓存状态: ${existingStatus}`);
+        // console.log(`[extractUnknownWords] hasValidData: ${hasValidData}, 当前缓存状态: ${existingStatus}`);
         
         if (hasValidData) {
           // 如果缓存中的状态已经是1-4，而数据库返回的状态是undefined或0，保留缓存中的状态
