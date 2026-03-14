@@ -443,7 +443,7 @@ function getSentenceWordDetails(detail) {
     console.log("[DEBUG] getSentenceWordDetails called with detail:", JSON.stringify(detail, (key, value) => key === 'range' ? 'RangeObject' : value)); // 添加日志，避免循环引用
 
     // 1. 获取句子文本
-    const targetSentenceText = getSentenceForWord(detail);
+    const {sentence: targetSentenceText, range: sentenceRange} = getSentenceForWord(detail);
     console.log("[DEBUG] getSentenceForWord returned:", targetSentenceText); // 添加日志
     if (!targetSentenceText) {
       console.warn("getSentenceWordDetails: Could not get sentence text.");

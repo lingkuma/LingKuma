@@ -5835,7 +5835,7 @@ async function handleMouseMoveForTooltip(e,isOffscreen = false) {
     // return;
   } else {
     // 仅当 hoveredDetail 有效时才执行以下逻辑
-    const sentence1 = getSentenceForWord(hoveredDetail);
+    const {sentence: sentence1, range: sentenceRange1} = getSentenceForWord(hoveredDetail);
 
     // 新增：检查 hoveredDetail.word 是否有效
     if (!hoveredDetail.word) {
@@ -6040,7 +6040,7 @@ if (hoveredDetail) {
   if (isOffscreen) {
   //更新当前窗口的单词
   currentTooltipWord = hoveredDetail.word;
-  const sentence = getSentenceForWord(hoveredDetail);
+  const {sentence, range: sentenceRange} = getSentenceForWord(hoveredDetail);
     console.log("originalWord",hoveredDetail.word);
     // console.log("鼠标已停留500ms，尝试检测单词，isOffscreen为true");
 
@@ -8432,7 +8432,7 @@ function writeToClipboard() {
 
 
   if (hoveredDetail) {
-    const sentence = getSentenceForWord(hoveredDetail);
+    const {sentence, range: sentenceRange} = getSentenceForWord(hoveredDetail);
 
     // 播放句子 TTS
     try {
@@ -8445,7 +8445,7 @@ function writeToClipboard() {
 
 
   if (hoveredDetail) {
-    const sentence = getSentenceForWord(hoveredDetail);
+    const {sentence, range: sentenceRange2} = getSentenceForWord(hoveredDetail);
     highlightSpecificWords(getSentenceWordDetails(hoveredDetail), 66);
     navigator.clipboard.writeText(sentence);
   }
@@ -9517,7 +9517,7 @@ document.addEventListener('keydown', function(e) {
       if (hoveredDetail) {
 
         //获取句子
-        const sentence = getSentenceForWord(hoveredDetail);
+        const {sentence, range: sentenceRange} = getSentenceForWord(hoveredDetail);
 
         // 播放 TTS
         try {

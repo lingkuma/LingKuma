@@ -989,7 +989,7 @@ function createCrossElementSentenceRange(sentence, sentenceInfo) {
 }
 
 // 创建句子的Range对象
-// 首先尝试在单个文本节点中查找，如果失败则尝试跨元素查找
+// 首先尝试在单个文本节点中查找（高效），如果失败则使用预计算的sentenceRange或尝试跨元素查找
 function createSentenceRange(sentence, sentenceInfo) {
   if (!sentence || !sentenceInfo) return null;
 
@@ -1012,6 +1012,11 @@ function createSentenceRange(sentence, sentenceInfo) {
     if (sentenceInfo.range && !sentenceInfo.textNode) {
       const textNode = sentenceInfo.range.startContainer;
       if (textNode.nodeType !== Node.TEXT_NODE) {
+        // 尝试使用预计算的sentenceRange
+        if (sentenceInfo.sentenceRange && document.contains(sentenceInfo.sentenceRange.startContainer)) {
+          console.log('[WordExplosion] 备用系统：使用预计算的sentenceRange（跨元素）');
+          return sentenceInfo.sentenceRange;
+        }
         // 尝试跨元素查找
         console.log('[WordExplosion] 备用系统：startContainer不是文本节点，尝试跨元素查找');
         return createCrossElementSentenceRange(sentence, sentenceInfo);
@@ -1025,7 +1030,12 @@ function createSentenceRange(sentence, sentenceInfo) {
       const sentenceStartInNormalized = normalizedFullText.indexOf(normalizedSentence);
 
       if (sentenceStartInNormalized === -1) {
-        // 如果在单个节点中找不到句子，尝试跨元素查找
+        // 如果在单个节点中找不到句子，检查是否有预计算的sentenceRange（跨元素）
+        if (sentenceInfo.sentenceRange && document.contains(sentenceInfo.sentenceRange.startContainer)) {
+          console.log('[WordExplosion] 备用系统：使用预计算的sentenceRange（跨元素）');
+          return sentenceInfo.sentenceRange;
+        }
+        // 尝试跨元素查找
         console.log('[WordExplosion] 备用系统：在单个节点中找不到句子，尝试跨元素查找');
         const crossRange = createCrossElementSentenceRange(sentence, sentenceInfo);
         if (crossRange) return crossRange;
@@ -1049,6 +1059,11 @@ function createSentenceRange(sentence, sentenceInfo) {
     // 处理新系统的情况
     const { textNode } = sentenceInfo;
     if (!textNode || textNode.nodeType !== Node.TEXT_NODE) {
+      // 尝试使用预计算的sentenceRange
+      if (sentenceInfo.sentenceRange && document.contains(sentenceInfo.sentenceRange.startContainer)) {
+        console.log('[WordExplosion] 新系统：使用预计算的sentenceRange（跨元素）');
+        return sentenceInfo.sentenceRange;
+      }
       // 尝试跨元素查找
       console.log('[WordExplosion] 新系统：textNode无效，尝试跨元素查找');
       return createCrossElementSentenceRange(sentence, sentenceInfo);
@@ -1062,7 +1077,12 @@ function createSentenceRange(sentence, sentenceInfo) {
     const sentenceStartInNormalized = normalizedFullText.indexOf(normalizedSentence);
 
     if (sentenceStartInNormalized === -1) {
-      // 如果句子不在当前文本节点中，尝试跨元素查找
+      // 如果句子不在当前文本节点中，检查是否有预计算的sentenceRange（跨元素）
+      if (sentenceInfo.sentenceRange && document.contains(sentenceInfo.sentenceRange.startContainer)) {
+        console.log('[WordExplosion] 新系统：使用预计算的sentenceRange（跨元素）');
+        return sentenceInfo.sentenceRange;
+      }
+      // 尝试跨元素查找
       console.log('[WordExplosion] 新系统：在单个节点中找不到句子，尝试跨元素查找');
       const crossRange = createCrossElementSentenceRange(sentence, sentenceInfo);
       if (crossRange) return crossRange;
@@ -3741,14 +3761,15 @@ function findWordAndSentenceAtPositionFallback(x, y) {
       word: ''
     };
 
-    const sentence = getSentenceForWord(detail);
+    const {sentence, range: sentenceRange} = getSentenceForWord(detail);
 
     // 只有当句子长度合理时才返回
     if (sentence && sentence.trim().length >= 5) {
       return {
         sentence: sentence,
         rect: getSentenceRectFallback(sentence, range),
-        range: range
+        range: range,
+        sentenceRange: sentenceRange // 新增：返回句子的 Range 对象
       };
     }
 
@@ -3925,7 +3946,7 @@ function findWordAndSentenceAtPosition(x, y) {
         
         if (foundWord) {
           // 找到单词后，获取包含该单词的完整句子
-          const sentence = getSentenceForWord({
+          const {sentence, range: sentenceRange} = getSentenceForWord({
             range: foundWord.range,
             word: foundWord.word
           });
@@ -3939,7 +3960,8 @@ function findWordAndSentenceAtPosition(x, y) {
               sentence: sentence,
               rect: foundWord.rect,
               textNode: textNode,
-              range: foundWord.range
+              range: foundWord.range,
+              sentenceRange: sentenceRange // 新增：返回句子的 Range 对象
             };
           } else {
             console.log('[WordExplosion] getSentenceForWord 返回空');
