@@ -549,8 +549,8 @@ class ScopeObserver {
     const allTextNodes = [];
     while (currentNode) {
       const parent = currentNode.parentNode;
-      // 跳过隐藏元素
-      if (parent && getComputedStyle(parent).display !== 'none') {
+      // 跳过隐藏元素和 Base64 图片数据
+      if (parent && !this.isElementHidden(parent) && !this.isBase64ImageData(currentNode.textContent)) {
         allTextNodes.push(currentNode);
       }
       currentNode = treeWalker.nextNode();
@@ -622,6 +622,9 @@ class ScopeObserver {
       if (!textNode || !textNode.textContent) continue;
 
       const text = textNode.textContent.replace(/\u00AD/g, '');
+
+      // 跳过 Base64 图片数据
+      if (this.isBase64ImageData(text)) continue;
 
       // 判断文本类型并使用对应的分词方式
       if (this.isJapaneseText(text)) {
@@ -800,6 +803,11 @@ class ScopeObserver {
       return;
     }
 
+    // 跳过隐藏元素
+    if (this.isElementHidden(parent)) {
+      return;
+    }
+
     // 添加空白文本过滤
     if (!textNode.textContent.trim()) {
       return;
@@ -807,6 +815,11 @@ class ScopeObserver {
 
     // 预处理文本，移除软连字符
     const text = textNode.textContent.replace(/\u00AD/g, '');
+
+    // 跳过 Base64 图片数据
+    if (this.isBase64ImageData(text)) {
+      return;
+    }
 
     // 检查缓存
     const cacheKey = text + '|' + this.getCurrentLanguageSettings();
@@ -1914,6 +1927,10 @@ if (window.location.hostname.includes('youtube.com')) {
           // 过滤掉空白文本节点和在忽略元素中的节点
           if (!node.textContent.trim()) return NodeFilter.FILTER_REJECT;
           if (this.isElementIgnored(node.parentNode)) return NodeFilter.FILTER_REJECT;
+          // 过滤掉隐藏元素
+          if (this.isElementHidden(node.parentNode)) return NodeFilter.FILTER_REJECT;
+          // 过滤掉 Base64 图片数据
+          if (this.isBase64ImageData(node.textContent)) return NodeFilter.FILTER_REJECT;
           return NodeFilter.FILTER_ACCEPT;
         }
       }
@@ -2021,7 +2038,14 @@ if (window.location.hostname.includes('youtube.com')) {
     for (const textNode of textNodes) {
       if (!textNode || !textNode.textContent) continue;
 
+      // 跳过隐藏元素
+      const parent = textNode.parentNode;
+      if (parent && this.isElementHidden(parent)) continue;
+
       const text = textNode.textContent.replace(/\u00AD/g, '');
+
+      // 跳过 Base64 图片数据
+      if (this.isBase64ImageData(text)) continue;
 
       // 判断文本类型并使用对应的分词方式
       if (this.isJapaneseText(text)) {
@@ -2734,6 +2758,54 @@ if (window.location.hostname.includes('youtube.com')) {
     }
 
     return false;
+  }
+
+  // 新增：检查元素是否隐藏（包括 display:none, visibility:hidden, hidden属性, type="hidden" 等）
+  isElementHidden(element) {
+    if (!element) return true;
+
+    // 检查元素自身是否具有 hidden 属性
+    if (element.hidden) return true;
+
+    // 检查是否为 hidden 类型的 input 元素
+    if (element.tagName === 'INPUT' && element.type === 'hidden') return true;
+
+    // 检查 computed style
+    try {
+      const style = getComputedStyle(element);
+      // display: none 表示元素完全不渲染
+      if (style.display === 'none') return true;
+      // visibility: hidden 表示元素不可见但仍占据空间
+      if (style.visibility === 'hidden') return true;
+      // opacity: 0 表示完全透明（可选，根据需求决定是否过滤）
+      // if (style.opacity === '0') return true;
+    } catch (e) {
+      // 某些情况下 getComputedStyle 可能失败，忽略错误
+    }
+
+    // 检查父元素是否隐藏（递归向上检查）
+    let parent = element.parentElement;
+    while (parent && parent !== document.documentElement) {
+      if (parent.hidden) return true;
+      try {
+        const parentStyle = getComputedStyle(parent);
+        if (parentStyle.display === 'none') return true;
+      } catch (e) {
+        // 忽略错误
+      }
+      parent = parent.parentElement;
+    }
+
+    return false;
+  }
+
+  // 新增：检查文本是否为 Base64 图片数据
+  isBase64ImageData(text) {
+    if (!text || typeof text !== 'string') return false;
+    // 检查是否以 "data:image" 开头（Base64 图片数据的特征）
+    // 使用 trim() 去除可能的空白字符
+    const trimmedText = text.trim();
+    return trimmedText.startsWith('data:image');
   }
 
 
