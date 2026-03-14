@@ -757,7 +757,239 @@ function removeExplosionSentenceHighlight() {
   }
 }
 
+// 规范化文本：将各种空格字符统一为普通空格
+// 这样可以处理 &nbsp; (U+00A0) 等特殊空格字符
+// 注意：这里的规范化必须与content.js中的normalizeText函数保持一致
+function normalizeTextForHighlight(text) {
+  if (!text) return "";
+  // 替换软连字符为空字符串
+  let normalized = text.replace(/\u00AD/g, '');
+  // 替换所有空白字符（包括 \s 和 \u00A0 非断行空格）为单个普通空格
+  normalized = normalized.replace(/[\s\u00A0]+/g, ' ');
+  return normalized;
+}
+
+// 跨元素创建句子的Range对象
+// 当句子被多个元素分割时，此函数可以找到句子的起始和结束位置，创建跨越多个元素的Range
+function createCrossElementSentenceRange(sentence, sentenceInfo) {
+  if (!sentence) return null;
+
+  console.log('[WordExplosion] 尝试跨元素创建句子Range:', sentence.substring(0, 50) + '...');
+
+  const normalizedSentence = normalizeTextForHighlight(sentence);
+  if (!normalizedSentence || normalizedSentence.trim().length === 0) {
+    console.log('[WordExplosion] 规范化后的句子为空，返回null');
+    return null;
+  }
+
+  // 确定搜索的根元素
+  let rootElement = document.body;
+  
+  // 如果有sentenceInfo，尝试找到更精确的搜索范围
+  if (sentenceInfo) {
+    if (sentenceInfo.textNode && document.contains(sentenceInfo.textNode)) {
+      // 从文本节点向上找到合适的父元素
+      let parent = sentenceInfo.textNode.parentElement;
+      while (parent && parent !== document.body) {
+        const style = window.getComputedStyle(parent);
+        // 如果是absolute/fixed定位，使用这个元素作为根
+        if (style.position === 'absolute' || style.position === 'fixed') {
+          rootElement = parent;
+          break;
+        }
+        // 如果文本内容足够长，使用这个元素作为根
+        if (parent.innerText && parent.innerText.trim().length >= normalizedSentence.length) {
+          rootElement = parent;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+    } else if (sentenceInfo.range && document.contains(sentenceInfo.range.startContainer)) {
+      // 从range的起始容器向上找到合适的父元素
+      let container = sentenceInfo.range.startContainer;
+      let parent = container.nodeType === Node.TEXT_NODE ? container.parentElement : container;
+      while (parent && parent !== document.body) {
+        const style = window.getComputedStyle(parent);
+        if (style.position === 'absolute' || style.position === 'fixed') {
+          rootElement = parent;
+          break;
+        }
+        if (parent.innerText && parent.innerText.trim().length >= normalizedSentence.length) {
+          rootElement = parent;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+    }
+  }
+
+  console.log('[WordExplosion] 搜索根元素:', rootElement.tagName, rootElement.className);
+
+  // 使用TreeWalker遍历所有文本节点
+  const walker = document.createTreeWalker(
+    rootElement,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: function(node) {
+        // 检查文本节点的父元素是否可见
+        let element = node.parentElement;
+        while (element && element !== rootElement) {
+          const style = window.getComputedStyle(element);
+          if (style.display === 'none' ||
+              style.visibility === 'hidden' ||
+              style.opacity === '0') {
+            return NodeFilter.FILTER_REJECT;
+          }
+          element = element.parentElement;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    },
+    false
+  );
+
+  // 收集所有文本节点和它们的规范化文本
+  const textNodes = [];
+  let currentNode;
+  while (currentNode = walker.nextNode()) {
+    textNodes.push({
+      node: currentNode,
+      originalText: currentNode.textContent,
+      normalizedText: normalizeTextForHighlight(currentNode.textContent)
+    });
+  }
+
+  console.log('[WordExplosion] 找到文本节点数量:', textNodes.length);
+
+  // 构建完整的规范化文本，并记录每个字符对应的文本节点和偏移量
+  let fullNormalizedText = '';
+  const charMap = []; // 每个规范化字符对应的 {node, originalOffset}
+
+  for (const textNodeInfo of textNodes) {
+    const originalText = textNodeInfo.originalText;
+    const normalizedText = textNodeInfo.normalizedText;
+    
+    // 为每个规范化字符建立映射
+    let originalOffset = 0;
+    let normalizedOffset = 0;
+    
+    while (originalOffset < originalText.length) {
+      const char = originalText[originalOffset];
+      
+      // 软连字符在规范化时被删除
+      if (char === '\u00AD') {
+        originalOffset++;
+        continue;
+      }
+      
+      // 空白字符在规范化时被替换为单个空格
+      if (/[\s\u00A0]/.test(char)) {
+        // 跳过连续的空白字符
+        while (originalOffset < originalText.length && /[\s\u00A0]/.test(originalText[originalOffset])) {
+          originalOffset++;
+        }
+        // 记录规范化后的空格
+        charMap.push({
+          node: textNodeInfo.node,
+          originalOffset: originalOffset, // 指向空白后的第一个字符
+          isSpace: true
+        });
+        fullNormalizedText += ' ';
+        normalizedOffset++;
+      } else {
+        // 普通字符
+        charMap.push({
+          node: textNodeInfo.node,
+          originalOffset: originalOffset,
+          isSpace: false
+        });
+        fullNormalizedText += char;
+        originalOffset++;
+        normalizedOffset++;
+      }
+    }
+  }
+
+  console.log('[WordExplosion] 完整规范化文本长度:', fullNormalizedText.length);
+
+  // 在完整规范化文本中查找句子
+  const sentenceStartIndex = fullNormalizedText.indexOf(normalizedSentence);
+  
+  if (sentenceStartIndex === -1) {
+    console.warn('[WordExplosion] 在完整文本中找不到句子');
+    return null;
+  }
+
+  const sentenceEndIndex = sentenceStartIndex + normalizedSentence.length;
+  console.log('[WordExplosion] 找到句子位置:', sentenceStartIndex, '-', sentenceEndIndex);
+
+  // 找到起始位置对应的文本节点和偏移量
+  const startCharInfo = charMap[sentenceStartIndex];
+  if (!startCharInfo) {
+    console.warn('[WordExplosion] 无法找到起始字符信息');
+    return null;
+  }
+
+  // 找到结束位置对应的文本节点和偏移量
+  // 结束位置是句子最后一个字符的下一个位置
+  const endCharInfo = charMap[sentenceEndIndex - 1];
+  if (!endCharInfo) {
+    console.warn('[WordExplosion] 无法找到结束字符信息');
+    return null;
+  }
+
+  // 创建Range对象
+  try {
+    const sentenceRange = document.createRange();
+    
+    // 设置起始位置
+    // 如果起始字符是空格，需要找到下一个非空格字符的位置
+    let startNode = startCharInfo.node;
+    let startOffset = startCharInfo.originalOffset;
+    
+    // 如果起始位置是空格标记，需要向前查找实际的起始位置
+    if (startCharInfo.isSpace) {
+      // 空格标记的originalOffset指向空白后的第一个字符
+      // 我们需要找到空白开始的位置
+      // 向前查找空白字符
+      const nodeText = startNode.textContent;
+      let tempOffset = startCharInfo.originalOffset - 1;
+      while (tempOffset >= 0 && /[\s\u00A0]/.test(nodeText[tempOffset])) {
+        tempOffset--;
+      }
+      startOffset = tempOffset + 1;
+    }
+    
+    sentenceRange.setStart(startNode, startOffset);
+    
+    // 设置结束位置
+    let endNode = endCharInfo.node;
+    let endOffset = endCharInfo.originalOffset + 1; // Range的endOffset是 exclusive
+    
+    // 如果结束字符是空格标记
+    if (endCharInfo.isSpace) {
+      // 找到空白结束的位置
+      const nodeText = endNode.textContent;
+      while (endOffset < nodeText.length && /[\s\u00A0]/.test(nodeText[endOffset])) {
+        endOffset++;
+      }
+    }
+    
+    sentenceRange.setEnd(endNode, endOffset);
+    
+    console.log('[WordExplosion] 成功创建跨元素Range');
+    console.log('[WordExplosion] 起始节点:', startNode.textContent.substring(0, 30), '偏移:', startOffset);
+    console.log('[WordExplosion] 结束节点:', endNode.textContent.substring(0, 30), '偏移:', endOffset);
+    
+    return sentenceRange;
+  } catch (error) {
+    console.error('[WordExplosion] 创建跨元素Range失败:', error);
+    return null;
+  }
+}
+
 // 创建句子的Range对象
+// 首先尝试在单个文本节点中查找，如果失败则尝试跨元素查找
 function createSentenceRange(sentence, sentenceInfo) {
   if (!sentence || !sentenceInfo) return null;
 
@@ -779,7 +1011,11 @@ function createSentenceRange(sentence, sentenceInfo) {
     // 处理备用系统的情况（只有range属性）
     if (sentenceInfo.range && !sentenceInfo.textNode) {
       const textNode = sentenceInfo.range.startContainer;
-      if (textNode.nodeType !== Node.TEXT_NODE) return null;
+      if (textNode.nodeType !== Node.TEXT_NODE) {
+        // 尝试跨元素查找
+        console.log('[WordExplosion] 备用系统：startContainer不是文本节点，尝试跨元素查找');
+        return createCrossElementSentenceRange(sentence, sentenceInfo);
+      }
 
       const fullText = textNode.textContent;
       const normalizedFullText = normalizeText(fullText);
@@ -789,7 +1025,12 @@ function createSentenceRange(sentence, sentenceInfo) {
       const sentenceStartInNormalized = normalizedFullText.indexOf(normalizedSentence);
 
       if (sentenceStartInNormalized === -1) {
-        // 如果找不到句子，使用原始range
+        // 如果在单个节点中找不到句子，尝试跨元素查找
+        console.log('[WordExplosion] 备用系统：在单个节点中找不到句子，尝试跨元素查找');
+        const crossRange = createCrossElementSentenceRange(sentence, sentenceInfo);
+        if (crossRange) return crossRange;
+        
+        // 如果跨元素查找也失败，使用原始range
         console.warn('[WordExplosion] 在规范化文本中找不到句子，使用原始range');
         sentenceRange.setStart(sentenceInfo.range.startContainer, sentenceInfo.range.startOffset);
         sentenceRange.setEnd(sentenceInfo.range.endContainer, sentenceInfo.range.endOffset);
@@ -807,7 +1048,11 @@ function createSentenceRange(sentence, sentenceInfo) {
 
     // 处理新系统的情况
     const { textNode } = sentenceInfo;
-    if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return null;
+    if (!textNode || textNode.nodeType !== Node.TEXT_NODE) {
+      // 尝试跨元素查找
+      console.log('[WordExplosion] 新系统：textNode无效，尝试跨元素查找');
+      return createCrossElementSentenceRange(sentence, sentenceInfo);
+    }
 
     const fullText = textNode.textContent;
     const normalizedFullText = normalizeText(fullText);
@@ -817,7 +1062,12 @@ function createSentenceRange(sentence, sentenceInfo) {
     const sentenceStartInNormalized = normalizedFullText.indexOf(normalizedSentence);
 
     if (sentenceStartInNormalized === -1) {
-      // 如果句子不在当前文本节点中，尝试使用原始范围
+      // 如果句子不在当前文本节点中，尝试跨元素查找
+      console.log('[WordExplosion] 新系统：在单个节点中找不到句子，尝试跨元素查找');
+      const crossRange = createCrossElementSentenceRange(sentence, sentenceInfo);
+      if (crossRange) return crossRange;
+      
+      // 如果跨元素查找也失败，尝试使用原始范围
       console.warn('[WordExplosion] 在规范化文本中找不到句子，尝试使用原始范围');
       if (sentenceInfo.range) {
         sentenceRange.setStart(sentenceInfo.range.startContainer, sentenceInfo.range.startOffset);
@@ -837,7 +1087,8 @@ function createSentenceRange(sentence, sentenceInfo) {
     return sentenceRange;
   } catch (error) {
     console.error('[WordExplosion] 创建句子Range失败:', error);
-    return null;
+    // 尝试跨元素查找作为最后的备选方案
+    return createCrossElementSentenceRange(sentence, sentenceInfo);
   }
 }
 
