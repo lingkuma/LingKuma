@@ -1049,6 +1049,37 @@ async function positionWordExplosion(sentenceRect = null) {
     // 手动模式使用保存的位置
     wordExplosionEl.style.left = wordExplosionSavedPosition.x + 'px';
     wordExplosionEl.style.top = wordExplosionSavedPosition.y + 'px';
+
+    // 手动模式下也需要定位左侧按钮
+    if (explosionShadowRoot) {
+      const leftButtons = explosionShadowRoot.getElementById('word-explosion-left-buttons-wrapper');
+      const leftButtonsBridge = explosionShadowRoot.getElementById('word-explosion-left-buttons-bridge');
+      if (leftButtons) {
+        // 显示左侧按钮
+        leftButtons.style.display = 'flex';
+        // 同步弹窗的暗色模式类到左侧按钮容器
+        if (wordExplosionEl.classList.contains('dark-mode')) {
+          leftButtons.classList.add('dark-mode');
+        } else {
+          leftButtons.classList.remove('dark-mode');
+        }
+        // 手动模式使用fixed定位
+        leftButtons.style.position = 'fixed';
+        leftButtons.style.left = (wordExplosionSavedPosition.x - 28) + 'px';
+        leftButtons.style.top = (wordExplosionSavedPosition.y + 16) + 'px';
+
+        // 定位透明连接层
+        if (leftButtonsBridge) {
+          leftButtonsBridge.style.display = 'block';
+          leftButtonsBridge.style.position = 'fixed';
+          leftButtonsBridge.style.left = (wordExplosionSavedPosition.x - 4) + 'px';
+          leftButtonsBridge.style.top = wordExplosionSavedPosition.y + 'px';
+          // 获取弹窗高度
+          const explosionRect = wordExplosionEl.getBoundingClientRect();
+          leftButtonsBridge.style.height = explosionRect.height + 'px';
+        }
+      }
+    }
     return;
   }
 
