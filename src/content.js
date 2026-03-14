@@ -57,6 +57,19 @@ function normalizeText(text) {
   return normalized.trim();
 }
 
+// 新增辅助函数：标准化文本并移除引用标记（用于句子提取和 Range 创建）
+// 这个函数的规范化逻辑必须与遍历时的规范化逻辑保持一致
+function normalizeTextForSentence(text) {
+  if (!text) return "";
+  // 移除引用标记 [\d+]
+  let normalized = text.replace(/\[\d+\]/g, '');
+  // 替换软连字符为空字符串
+  normalized = normalized.replace(/\u00AD/g, '');
+  // 替换所有空白字符为单个普通空格
+  normalized = normalized.replace(/[\s\u00A0]+/g, ' ');
+  return normalized;
+}
+
 // =======================
 // 显示单词限制通知
 // =======================
@@ -234,7 +247,7 @@ function getSentenceForWord(detail) {
   // 新增：检查 detail 和其必要属性是否有效
   if (!detail || !detail.range || !detail.range.startContainer) {
     //console.error('[getSentenceForWord] 传入的 detail 或其 range/startContainer 无效。', detail);
-    return ""; // 无效则直接返回空字符串
+    return {sentence: "", range: null}; // 无效则返回空对象
   }
   // console.log("=== [Debug] 开始获取句子 for word:", detail.word, "Container:", detail.range.startContainer, "Offset:", detail.range.startOffset);
   let container = detail.range.startContainer;
@@ -331,8 +344,63 @@ function getSentenceForWord(detail) {
   const normalizedCharMap = []; // 每个元素: {node, originalOffset}
   let normalizedTextBuilder = ""; // 同时构建规范化文本（已移除引用标记）
   
+  // 获取当前单词所在的文本节点和偏移量，用于在遍历时计算 offset
+  const wordTextNode = detail.range.startContainer.nodeType === Node.TEXT_NODE 
+    ? detail.range.startContainer 
+    : null;
+  const wordStartOffset = detail.range.startOffset;
+  let offset = -1; // 将在遍历时计算
+  
+  console.log('[getSentenceForWord] 开始遍历，traversalParent:', traversalParent.tagName, traversalParent.className);
+  console.log('[getSentenceForWord] wordTextNode:', wordTextNode?.textContent?.substring(0, 30), 'wordStartOffset:', wordStartOffset);
+  
   while (currentNode = walker.nextNode()) {
+    console.log('[getSentenceForWord] 遍历到文本节点:', currentNode.textContent?.substring(0, 50));
     const currentParentElement = currentNode.parentElement;
+    
+    // 检查是否是单词所在的文本节点，如果是则计算 offset
+    if (currentNode === wordTextNode && offset === -1) {
+      // 计算单词在 normalizedTextBuilder 中的位置
+      // 需要考虑规范化后的偏移量
+      let normalizedOffsetInNode = 0;
+      let originalPos = 0;
+      const nodeText = currentNode.textContent || "";
+      
+      while (originalPos < wordStartOffset) {
+        const char = nodeText[originalPos];
+        
+        // 引用标记被移除，不计入规范化偏移
+        if (char === '[' && originalPos + 1 < nodeText.length) {
+          const restOfText = nodeText.substring(originalPos);
+          const refMatch = restOfText.match(/^\[\d+\]/);
+          if (refMatch) {
+            originalPos += refMatch[0].length;
+            continue;
+          }
+        }
+        
+        // 软连字符被移除，不计入规范化偏移
+        if (char === '\u00AD') {
+          originalPos++;
+          continue;
+        }
+        
+        // 空白字符被合并为单个空格
+        if (/[\s\u00A0]/.test(char)) {
+          // 跳过连续空白，但只增加一个规范化偏移
+          while (originalPos < wordStartOffset && /[\s\u00A0]/.test(nodeText[originalPos])) {
+            originalPos++;
+          }
+          normalizedOffsetInNode++;
+        } else {
+          normalizedOffsetInNode++;
+          originalPos++;
+        }
+      }
+      
+      offset = normalizedTextBuilder.length + normalizedOffsetInNode;
+      console.log('[getSentenceForWord] 计算出的 offset:', offset, 'normalizedOffsetInNode:', normalizedOffsetInNode);
+    }
     
     // 查找当前文本节点的最近块级祖先元素
     let currentBlockAncestor = currentParentElement;
@@ -398,47 +466,21 @@ function getSentenceForWord(detail) {
   //console.log('[getSentenceForWord] TreeWalker 构建的 rawFullText:', rawFullTextBuilder.substring(0, 200));
   //console.log('[getSentenceForWord] rawFullText 总长度:', rawFullTextBuilder.length);
 
-  // --- 步骤 2-5: 基于 Range 计算 Offset (在标准化和清理后) ---
-  let offset = -1;
-  let normalizedFullText = ""; // 将在下面计算
-
-  try {
-    const preRange = document.createRange();
-    preRange.selectNodeContents(parent);
-    preRange.setEnd(detail.range.startContainer, detail.range.startOffset);
-
-    let rawRangeText = preRange.toString();
-    //console.log('[getSentenceForWord] Range.toString() 原始文本:', rawRangeText.substring(0, 100));
-
-    // --- 标准化 Range 文本 ---
-    let normalizedRangeText = normalizeText(rawRangeText);
-    //console.log('[getSentenceForWord] 标准化后的 Range 文本:', normalizedRangeText.substring(0, 100));
-
-    // --- 清理标准化后的 Range 文本 (移除引用标记) ---
-    let cleanedNormalizedRangeText = normalizedRangeText.replace(/\[\d+\]/g, '');
-    // console.log('[getSentenceForWord] 清理并标准化后的 Range 文本:', cleanedNormalizedRangeText.substring(0, 100));
-
-    // --- 计算精确 offset ---
-    offset = cleanedNormalizedRangeText.length;
-    // console.log('[getSentenceForWord] 计算出的 offset:', offset);
-
-  } catch (e) {
-    //console.error("使用 Range 计算 Offset 时出错:", e, "Parent:", parent, "Container:", detail.range.startContainer);
-    return ""; // 出错则返回
-  }
-
+  // --- 步骤 2-5: Offset 已在遍历时计算 ---
+  
   if (offset === -1) {
-      //console.error("未能使用 Range 方法计算 Offset");
-      return "";
+      console.error("未能计算 Offset");
+      return {sentence: "", range: null};
   }
+  console.log('[getSentenceForWord] 最终 offset:', offset);
   // --- 结束 Range Offset 计算 ---
 
   // --- 步骤 6: 标准化并清理 fullText ---
-  normalizedFullText = normalizeText(rawFullTextBuilder); // 标准化原始 fullText
-  // console.log('[getSentenceForWord] 标准化后的 fullText:', normalizedFullText.substring(0, 200));
-  let cleanedNormalizedFullText = normalizedFullText.replace(/\[\d+\]/g, ''); // 移除引用标记
-  // console.log('[getSentenceForWord] 清理并标准化后的 fullText:', cleanedNormalizedFullText.substring(0, 200));
-  // console.log('[getSentenceForWord] cleanedNormalizedFullText 总长度:', cleanedNormalizedFullText.length);
+  // 使用遍历时构建的 normalizedTextBuilder，它已经移除了引用标记
+  // 这样可以确保 normalizedCharMap 的索引与文本一致
+  let cleanedNormalizedFullText = normalizedTextBuilder;
+  console.log('[getSentenceForWord] normalizedTextBuilder 长度:', normalizedTextBuilder.length, '内容:', normalizedTextBuilder.substring(0, 200));
+  console.log('[getSentenceForWord] normalizedCharMap 长度:', normalizedCharMap.length);
 
 
   // --- 步骤 7: 提取句子 (使用清理并标准化的 fullText 和精确的 offset) ---
