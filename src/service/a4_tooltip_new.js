@@ -9449,6 +9449,62 @@ function setupMouseListeners() {
 
 
 ////////////////////////// 键盘事件处理
+
+// 处理句子爆炸快捷键触发
+function handleSentenceExplosion() {
+  console.log('[SentenceExplosion] 句子爆炸快捷键被触发');
+  
+  // 检查lastMouseEvent是否存在
+  if (!lastMouseEvent) {
+    console.log('[SentenceExplosion] 没有鼠标事件记录，无法触发');
+    return;
+  }
+
+  // 检查句子爆炸功能是否启用
+  chrome.storage.local.get(['wordExplosionEnabled', 'enablePlugin'], function(result) {
+    const isPluginEnabled = result.enablePlugin !== false;
+    const isExplosionEnabled = result.wordExplosionEnabled !== false;
+    
+    if (!isPluginEnabled || !isExplosionEnabled) {
+      console.log('[SentenceExplosion] 插件或句子爆炸功能未启用');
+      return;
+    }
+
+    // 使用findWordAndSentenceAtPosition获取鼠标位置的句子信息
+    // 这个函数在a7_words_boom.js中定义
+    if (typeof findWordAndSentenceAtPosition === 'function') {
+      const sentenceInfo = findWordAndSentenceAtPosition(lastMouseEvent.clientX, lastMouseEvent.clientY);
+      console.log('[SentenceExplosion] findWordAndSentenceAtPosition返回:', sentenceInfo);
+      
+      if (sentenceInfo && sentenceInfo.sentence && sentenceInfo.sentence.trim().length >= 5) {
+        console.log('[SentenceExplosion] 找到有效句子:', sentenceInfo.sentence);
+        
+        // 获取句子的位置信息（优先使用sentenceInfo中已有的rect）
+        let sentenceRect = sentenceInfo.rect;
+        
+        // 如果没有rect，尝试使用getSentenceRect函数获取
+        if (!sentenceRect && typeof getSentenceRect === 'function') {
+          sentenceRect = getSentenceRect(sentenceInfo.sentence, {
+            textNode: sentenceInfo.textNode,
+            range: sentenceInfo.range
+          });
+        }
+        
+        // 调用showWordExplosion显示句子爆炸弹窗
+        if (typeof showWordExplosion === 'function') {
+          showWordExplosion(sentenceInfo.sentence, sentenceRect, sentenceInfo);
+        } else {
+          console.warn('[SentenceExplosion] showWordExplosion函数不可用');
+        }
+      } else {
+        console.log('[SentenceExplosion] 未找到有效句子');
+      }
+    } else {
+      console.warn('[SentenceExplosion] findWordAndSentenceAtPosition函数不可用');
+    }
+  });
+}
+
 document.addEventListener('keydown', function(e) {
   console.log("lastMouseEvent:  ", lastMouseEvent);
 
@@ -9479,11 +9535,12 @@ document.addEventListener('keydown', function(e) {
   }
 
   // 获取用户自定义快捷键
-  chrome.storage.local.get(['wordQueryKey', 'copySentenceKey', 'analysisWindowKey', 'sidePanelKey'], function(result) {
+  chrome.storage.local.get(['wordQueryKey', 'copySentenceKey', 'analysisWindowKey', 'sidePanelKey', 'sentenceExplosionKey'], function(result) {
     const wordQueryKey = (result.wordQueryKey || 'q').toLowerCase();
     const copySentenceKey = (result.copySentenceKey || 'w').toLowerCase();
     const analysisWindowKey = (result.analysisWindowKey || 'e').toLowerCase();
     const sidePanelKey = (result.sidePanelKey || 'r').toLowerCase();
+    const sentenceExplosionKey = (result.sentenceExplosionKey || 't').toLowerCase();
 
     console.log("用户按下快捷键", e.key.toLowerCase());
     if (e.key.toLowerCase() === wordQueryKey) {
@@ -9568,6 +9625,13 @@ document.addEventListener('keydown', function(e) {
     } else if (e.key.toLowerCase() === sidePanelKey) {
       // 打开侧栏，进行句子解析
       handleSidebarAnalysis();
+
+      // 添加阻止传播和默认行为
+      e.preventDefault();
+      e.stopPropagation();
+    } else if (e.key.toLowerCase() === sentenceExplosionKey) {
+      // 触发句子爆炸功能
+      handleSentenceExplosion();
 
       // 添加阻止传播和默认行为
       e.preventDefault();

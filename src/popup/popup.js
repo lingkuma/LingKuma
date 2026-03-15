@@ -477,6 +477,7 @@ function initializeSettings() {
       copySentenceKey: 'w',
       analysisWindowKey: 'e',
       sidePanelKey: 'r',
+      sentenceExplosionKey: 't',
       // addAITranslationKey: 'tab',
 
       // 新增：单词状态快捷键默认值
@@ -2214,6 +2215,16 @@ chrome.storage.local.get('sidePanelKey', function(result) {
     sidePanelBtn.dataset.key = key;
     // sidePanelBtn.placeholder = key.toUpperCase(); // 旧代码：转了大写
     sidePanelBtn.placeholder = (key === ' ') ? 'Space' : key; // 修改：不转大写，处理空格显示
+});
+
+// 句子爆炸快捷键
+const sentenceExplosionBtn = document.getElementById('sentenceExplosionBtn');
+
+// 加载状态
+chrome.storage.local.get('sentenceExplosionKey', function(result) {
+    const key = result.sentenceExplosionKey || 't';
+    sentenceExplosionBtn.dataset.key = key;
+    sentenceExplosionBtn.placeholder = (key === ' ') ? 'Space' : key;
 });
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -4579,6 +4590,7 @@ document.addEventListener('DOMContentLoaded', function() {
       setupKeydownListener('copySentenceBtn', 'copySentenceKey');
       setupKeydownListener('analysisWindowBtn', 'analysisWindowKey');
       setupKeydownListener('sidePanelBtn', 'sidePanelKey');
+      setupKeydownListener('sentenceExplosionBtn', 'sentenceExplosionKey');
       // 添加AI释义快捷键
       setupKeydownListener('addAITranslationBtn', 'addAITranslationKey');
       // 添加关闭小窗快捷键
@@ -4680,6 +4692,7 @@ function setupKeydownListener(elementId, storageKey = null) {
                         case 'copySentenceKey': defaultKey = 'w'; break;
                         case 'analysisWindowKey': defaultKey = 'e'; break;
                         case 'sidePanelKey': defaultKey = 'r'; break;
+                        case 'sentenceExplosionKey': defaultKey = 't'; break;
                         case 'addAITranslationKey': defaultKey = 'tab'; break;
                         default: defaultKey = ' '; // 未知 storageKey 的回退
                     }
