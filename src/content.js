@@ -338,6 +338,44 @@ function getSentenceForWord(detail) {
   let currentNode;
   let lastParentElement = null; // 记录上一个文本节点的父元素
   let lastBlockAncestor = null; // 记录上一个文本节点的最近块级祖先元素
+  let lastTextNode = null; // 记录上一个文本节点，用于检测 br 标签
+  
+  // 辅助函数：检测两个文本节点之间是否有 br 标签
+  function hasBrBetween(node1, node2) {
+    if (!node1 || !node2) return false;
+    
+    // 获取两个节点的共同祖先
+    let ancestor = node1.parentElement;
+    while (ancestor) {
+      if (ancestor.contains(node2)) break;
+      ancestor = ancestor.parentElement;
+    }
+    if (!ancestor) return false;
+    
+    // 在共同祖先中查找两个节点之间的 br 标签
+    const walker = document.createTreeWalker(
+      ancestor,
+      NodeFilter.SHOW_ELEMENT,
+      null,
+      false
+    );
+    
+    let foundFirst = false;
+    let currentNode;
+    while ((currentNode = walker.nextNode())) {
+      if (currentNode.contains(node1)) {
+        foundFirst = true;
+        continue;
+      }
+      if (foundFirst && currentNode.contains(node2)) {
+        break;
+      }
+      if (foundFirst && currentNode.tagName === 'BR') {
+        return true;
+      }
+    }
+    return false;
+  }
   
   // 新增：记录规范化文本中每个字符对应的原始文本位置和节点信息
   // 用于创建跨元素的 Range（同时移除引用标记）
@@ -351,11 +389,11 @@ function getSentenceForWord(detail) {
   const wordStartOffset = detail.range.startOffset;
   let offset = -1; // 将在遍历时计算
   
-  console.log('[getSentenceForWord] 开始遍历，traversalParent:', traversalParent.tagName, traversalParent.className);
-  console.log('[getSentenceForWord] wordTextNode:', wordTextNode?.textContent?.substring(0, 30), 'wordStartOffset:', wordStartOffset);
+  // console.log('[getSentenceForWord] 开始遍历，traversalParent:', traversalParent.tagName, traversalParent.className);
+  // console.log('[getSentenceForWord] wordTextNode:', wordTextNode?.textContent?.substring(0, 30), 'wordStartOffset:', wordStartOffset);
   
-  while (currentNode = walker.nextNode()) {
-    console.log('[getSentenceForWord] 遍历到文本节点:', currentNode.textContent?.substring(0, 50));
+  while ((currentNode = walker.nextNode())) {
+    // console.log('[getSentenceForWord] 遍历到文本节点:', currentNode.textContent?.substring(0, 50));
     const currentParentElement = currentNode.parentElement;
     
     // 检查是否是单词所在的文本节点，如果是则计算 offset
@@ -399,7 +437,7 @@ function getSentenceForWord(detail) {
       }
       
       offset = normalizedTextBuilder.length + normalizedOffsetInNode;
-      console.log('[getSentenceForWord] 计算出的 offset:', offset, 'normalizedOffsetInNode:', normalizedOffsetInNode);
+      // console.log('[getSentenceForWord] 计算出的 offset:', offset, 'normalizedOffsetInNode:', normalizedOffsetInNode);
     }
     
     // 查找当前文本节点的最近块级祖先元素
@@ -415,6 +453,13 @@ function getSentenceForWord(detail) {
       // 记录规范化文本中的空格（块边界产生的空格）
       normalizedTextBuilder += ' ';
       normalizedCharMap.push({node: lastParentElement ? lastParentElement.firstChild : null, originalOffset: 0, isBlockBoundary: true});
+    }
+    // 检查两个文本节点之间是否有 br 标签
+    else if (lastTextNode && hasBrBetween(lastTextNode, currentNode)) {
+      // 如果有 br 标签，添加空格
+      rawFullTextBuilder += ' ';
+      normalizedTextBuilder += ' ';
+      normalizedCharMap.push({node: lastParentElement ? lastParentElement.firstChild : null, originalOffset: 0, isBrBoundary: true});
     }
     
     const nodeText = currentNode.textContent || "";
@@ -462,6 +507,7 @@ function getSentenceForWord(detail) {
     
     lastParentElement = currentParentElement; // 更新上一个父元素
     lastBlockAncestor = currentBlockAncestor; // 更新上一个块级祖先元素
+    lastTextNode = currentNode; // 更新上一个文本节点
   }
   //console.log('[getSentenceForWord] TreeWalker 构建的 rawFullText:', rawFullTextBuilder.substring(0, 200));
   //console.log('[getSentenceForWord] rawFullText 总长度:', rawFullTextBuilder.length);
@@ -469,18 +515,18 @@ function getSentenceForWord(detail) {
   // --- 步骤 2-5: Offset 已在遍历时计算 ---
   
   if (offset === -1) {
-      console.error("未能计算 Offset");
+      // console.error("未能计算 Offset");
       return {sentence: "", range: null};
   }
-  console.log('[getSentenceForWord] 最终 offset:', offset);
+  // console.log('[getSentenceForWord] 最终 offset:', offset);
   // --- 结束 Range Offset 计算 ---
 
   // --- 步骤 6: 标准化并清理 fullText ---
   // 使用遍历时构建的 normalizedTextBuilder，它已经移除了引用标记
   // 这样可以确保 normalizedCharMap 的索引与文本一致
   let cleanedNormalizedFullText = normalizedTextBuilder;
-  console.log('[getSentenceForWord] normalizedTextBuilder 长度:', normalizedTextBuilder.length, '内容:', normalizedTextBuilder.substring(0, 200));
-  console.log('[getSentenceForWord] normalizedCharMap 长度:', normalizedCharMap.length);
+  // console.log('[getSentenceForWord] normalizedTextBuilder 长度:', normalizedTextBuilder.length, '内容:', normalizedTextBuilder.substring(0, 200));
+  // console.log('[getSentenceForWord] normalizedCharMap 长度:', normalizedCharMap.length);
 
 
   // --- 步骤 7: 提取句子 (使用清理并标准化的 fullText 和精确的 offset) ---
