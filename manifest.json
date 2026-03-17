@@ -47,6 +47,7 @@
       "src/plugin/youtubeCaptionGet.js",
       "src/plugin/youtubeCaptionFix.js",
       "src/plugin/youtubeVideoOverlay.js",
+      "src/plugin/min/compromise.js",
       "src/plugin/min/de-compromise.min.js",
       "src/plugin/verb-highlight.js",
       "src/service/a1_loadKnowWords.js",

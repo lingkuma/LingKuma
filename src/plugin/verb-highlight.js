@@ -2,13 +2,16 @@
     'use strict';
 
     // =======================
-    // 动词高亮插件 - 使用 de-compromise 识别德语动词
+    // 动词高亮插件 - 使用 compromise/de-compromise 识别动词
     // =======================
 
     // 配置项（从storage加载）
     let verbHighlightConfig = {
         enabled: false, // 功能总开关
         language: 'german', // 高亮语言：german, english
+        backgroundEnabled: true, // 背景高亮开关
+        backgroundColor: '#FF6B6B40', // 背景颜色
+        underlineEnabled: true, // 下划线开关
         underlineStyle: 'wavy', // 下划线样式：solid/wavy/dotted/dashed
         underlineColor: '#FF6B6B', // 下划线颜色
         underlineThickness: 2, // 下划线粗度
@@ -17,10 +20,11 @@
 
     // 全局变量
     let verbHighlightObserver = null; // ScopeObserver 实例
-    let nlpDe = null; // de-compromise 实例
+    let nlpInstance = null; // NLP 实例（德语或英语）
 
     // CSS Highlight 组名
-    const VERB_HIGHLIGHT_GROUP = 'verb-highlight-group';
+    const VERB_HIGHLIGHT_UNDERLINE_GROUP = 'verb-highlight-underline-group';
+    const VERB_HIGHLIGHT_BACKGROUND_GROUP = 'verb-highlight-background-group';
 
     // =======================
     // 初始化：加载配置并启动
@@ -29,6 +33,9 @@
         chrome.storage.local.get([
             'verbHighlightEnabled',
             'verbHighlightLanguage',
+            'verbHighlightBackgroundEnabled',
+            'verbHighlightBackgroundColor',
+            'verbHighlightUnderlineEnabled',
             'verbHighlightUnderlineStyle',
             'verbHighlightUnderlineColor',
             'verbHighlightUnderlineThickness',
@@ -36,6 +43,9 @@
         ], (result) => {
             verbHighlightConfig.enabled = result.verbHighlightEnabled || false;
             verbHighlightConfig.language = result.verbHighlightLanguage || 'german';
+            verbHighlightConfig.backgroundEnabled = result.verbHighlightBackgroundEnabled !== false;
+            verbHighlightConfig.backgroundColor = result.verbHighlightBackgroundColor || '#FF6B6B40';
+            verbHighlightConfig.underlineEnabled = result.verbHighlightUnderlineEnabled !== false;
             verbHighlightConfig.underlineStyle = result.verbHighlightUnderlineStyle || 'wavy';
             verbHighlightConfig.underlineColor = result.verbHighlightUnderlineColor || '#FF6B6B';
             verbHighlightConfig.underlineThickness = result.verbHighlightUnderlineThickness || 2;
@@ -54,27 +64,47 @@
     // 启动动词高亮
     // =======================
     function startVerbHighlight() {
-        if (verbHighlightConfig.language !== 'german') {
-            console.log('[VerbHighlight] 当前语言不支持:', verbHighlightConfig.language);
-            return;
-        }
-
-        // 检查 de-compromise 是否已加载（全局变量名为 deCompromise）
-        if (typeof window.deCompromise !== 'undefined') {
-            nlpDe = window.deCompromise;
-            console.log('[VerbHighlight] de-compromise 已加载');
-            initializeHighlighter();
+        const language = verbHighlightConfig.language;
+        
+        // 根据语言选择对应的 NLP 库
+        if (language === 'german') {
+            // 检查 de-compromise 是否已加载（全局变量名为 deCompromise）
+            if (typeof window.deCompromise !== 'undefined') {
+                nlpInstance = window.deCompromise;
+                console.log('[VerbHighlight] de-compromise 已加载');
+                initializeHighlighter();
+            } else {
+                console.warn('[VerbHighlight] de-compromise 未加载，等待加载...');
+                // 延迟重试
+                setTimeout(() => {
+                    if (typeof window.deCompromise !== 'undefined') {
+                        nlpInstance = window.deCompromise;
+                        initializeHighlighter();
+                    } else {
+                        console.error('[VerbHighlight] de-compromise 加载失败');
+                    }
+                }, 1000);
+            }
+        } else if (language === 'english') {
+            // 检查 compromise 是否已加载（全局变量名为 nlp）
+            if (typeof window.nlp !== 'undefined') {
+                nlpInstance = window.nlp;
+                console.log('[VerbHighlight] compromise (English) 已加载');
+                initializeHighlighter();
+            } else {
+                console.warn('[VerbHighlight] compromise 未加载，等待加载...');
+                // 延迟重试
+                setTimeout(() => {
+                    if (typeof window.nlp !== 'undefined') {
+                        nlpInstance = window.nlp;
+                        initializeHighlighter();
+                    } else {
+                        console.error('[VerbHighlight] compromise 加载失败');
+                    }
+                }, 1000);
+            }
         } else {
-            console.warn('[VerbHighlight] de-compromise 未加载，等待加载...');
-            // 延迟重试
-            setTimeout(() => {
-                if (typeof window.deCompromise !== 'undefined') {
-                    nlpDe = window.deCompromise;
-                    initializeHighlighter();
-                } else {
-                    console.error('[VerbHighlight] de-compromise 加载失败');
-                }
-            }, 1000);
+            console.log('[VerbHighlight] 当前语言不支持:', language);
         }
     }
 
@@ -88,7 +118,8 @@
         // 创建 ScopeObserver
         verbHighlightObserver = new VerbHighlightObserver({
             scope: document.body,
-            nlp: nlpDe
+            nlp: nlpInstance,
+            language: verbHighlightConfig.language
         });
 
         console.log('[VerbHighlight] 高亮器已初始化');
@@ -105,28 +136,51 @@
             document.head.appendChild(styleEl);
         }
 
-        const { underlineStyle, underlineColor, underlineThickness, underlinePosition } = verbHighlightConfig;
+        const { 
+            backgroundEnabled, 
+            backgroundColor,
+            underlineEnabled,
+            underlineStyle, 
+            underlineColor, 
+            underlineThickness, 
+            underlinePosition 
+        } = verbHighlightConfig;
 
-        // 构建下划线样式
-        let textDecorationLine = '';
-        switch (underlinePosition) {
-            case 'top':
-                textDecorationLine = 'overline';
-                break;
-            case 'bottom':
-                textDecorationLine = 'underline';
-                break;
-            default:
-                textDecorationLine = 'underline';
+        // 构建样式内容
+        let styleContent = '';
+
+        // 背景高亮样式
+        if (backgroundEnabled) {
+            styleContent += `
+                ::highlight(${VERB_HIGHLIGHT_BACKGROUND_GROUP}) {
+                    background-color: ${backgroundColor};
+                }
+            `;
         }
 
-        styleEl.textContent = `
-            ::highlight(${VERB_HIGHLIGHT_GROUP}) {
-                text-decoration: ${textDecorationLine} ${underlineStyle} ${underlineColor};
-                text-decoration-thickness: ${underlineThickness}px;
-                text-underline-offset: 2px;
+        // 下划线高亮样式
+        if (underlineEnabled) {
+            // 构建下划线样式
+            let textDecorationLine = '';
+            switch (underlinePosition) {
+                case 'top':
+                    textDecorationLine = 'overline';
+                    break;
+                case 'bottom':
+                default:
+                    textDecorationLine = 'underline';
             }
-        `;
+
+            styleContent += `
+                ::highlight(${VERB_HIGHLIGHT_UNDERLINE_GROUP}) {
+                    text-decoration: ${textDecorationLine} ${underlineStyle} ${underlineColor};
+                    text-decoration-thickness: ${underlineThickness}px;
+                    text-underline-offset: 2px;
+                }
+            `;
+        }
+
+        styleEl.textContent = styleContent;
 
         console.log('[VerbHighlight] 样式已注入');
     }
@@ -136,8 +190,11 @@
     // =======================
     function stopVerbHighlight() {
         // 移除 CSS Highlight
-        if (CSS.highlights.has(VERB_HIGHLIGHT_GROUP)) {
-            CSS.highlights.delete(VERB_HIGHLIGHT_GROUP);
+        if (CSS.highlights.has(VERB_HIGHLIGHT_UNDERLINE_GROUP)) {
+            CSS.highlights.delete(VERB_HIGHLIGHT_UNDERLINE_GROUP);
+        }
+        if (CSS.highlights.has(VERB_HIGHLIGHT_BACKGROUND_GROUP)) {
+            CSS.highlights.delete(VERB_HIGHLIGHT_BACKGROUND_GROUP);
         }
 
         // 断开观察器
@@ -173,6 +230,7 @@
         constructor(options) {
             this.scope = options.scope || document.body;
             this.nlp = options.nlp;
+            this.language = options.language || 'german';
             this.intersectionObserver = null;
             this.mutationObserver = null;
             this.processedTextNodes = new Map(); // 已处理的文本节点
@@ -346,14 +404,7 @@
         highlightVerbs(textNode, verbs) {
             if (!textNode || verbs.length === 0) return;
 
-            // 获取或创建 Highlight 对象
-            let highlight;
-            if (!CSS.highlights.has(VERB_HIGHLIGHT_GROUP)) {
-                highlight = new Highlight();
-                CSS.highlights.set(VERB_HIGHLIGHT_GROUP, highlight);
-            } else {
-                highlight = CSS.highlights.get(VERB_HIGHLIGHT_GROUP);
-            }
+            const { backgroundEnabled, underlineEnabled } = verbHighlightConfig;
 
             // 为每个动词创建 Range
             const ranges = [];
@@ -362,12 +413,35 @@
                     const range = new Range();
                     range.setStart(textNode, verb.start);
                     range.setEnd(textNode, verb.end);
-                    highlight.add(range);
                     ranges.push(range);
                 } catch (error) {
                     // 忽略无效的范围
                 }
             });
+
+            // 添加背景高亮
+            if (backgroundEnabled && ranges.length > 0) {
+                let bgHighlight;
+                if (!CSS.highlights.has(VERB_HIGHLIGHT_BACKGROUND_GROUP)) {
+                    bgHighlight = new Highlight();
+                    CSS.highlights.set(VERB_HIGHLIGHT_BACKGROUND_GROUP, bgHighlight);
+                } else {
+                    bgHighlight = CSS.highlights.get(VERB_HIGHLIGHT_BACKGROUND_GROUP);
+                }
+                ranges.forEach(range => bgHighlight.add(range));
+            }
+
+            // 添加下划线高亮
+            if (underlineEnabled && ranges.length > 0) {
+                let ulHighlight;
+                if (!CSS.highlights.has(VERB_HIGHLIGHT_UNDERLINE_GROUP)) {
+                    ulHighlight = new Highlight();
+                    CSS.highlights.set(VERB_HIGHLIGHT_UNDERLINE_GROUP, ulHighlight);
+                } else {
+                    ulHighlight = CSS.highlights.get(VERB_HIGHLIGHT_UNDERLINE_GROUP);
+                }
+                ranges.forEach(range => ulHighlight.add(range));
+            }
 
             // 存储可见范围
             if (ranges.length > 0) {
@@ -378,15 +452,30 @@
         // 移除高亮
         removeHighlight(textNode) {
             const ranges = this.visibleRanges.get(textNode);
-            if (ranges && CSS.highlights.has(VERB_HIGHLIGHT_GROUP)) {
-                const highlight = CSS.highlights.get(VERB_HIGHLIGHT_GROUP);
-                ranges.forEach(range => {
-                    try {
-                        highlight.delete(range);
-                    } catch (error) {
-                        // 忽略错误
-                    }
-                });
+            if (ranges) {
+                // 移除背景高亮
+                if (CSS.highlights.has(VERB_HIGHLIGHT_BACKGROUND_GROUP)) {
+                    const bgHighlight = CSS.highlights.get(VERB_HIGHLIGHT_BACKGROUND_GROUP);
+                    ranges.forEach(range => {
+                        try {
+                            bgHighlight.delete(range);
+                        } catch (error) {
+                            // 忽略错误
+                        }
+                    });
+                }
+
+                // 移除下划线高亮
+                if (CSS.highlights.has(VERB_HIGHLIGHT_UNDERLINE_GROUP)) {
+                    const ulHighlight = CSS.highlights.get(VERB_HIGHLIGHT_UNDERLINE_GROUP);
+                    ranges.forEach(range => {
+                        try {
+                            ulHighlight.delete(range);
+                        } catch (error) {
+                            // 忽略错误
+                        }
+                    });
+                }
                 this.visibleRanges.delete(textNode);
             }
         }
@@ -460,8 +549,11 @@
         // 重新应用所有高亮
         reapplyHighlights() {
             // 清除所有现有高亮
-            if (CSS.highlights.has(VERB_HIGHLIGHT_GROUP)) {
-                CSS.highlights.delete(VERB_HIGHLIGHT_GROUP);
+            if (CSS.highlights.has(VERB_HIGHLIGHT_UNDERLINE_GROUP)) {
+                CSS.highlights.delete(VERB_HIGHLIGHT_UNDERLINE_GROUP);
+            }
+            if (CSS.highlights.has(VERB_HIGHLIGHT_BACKGROUND_GROUP)) {
+                CSS.highlights.delete(VERB_HIGHLIGHT_BACKGROUND_GROUP);
             }
             this.visibleRanges.clear();
 
@@ -501,6 +593,15 @@
             sendResponse({ success: true });
         } else if (message.action === 'updateVerbHighlightStyle') {
             // 更新样式配置
+            if (message.backgroundEnabled !== undefined) {
+                verbHighlightConfig.backgroundEnabled = message.backgroundEnabled;
+            }
+            if (message.backgroundColor) {
+                verbHighlightConfig.backgroundColor = message.backgroundColor;
+            }
+            if (message.underlineEnabled !== undefined) {
+                verbHighlightConfig.underlineEnabled = message.underlineEnabled;
+            }
             if (message.style) {
                 verbHighlightConfig.underlineStyle = message.style;
             }

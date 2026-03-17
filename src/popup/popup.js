@@ -517,6 +517,10 @@ function initializeSettings() {
       // 高亮动词功能默认设置
       verbHighlightEnabled: false, // 高亮动词默认关闭
       verbHighlightLanguage: 'german', // 默认语言为德语
+      verbHighlightBackgroundEnabled: true, // 默认启用背景高亮
+      verbHighlightBackgroundColor: '#FF6B6B40', // 默认背景颜色
+      verbHighlightBackgroundOpacity: 25, // 默认背景透明度
+      verbHighlightUnderlineEnabled: true, // 默认启用下划线
       verbHighlightUnderlineStyle: 'wavy', // 默认下划线样式为波浪线
       verbHighlightUnderlineColor: '#FF6B6B', // 默认下划线颜色
       verbHighlightUnderlineThickness: 2, // 默认下划线粗度
@@ -2717,6 +2721,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const verbHighlightSettings = document.getElementById('verbHighlightSettings');
     const verbHighlightEnabled = document.getElementById('verbHighlightEnabled');
     const verbHighlightLanguage = document.getElementById('verbHighlightLanguage');
+    
+    // 背景高亮设置
+    const verbHighlightBackgroundEnabled = document.getElementById('verbHighlightBackgroundEnabled');
+    const verbHighlightBackgroundSettings = document.getElementById('verbHighlightBackgroundSettings');
+    const verbHighlightBackgroundColor = document.getElementById('verbHighlightBackgroundColor');
+    const verbHighlightBackgroundColorPicker = document.getElementById('verbHighlightBackgroundColorPicker');
+    const verbHighlightBackgroundColorPreview = document.getElementById('verbHighlightBackgroundColorPreview');
+    const verbHighlightBackgroundOpacity = document.getElementById('verbHighlightBackgroundOpacity');
+    const verbHighlightBackgroundOpacityValue = document.getElementById('verbHighlightBackgroundOpacityValue');
+    
+    // 下划线设置
+    const verbHighlightUnderlineEnabled = document.getElementById('verbHighlightUnderlineEnabled');
+    const verbHighlightUnderlineSettings = document.getElementById('verbHighlightUnderlineSettings');
     const verbHighlightUnderlineStyle = document.getElementById('verbHighlightUnderlineStyle');
     const verbHighlightUnderlineColor = document.getElementById('verbHighlightUnderlineColor');
     const verbHighlightUnderlineColorPicker = document.getElementById('verbHighlightUnderlineColorPicker');
@@ -2736,6 +2753,10 @@ document.addEventListener('DOMContentLoaded', function() {
     chrome.storage.local.get({
         verbHighlightEnabled: false,
         verbHighlightLanguage: 'german',
+        verbHighlightBackgroundEnabled: true,
+        verbHighlightBackgroundColor: '#FF6B6B40',
+        verbHighlightBackgroundOpacity: 25,
+        verbHighlightUnderlineEnabled: true,
         verbHighlightUnderlineStyle: 'wavy',
         verbHighlightUnderlineColor: '#FF6B6B',
         verbHighlightUnderlineThickness: 2,
@@ -2746,6 +2767,41 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (verbHighlightLanguage) {
             verbHighlightLanguage.value = result.verbHighlightLanguage;
+        }
+        
+        // 背景设置
+        if (verbHighlightBackgroundEnabled) {
+            verbHighlightBackgroundEnabled.checked = result.verbHighlightBackgroundEnabled;
+        }
+        if (verbHighlightBackgroundSettings) {
+            verbHighlightBackgroundSettings.style.display = result.verbHighlightBackgroundEnabled ? 'block' : 'none';
+        }
+        if (verbHighlightBackgroundColor) {
+            verbHighlightBackgroundColor.value = result.verbHighlightBackgroundColor;
+        }
+        if (verbHighlightBackgroundColorPreview) {
+            verbHighlightBackgroundColorPreview.style.backgroundColor = result.verbHighlightBackgroundColor;
+        }
+        if (verbHighlightBackgroundColorPicker) {
+            // 从颜色值提取纯色部分
+            const colorMatch = result.verbHighlightBackgroundColor.match(/^#([0-9A-Fa-f]{6})/);
+            if (colorMatch) {
+                verbHighlightBackgroundColorPicker.value = '#' + colorMatch[1];
+            }
+        }
+        if (verbHighlightBackgroundOpacity) {
+            verbHighlightBackgroundOpacity.value = result.verbHighlightBackgroundOpacity;
+        }
+        if (verbHighlightBackgroundOpacityValue) {
+            verbHighlightBackgroundOpacityValue.textContent = result.verbHighlightBackgroundOpacity;
+        }
+        
+        // 下划线设置
+        if (verbHighlightUnderlineEnabled) {
+            verbHighlightUnderlineEnabled.checked = result.verbHighlightUnderlineEnabled;
+        }
+        if (verbHighlightUnderlineSettings) {
+            verbHighlightUnderlineSettings.style.display = result.verbHighlightUnderlineEnabled ? 'block' : 'none';
         }
         if (verbHighlightUnderlineStyle) {
             verbHighlightUnderlineStyle.value = result.verbHighlightUnderlineStyle;
@@ -2802,6 +2858,92 @@ document.addEventListener('DOMContentLoaded', function() {
                     }).catch(() => {});
                 }
             });
+        });
+    }
+
+    // 监听背景高亮开关变化
+    if (verbHighlightBackgroundEnabled) {
+        verbHighlightBackgroundEnabled.addEventListener('change', function(e) {
+            const isEnabled = e.target.checked;
+            chrome.storage.local.set({ verbHighlightBackgroundEnabled: isEnabled });
+            
+            // 显示/隐藏背景设置区域
+            if (verbHighlightBackgroundSettings) {
+                verbHighlightBackgroundSettings.style.display = isEnabled ? 'block' : 'none';
+            }
+            
+            notifyStyleUpdate();
+        });
+    }
+
+    // 监听背景颜色变化（文本输入）
+    if (verbHighlightBackgroundColor) {
+        verbHighlightBackgroundColor.addEventListener('input', function(e) {
+            const color = e.target.value;
+            chrome.storage.local.set({ verbHighlightBackgroundColor: color });
+            if (verbHighlightBackgroundColorPreview) {
+                verbHighlightBackgroundColorPreview.style.backgroundColor = color;
+            }
+            notifyStyleUpdate();
+        });
+    }
+
+    // 监听背景颜色选择器变化
+    if (verbHighlightBackgroundColorPicker) {
+        verbHighlightBackgroundColorPicker.addEventListener('input', function(e) {
+            const baseColor = e.target.value;
+            // 获取当前透明度
+            const opacity = verbHighlightBackgroundOpacity ? verbHighlightBackgroundOpacity.value : 25;
+            const opacityHex = Math.round(opacity * 2.55).toString(16).padStart(2, '0');
+            const colorWithOpacity = baseColor + opacityHex;
+            
+            chrome.storage.local.set({ verbHighlightBackgroundColor: colorWithOpacity });
+            if (verbHighlightBackgroundColor) {
+                verbHighlightBackgroundColor.value = colorWithOpacity;
+            }
+            if (verbHighlightBackgroundColorPreview) {
+                verbHighlightBackgroundColorPreview.style.backgroundColor = colorWithOpacity;
+            }
+            notifyStyleUpdate();
+        });
+    }
+
+    // 监听背景透明度变化
+    if (verbHighlightBackgroundOpacity) {
+        verbHighlightBackgroundOpacity.addEventListener('input', function(e) {
+            const opacity = parseInt(e.target.value);
+            if (verbHighlightBackgroundOpacityValue) {
+                verbHighlightBackgroundOpacityValue.textContent = opacity;
+            }
+            
+            // 更新颜色值
+            if (verbHighlightBackgroundColor && verbHighlightBackgroundColorPicker) {
+                const baseColor = verbHighlightBackgroundColorPicker.value;
+                const opacityHex = Math.round(opacity * 2.55).toString(16).padStart(2, '0');
+                const colorWithOpacity = baseColor + opacityHex;
+                
+                chrome.storage.local.set({ verbHighlightBackgroundColor: colorWithOpacity });
+                verbHighlightBackgroundColor.value = colorWithOpacity;
+                if (verbHighlightBackgroundColorPreview) {
+                    verbHighlightBackgroundColorPreview.style.backgroundColor = colorWithOpacity;
+                }
+            }
+            notifyStyleUpdate();
+        });
+    }
+
+    // 监听下划线开关变化
+    if (verbHighlightUnderlineEnabled) {
+        verbHighlightUnderlineEnabled.addEventListener('change', function(e) {
+            const isEnabled = e.target.checked;
+            chrome.storage.local.set({ verbHighlightUnderlineEnabled: isEnabled });
+            
+            // 显示/隐藏下划线设置区域
+            if (verbHighlightUnderlineSettings) {
+                verbHighlightUnderlineSettings.style.display = isEnabled ? 'block' : 'none';
+            }
+            
+            notifyStyleUpdate();
         });
     }
 
@@ -2880,6 +3022,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 通知样式更新
     function notifyStyleUpdate() {
         chrome.storage.local.get([
+            'verbHighlightBackgroundEnabled',
+            'verbHighlightBackgroundColor',
+            'verbHighlightUnderlineEnabled',
             'verbHighlightUnderlineStyle',
             'verbHighlightUnderlineColor',
             'verbHighlightUnderlineThickness',
@@ -2889,6 +3034,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (tabs[0]) {
                     chrome.tabs.sendMessage(tabs[0].id, {
                         action: 'updateVerbHighlightStyle',
+                        backgroundEnabled: result.verbHighlightBackgroundEnabled,
+                        backgroundColor: result.verbHighlightBackgroundColor,
+                        underlineEnabled: result.verbHighlightUnderlineEnabled,
                         style: result.verbHighlightUnderlineStyle,
                         color: result.verbHighlightUnderlineColor,
                         thickness: result.verbHighlightUnderlineThickness,
@@ -3313,9 +3461,14 @@ const i18n = {
     "verb_highlight": "高亮动词",
     "verb_highlight_tooltip": "使用NLP识别并高亮文本中的动词",
     "verb_highlight_language": "高亮语言",
-    "verb_highlight_language_hint": "目前仅支持德语，后续将添加更多语言",
+    "verb_highlight_language_hint": "选择要高亮动词的语言",
     "language_german": "德语",
     "language_english": "英语",
+    "verb_highlight_background_enabled": "启用背景高亮",
+    "verb_highlight_background_color": "背景颜色",
+    "verb_highlight_background_color_hint": "点击色板选择颜色，拖动滑块调整透明度",
+    "verb_highlight_background_opacity_label": "透明度",
+    "verb_highlight_underline_enabled": "启用下划线",
     "verb_highlight_underline_style": "下划线样式",
     "underline_style_dashed": "虚线",
     "verb_highlight_underline_color": "下划线颜色",
@@ -3492,9 +3645,14 @@ const i18n = {
     "verb_highlight": "Highlight Verbs",
     "verb_highlight_tooltip": "Use NLP to identify and highlight verbs in text",
     "verb_highlight_language": "Highlight Language",
-    "verb_highlight_language_hint": "Currently only German is supported, more languages will be added",
+    "verb_highlight_language_hint": "Select the language to highlight verbs",
     "language_german": "German",
     "language_english": "English",
+    "verb_highlight_background_enabled": "Enable Background Highlight",
+    "verb_highlight_background_color": "Background Color",
+    "verb_highlight_background_color_hint": "Click color palette to select color, drag slider to adjust opacity",
+    "verb_highlight_background_opacity_label": "Opacity",
+    "verb_highlight_underline_enabled": "Enable Underline",
     "verb_highlight_underline_style": "Underline Style",
     "underline_style_dashed": "Dashed",
     "verb_highlight_underline_color": "Underline Color",
@@ -3637,9 +3795,14 @@ const i18n = {
     "verb_highlight": "高亮動詞",
     "verb_highlight_tooltip": "使用NLP識別並高亮文字中的動詞",
     "verb_highlight_language": "高亮語言",
-    "verb_highlight_language_hint": "目前僅支援德語，後續將新增更多語言",
+    "verb_highlight_language_hint": "選擇要高亮動詞的語言",
     "language_german": "德語",
     "language_english": "英語",
+    "verb_highlight_background_enabled": "啟用背景高亮",
+    "verb_highlight_background_color": "背景顏色",
+    "verb_highlight_background_color_hint": "點擊色盤選擇顏色，拖動滑桿調整透明度",
+    "verb_highlight_background_opacity_label": "透明度",
+    "verb_highlight_underline_enabled": "啟用底線",
     "verb_highlight_underline_style": "底線樣式",
     "underline_style_dashed": "虛線",
     "verb_highlight_underline_color": "底線顏色",
@@ -3778,9 +3941,14 @@ const i18n = {
         "verb_highlight": "Verben hervorheben",
         "verb_highlight_tooltip": "NLP verwenden, um Verben im Text zu erkennen und hervorzuheben",
         "verb_highlight_language": "Hervorhebungssprache",
-        "verb_highlight_language_hint": "Derzeit wird nur Deutsch unterstützt, weitere Sprachen werden hinzugefügt",
+        "verb_highlight_language_hint": "Wählen Sie die Sprache, um Verben hervorzuheben",
         "language_german": "Deutsch",
         "language_english": "Englisch",
+        "verb_highlight_background_enabled": "Hintergrundhervorhebung aktivieren",
+        "verb_highlight_background_color": "Hintergrundfarbe",
+        "verb_highlight_background_color_hint": "Klicken Sie auf die Farbpalette, um eine Farbe auszuwählen, ziehen Sie den Schieberegler, um die Transparenz anzupassen",
+        "verb_highlight_background_opacity_label": "Transparenz",
+        "verb_highlight_underline_enabled": "Unterstreichen aktivieren",
         "verb_highlight_underline_style": "Unterstrichstil",
         "underline_style_dashed": "Gestrichelt",
         "verb_highlight_underline_color": "Unterstrichfarbe",
@@ -3921,9 +4089,14 @@ const i18n = {
         "verb_highlight": "Surligner les verbes",
         "verb_highlight_tooltip": "Utiliser le NLP pour identifier et surligner les verbes dans le texte",
         "verb_highlight_language": "Langue de surlignage",
-        "verb_highlight_language_hint": "Actuellement, seul l'allemand est pris en charge, d'autres langues seront ajoutées",
+        "verb_highlight_language_hint": "Sélectionnez la langue pour surligner les verbes",
         "language_german": "Allemand",
         "language_english": "Anglais",
+        "verb_highlight_background_enabled": "Activer le surlignage d'arrière-plan",
+        "verb_highlight_background_color": "Couleur d'arrière-plan",
+        "verb_highlight_background_color_hint": "Cliquez sur la palette de couleurs pour sélectionner une couleur, faites glisser le curseur pour ajuster l'opacité",
+        "verb_highlight_background_opacity_label": "Opacité",
+        "verb_highlight_underline_enabled": "Activer le soulignement",
         "verb_highlight_underline_style": "Style de soulignement",
         "underline_style_dashed": "Tirets",
         "verb_highlight_underline_color": "Couleur du soulignement",
@@ -4065,9 +4238,14 @@ const i18n = {
         "verb_highlight": "Resaltar verbos",
         "verb_highlight_tooltip": "Usar NLP para identificar y resaltar verbos en el texto",
         "verb_highlight_language": "Idioma de resaltado",
-        "verb_highlight_language_hint": "Actualmente solo se admite alemán, se agregarán más idiomas",
+        "verb_highlight_language_hint": "Seleccione el idioma para resaltar verbos",
         "language_german": "Alemán",
         "language_english": "Inglés",
+        "verb_highlight_background_enabled": "Activar resaltado de fondo",
+        "verb_highlight_background_color": "Color de fondo",
+        "verb_highlight_background_color_hint": "Haga clic en la paleta de colores para seleccionar un color, arrastre el control deslizante para ajustar la opacidad",
+        "verb_highlight_background_opacity_label": "Opacidad",
+        "verb_highlight_underline_enabled": "Activar subrayado",
         "verb_highlight_underline_style": "Estilo de subrayado",
         "underline_style_dashed": "Guiones",
         "verb_highlight_underline_color": "Color del subrayado",
@@ -4209,9 +4387,14 @@ const i18n = {
           "verb_highlight": "動詞をハイライト",
           "verb_highlight_tooltip": "NLPを使用してテキスト内の動詞を識別しハイライトする",
           "verb_highlight_language": "ハイライト言語",
-          "verb_highlight_language_hint": "現在はドイツ語のみ対応、今後他言語を追加予定",
+          "verb_highlight_language_hint": "動詞をハイライトする言語を選択",
           "language_german": "ドイツ語",
           "language_english": "英語",
+          "verb_highlight_background_enabled": "背景ハイライトを有効にする",
+          "verb_highlight_background_color": "背景色",
+          "verb_highlight_background_color_hint": "カラーパレットをクリックして色を選択し、スライダーをドラッグして不透明度を調整します",
+          "verb_highlight_background_opacity_label": "不透明度",
+          "verb_highlight_underline_enabled": "下線を有効にする",
           "verb_highlight_underline_style": "下線スタイル",
           "underline_style_dashed": "破線",
           "verb_highlight_underline_color": "下線の色",
@@ -4351,9 +4534,14 @@ const i18n = {
           "verb_highlight": "동사 강조",
           "verb_highlight_tooltip": "NLP를 사용하여 텍스트의 동사를 식별하고 강조",
           "verb_highlight_language": "강조 언어",
-          "verb_highlight_language_hint": "현재 독일어만 지원, 추후 더 많은 언어 추가 예정",
+          "verb_highlight_language_hint": "동사를 강조할 언어 선택",
           "language_german": "독일어",
           "language_english": "영어",
+          "verb_highlight_background_enabled": "배경 강조 활성화",
+          "verb_highlight_background_color": "배경색",
+          "verb_highlight_background_color_hint": "색상 팔레트를 클릭하여 색상을 선택하고 슬라이더를 드래그하여 불투명도를 조정합니다",
+          "verb_highlight_background_opacity_label": "불투명도",
+          "verb_highlight_underline_enabled": "밑줄 활성화",
           "verb_highlight_underline_style": "밑줄 스타일",
           "underline_style_dashed": "파선",
           "verb_highlight_underline_color": "밑줄 색상",
@@ -4484,9 +4672,14 @@ const i18n = {
           "verb_highlight": "Подсветка глаголов",
           "verb_highlight_tooltip": "Использовать NLP для идентификации и подсветки глаголов в тексте",
           "verb_highlight_language": "Язык подсветки",
-          "verb_highlight_language_hint": "В настоящее время поддерживается только немецкий, будут добавлены другие языки",
+          "verb_highlight_language_hint": "Выберите язык для подсветки глаголов",
           "language_german": "Немецкий",
           "language_english": "Английский",
+          "verb_highlight_background_enabled": "Включить подсветку фона",
+          "verb_highlight_background_color": "Цвет фона",
+          "verb_highlight_background_color_hint": "Нажмите на палитру цветов, чтобы выбрать цвет, перетащите ползунок, чтобы настроить прозрачность",
+          "verb_highlight_background_opacity_label": "Прозрачность",
+          "verb_highlight_underline_enabled": "Включить подчеркивание",
           "verb_highlight_underline_style": "Стиль подчеркивания",
           "underline_style_dashed": "Штриховой",
           "verb_highlight_underline_color": "Цвет подчеркивания",
