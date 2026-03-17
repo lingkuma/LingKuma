@@ -514,6 +514,14 @@ function initializeSettings() {
       youtubeFontFamily: 'Fanwood', // 添加：YouTube 字幕字体样式的默认值
       lingqBlocker: false, // 添加：LingqBlocker 的默认值（默认关闭）
 
+      // 高亮动词功能默认设置
+      verbHighlightEnabled: false, // 高亮动词默认关闭
+      verbHighlightLanguage: 'german', // 默认语言为德语
+      verbHighlightUnderlineStyle: 'wavy', // 默认下划线样式为波浪线
+      verbHighlightUnderlineColor: '#FF6B6B', // 默认下划线颜色
+      verbHighlightUnderlineThickness: 2, // 默认下划线粗度
+      verbHighlightUnderlinePosition: 'bottom', // 默认下划线位置
+
       // 弹窗背景设置默认为开启，默认使用随机SVG背景
       tooltipBackground: { enabled: true, useCustom: false, defaultType: 'svg' },
 
@@ -2703,6 +2711,193 @@ document.addEventListener('DOMContentLoaded', function() {
             chrome.storage.local.set({ showKnownSentenceAnimation: e.target.checked });
         });
     }
+
+    // ===== 高亮动词设置 =====
+    const verbHighlightSettingsToggle = document.getElementById('verbHighlightSettingsToggle');
+    const verbHighlightSettings = document.getElementById('verbHighlightSettings');
+    const verbHighlightEnabled = document.getElementById('verbHighlightEnabled');
+    const verbHighlightLanguage = document.getElementById('verbHighlightLanguage');
+    const verbHighlightUnderlineStyle = document.getElementById('verbHighlightUnderlineStyle');
+    const verbHighlightUnderlineColor = document.getElementById('verbHighlightUnderlineColor');
+    const verbHighlightUnderlineColorPicker = document.getElementById('verbHighlightUnderlineColorPicker');
+    const verbHighlightUnderlineColorPreview = document.getElementById('verbHighlightUnderlineColorPreview');
+    const verbHighlightUnderlineThickness = document.getElementById('verbHighlightUnderlineThickness');
+    const verbHighlightUnderlineThicknessInput = document.getElementById('verbHighlightUnderlineThicknessInput');
+    const verbHighlightUnderlinePosition = document.getElementById('verbHighlightUnderlinePosition');
+
+    // 点击按钮展开/收起设置区域
+    if (verbHighlightSettingsToggle) {
+        verbHighlightSettingsToggle.addEventListener('click', function() {
+            verbHighlightSettings.classList.toggle('visible');
+        });
+    }
+
+    // 加载设置
+    chrome.storage.local.get({
+        verbHighlightEnabled: false,
+        verbHighlightLanguage: 'german',
+        verbHighlightUnderlineStyle: 'wavy',
+        verbHighlightUnderlineColor: '#FF6B6B',
+        verbHighlightUnderlineThickness: 2,
+        verbHighlightUnderlinePosition: 'bottom'
+    }, function(result) {
+        if (verbHighlightEnabled) {
+            verbHighlightEnabled.checked = result.verbHighlightEnabled;
+        }
+        if (verbHighlightLanguage) {
+            verbHighlightLanguage.value = result.verbHighlightLanguage;
+        }
+        if (verbHighlightUnderlineStyle) {
+            verbHighlightUnderlineStyle.value = result.verbHighlightUnderlineStyle;
+        }
+        if (verbHighlightUnderlineColor) {
+            verbHighlightUnderlineColor.value = result.verbHighlightUnderlineColor;
+        }
+        if (verbHighlightUnderlineColorPicker) {
+            verbHighlightUnderlineColorPicker.value = result.verbHighlightUnderlineColor;
+        }
+        if (verbHighlightUnderlineColorPreview) {
+            verbHighlightUnderlineColorPreview.style.backgroundColor = result.verbHighlightUnderlineColor;
+        }
+        if (verbHighlightUnderlineThickness) {
+            verbHighlightUnderlineThickness.value = result.verbHighlightUnderlineThickness;
+        }
+        if (verbHighlightUnderlineThicknessInput) {
+            verbHighlightUnderlineThicknessInput.value = result.verbHighlightUnderlineThickness;
+        }
+        if (verbHighlightUnderlinePosition) {
+            verbHighlightUnderlinePosition.value = result.verbHighlightUnderlinePosition;
+        }
+    });
+
+    // 监听总开关变化
+    if (verbHighlightEnabled) {
+        verbHighlightEnabled.addEventListener('change', function(e) {
+            const isEnabled = e.target.checked;
+            chrome.storage.local.set({ verbHighlightEnabled: isEnabled });
+
+            // 向所有标签页发送切换消息
+            chrome.tabs.query({}, function(tabs) {
+                tabs.forEach(tab => {
+                    chrome.tabs.sendMessage(tab.id, {
+                        action: "toggleVerbHighlight",
+                        enabled: isEnabled
+                    }).catch(() => {});
+                });
+            });
+        });
+    }
+
+    // 监听语言选择变化
+    if (verbHighlightLanguage) {
+        verbHighlightLanguage.addEventListener('change', function(e) {
+            chrome.storage.local.set({ verbHighlightLanguage: e.target.value });
+
+            // 通知 content script 更新语言
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                if (tabs[0]) {
+                    chrome.tabs.sendMessage(tabs[0].id, {
+                        action: 'updateVerbHighlightLanguage',
+                        language: e.target.value
+                    }).catch(() => {});
+                }
+            });
+        });
+    }
+
+    // 监听下划线样式变化
+    if (verbHighlightUnderlineStyle) {
+        verbHighlightUnderlineStyle.addEventListener('change', function(e) {
+            chrome.storage.local.set({ verbHighlightUnderlineStyle: e.target.value });
+            notifyStyleUpdate();
+        });
+    }
+
+    // 监听下划线颜色变化（文本输入）
+    if (verbHighlightUnderlineColor) {
+        verbHighlightUnderlineColor.addEventListener('input', function(e) {
+            const color = e.target.value;
+            chrome.storage.local.set({ verbHighlightUnderlineColor: color });
+            if (verbHighlightUnderlineColorPreview) {
+                verbHighlightUnderlineColorPreview.style.backgroundColor = color;
+            }
+            if (verbHighlightUnderlineColorPicker) {
+                verbHighlightUnderlineColorPicker.value = color;
+            }
+            notifyStyleUpdate();
+        });
+    }
+
+    // 监听下划线颜色选择器变化
+    if (verbHighlightUnderlineColorPicker) {
+        verbHighlightUnderlineColorPicker.addEventListener('input', function(e) {
+            const color = e.target.value;
+            chrome.storage.local.set({ verbHighlightUnderlineColor: color });
+            if (verbHighlightUnderlineColor) {
+                verbHighlightUnderlineColor.value = color;
+            }
+            if (verbHighlightUnderlineColorPreview) {
+                verbHighlightUnderlineColorPreview.style.backgroundColor = color;
+            }
+            notifyStyleUpdate();
+        });
+    }
+
+    // 监听下划线粗度变化（滑块）
+    if (verbHighlightUnderlineThickness) {
+        verbHighlightUnderlineThickness.addEventListener('input', function(e) {
+            const thickness = parseInt(e.target.value);
+            chrome.storage.local.set({ verbHighlightUnderlineThickness: thickness });
+            if (verbHighlightUnderlineThicknessInput) {
+                verbHighlightUnderlineThicknessInput.value = thickness;
+            }
+            notifyStyleUpdate();
+        });
+    }
+
+    // 监听下划线粗度变化（数字输入）
+    if (verbHighlightUnderlineThicknessInput) {
+        verbHighlightUnderlineThicknessInput.addEventListener('input', function(e) {
+            const thickness = parseInt(e.target.value);
+            if (!isNaN(thickness) && thickness >= 1 && thickness <= 6) {
+                chrome.storage.local.set({ verbHighlightUnderlineThickness: thickness });
+                if (verbHighlightUnderlineThickness) {
+                    verbHighlightUnderlineThickness.value = thickness;
+                }
+                notifyStyleUpdate();
+            }
+        });
+    }
+
+    // 监听下划线位置变化
+    if (verbHighlightUnderlinePosition) {
+        verbHighlightUnderlinePosition.addEventListener('change', function(e) {
+            chrome.storage.local.set({ verbHighlightUnderlinePosition: e.target.value });
+            notifyStyleUpdate();
+        });
+    }
+
+    // 通知样式更新
+    function notifyStyleUpdate() {
+        chrome.storage.local.get([
+            'verbHighlightUnderlineStyle',
+            'verbHighlightUnderlineColor',
+            'verbHighlightUnderlineThickness',
+            'verbHighlightUnderlinePosition'
+        ], function(result) {
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                if (tabs[0]) {
+                    chrome.tabs.sendMessage(tabs[0].id, {
+                        action: 'updateVerbHighlightStyle',
+                        style: result.verbHighlightUnderlineStyle,
+                        color: result.verbHighlightUnderlineColor,
+                        thickness: result.verbHighlightUnderlineThickness,
+                        position: result.verbHighlightUnderlinePosition
+                    }).catch(() => {});
+                }
+            });
+        });
+    }
 });
 
 // TTS设置
@@ -3114,6 +3309,19 @@ const i18n = {
     "underline_position_bottom": "下",
     "underline_position_top": "上",
     "underline_position_both": "上+下",
+    // 高亮动词
+    "verb_highlight": "高亮动词",
+    "verb_highlight_tooltip": "使用NLP识别并高亮文本中的动词",
+    "verb_highlight_language": "高亮语言",
+    "verb_highlight_language_hint": "目前仅支持德语，后续将添加更多语言",
+    "language_german": "德语",
+    "language_english": "英语",
+    "verb_highlight_underline_style": "下划线样式",
+    "underline_style_dashed": "虚线",
+    "verb_highlight_underline_color": "下划线颜色",
+    "verb_highlight_underline_color_hint": "点击色板选择颜色",
+    "verb_highlight_underline_thickness": "下划线粗度 (px)",
+    "verb_highlight_underline_position": "下划线位置",
   },
   en: {
     // 标题
@@ -3280,6 +3488,19 @@ const i18n = {
     "underline_position_bottom": "Bottom",
     "underline_position_top": "Top",
     "underline_position_both": "Both",
+    // Verb Highlight
+    "verb_highlight": "Highlight Verbs",
+    "verb_highlight_tooltip": "Use NLP to identify and highlight verbs in text",
+    "verb_highlight_language": "Highlight Language",
+    "verb_highlight_language_hint": "Currently only German is supported, more languages will be added",
+    "language_german": "German",
+    "language_english": "English",
+    "verb_highlight_underline_style": "Underline Style",
+    "underline_style_dashed": "Dashed",
+    "verb_highlight_underline_color": "Underline Color",
+    "verb_highlight_underline_color_hint": "Click color palette to select color",
+    "verb_highlight_underline_thickness": "Underline Thickness (px)",
+    "verb_highlight_underline_position": "Underline Position",
   },
   zh_TW: {
     "popupTitle": "設定",
@@ -3412,6 +3633,19 @@ const i18n = {
     "underline_position_bottom": "下",
     "underline_position_top": "上",
     "underline_position_both": "上+下",
+    // 高亮動詞
+    "verb_highlight": "高亮動詞",
+    "verb_highlight_tooltip": "使用NLP識別並高亮文字中的動詞",
+    "verb_highlight_language": "高亮語言",
+    "verb_highlight_language_hint": "目前僅支援德語，後續將新增更多語言",
+    "language_german": "德語",
+    "language_english": "英語",
+    "verb_highlight_underline_style": "底線樣式",
+    "underline_style_dashed": "虛線",
+    "verb_highlight_underline_color": "底線顏色",
+    "verb_highlight_underline_color_hint": "點擊色盤選擇顏色",
+    "verb_highlight_underline_thickness": "底線粗度 (px)",
+    "verb_highlight_underline_position": "底線位置",
   },
   de: {
         "popupTitle": "Einstellungen",
@@ -3540,6 +3774,19 @@ const i18n = {
         "underline_position_bottom": "Unten",
         "underline_position_top": "Oben",
         "underline_position_both": "Oben+Unten",
+        // Verb Hervorhebung
+        "verb_highlight": "Verben hervorheben",
+        "verb_highlight_tooltip": "NLP verwenden, um Verben im Text zu erkennen und hervorzuheben",
+        "verb_highlight_language": "Hervorhebungssprache",
+        "verb_highlight_language_hint": "Derzeit wird nur Deutsch unterstützt, weitere Sprachen werden hinzugefügt",
+        "language_german": "Deutsch",
+        "language_english": "Englisch",
+        "verb_highlight_underline_style": "Unterstrichstil",
+        "underline_style_dashed": "Gestrichelt",
+        "verb_highlight_underline_color": "Unterstrichfarbe",
+        "verb_highlight_underline_color_hint": "Klicken Sie auf die Farbpalette, um eine Farbe auszuwählen",
+        "verb_highlight_underline_thickness": "Unterstrichstärke (px)",
+        "verb_highlight_underline_position": "Unterstrichposition",
       },
     fr: {
         "popupTitle": "Paramètres",
@@ -3670,6 +3917,19 @@ const i18n = {
         "underline_position_bottom": "Bas",
         "underline_position_top": "Haut",
         "underline_position_both": "Haut+Bas",
+        // Surlignage des verbes
+        "verb_highlight": "Surligner les verbes",
+        "verb_highlight_tooltip": "Utiliser le NLP pour identifier et surligner les verbes dans le texte",
+        "verb_highlight_language": "Langue de surlignage",
+        "verb_highlight_language_hint": "Actuellement, seul l'allemand est pris en charge, d'autres langues seront ajoutées",
+        "language_german": "Allemand",
+        "language_english": "Anglais",
+        "verb_highlight_underline_style": "Style de soulignement",
+        "underline_style_dashed": "Tirets",
+        "verb_highlight_underline_color": "Couleur du soulignement",
+        "verb_highlight_underline_color_hint": "Cliquez sur la palette de couleurs pour sélectionner une couleur",
+        "verb_highlight_underline_thickness": "Épaisseur du soulignement (px)",
+        "verb_highlight_underline_position": "Position du soulignement",
       },
     es: {
         "popupTitle": "Configuración",
@@ -3801,6 +4061,19 @@ const i18n = {
         "underline_position_bottom": "Abajo",
         "underline_position_top": "Arriba",
         "underline_position_both": "Arriba+Abajo",
+        // Resaltado de verbos
+        "verb_highlight": "Resaltar verbos",
+        "verb_highlight_tooltip": "Usar NLP para identificar y resaltar verbos en el texto",
+        "verb_highlight_language": "Idioma de resaltado",
+        "verb_highlight_language_hint": "Actualmente solo se admite alemán, se agregarán más idiomas",
+        "language_german": "Alemán",
+        "language_english": "Inglés",
+        "verb_highlight_underline_style": "Estilo de subrayado",
+        "underline_style_dashed": "Guiones",
+        "verb_highlight_underline_color": "Color del subrayado",
+        "verb_highlight_underline_color_hint": "Haga clic en la paleta de colores para seleccionar un color",
+        "verb_highlight_underline_thickness": "Grosor del subrayado (px)",
+        "verb_highlight_underline_position": "Posición del subrayado",
       },
     ja: {
           "popupTitle": "設定",
@@ -3932,6 +4205,19 @@ const i18n = {
           "underline_position_bottom": "下",
           "underline_position_top": "上",
           "underline_position_both": "上+下",
+          // 動詞ハイライト
+          "verb_highlight": "動詞をハイライト",
+          "verb_highlight_tooltip": "NLPを使用してテキスト内の動詞を識別しハイライトする",
+          "verb_highlight_language": "ハイライト言語",
+          "verb_highlight_language_hint": "現在はドイツ語のみ対応、今後他言語を追加予定",
+          "language_german": "ドイツ語",
+          "language_english": "英語",
+          "verb_highlight_underline_style": "下線スタイル",
+          "underline_style_dashed": "破線",
+          "verb_highlight_underline_color": "下線の色",
+          "verb_highlight_underline_color_hint": "カラーパレットをクリックして色を選択",
+          "verb_highlight_underline_thickness": "下線の太さ (px)",
+          "verb_highlight_underline_position": "下線の位置",
       },
     ko: {
           "popupTitle": "설정",
@@ -4061,6 +4347,19 @@ const i18n = {
           "underline_position_bottom": "아래",
           "underline_position_top": "위",
           "underline_position_both": "위+아래",
+          // 동사 강조
+          "verb_highlight": "동사 강조",
+          "verb_highlight_tooltip": "NLP를 사용하여 텍스트의 동사를 식별하고 강조",
+          "verb_highlight_language": "강조 언어",
+          "verb_highlight_language_hint": "현재 독일어만 지원, 추후 더 많은 언어 추가 예정",
+          "language_german": "독일어",
+          "language_english": "영어",
+          "verb_highlight_underline_style": "밑줄 스타일",
+          "underline_style_dashed": "파선",
+          "verb_highlight_underline_color": "밑줄 색상",
+          "verb_highlight_underline_color_hint": "색상 팔레트를 클릭하여 색상을 선택",
+          "verb_highlight_underline_thickness": "밑줄 두께 (px)",
+          "verb_highlight_underline_position": "밑줄 위치",
       },
     ru: {
           "popupTitle": "Настройки",
@@ -4181,6 +4480,19 @@ const i18n = {
           "underline_position_bottom": "Снизу",
           "underline_position_top": "Сверху",
           "underline_position_both": "Сверху+Снизу",
+          // Подсветка глаголов
+          "verb_highlight": "Подсветка глаголов",
+          "verb_highlight_tooltip": "Использовать NLP для идентификации и подсветки глаголов в тексте",
+          "verb_highlight_language": "Язык подсветки",
+          "verb_highlight_language_hint": "В настоящее время поддерживается только немецкий, будут добавлены другие языки",
+          "language_german": "Немецкий",
+          "language_english": "Английский",
+          "verb_highlight_underline_style": "Стиль подчеркивания",
+          "underline_style_dashed": "Штриховой",
+          "verb_highlight_underline_color": "Цвет подчеркивания",
+          "verb_highlight_underline_color_hint": "Нажмите на палитру цветов, чтобы выбрать цвет",
+          "verb_highlight_underline_thickness": "Толщина подчеркивания (px)",
+          "verb_highlight_underline_position": "Положение подчеркивания",
     },
     it: {
           "popupTitle": "Impostazioni",
