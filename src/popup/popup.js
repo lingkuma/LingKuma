@@ -515,16 +515,26 @@ function initializeSettings() {
       lingqBlocker: false, // 添加：LingqBlocker 的默认值（默认关闭）
 
       // 高亮动词功能默认设置
-      verbHighlightEnabled: false, // 高亮动词默认关闭
-      verbHighlightLanguage: 'german', // 默认语言为德语
-      verbHighlightBackgroundEnabled: true, // 默认启用背景高亮
-      verbHighlightBackgroundColor: '#FF6B6B40', // 默认背景颜色
-      verbHighlightBackgroundOpacity: 25, // 默认背景透明度
-      verbHighlightUnderlineEnabled: true, // 默认启用下划线
-      verbHighlightUnderlineStyle: 'wavy', // 默认下划线样式为波浪线
-      verbHighlightUnderlineColor: '#FF6B6B', // 默认下划线颜色
-      verbHighlightUnderlineThickness: 2, // 默认下划线粗度
-      verbHighlightUnderlinePosition: 'bottom', // 默认下划线位置
+      posHighlightEnabled: false, // 词性高亮默认关闭
+      posHighlightLanguage: 'german', // 默认语言为德语
+      posHighlightVerbEnabled: true, // 动词高亮默认开启
+      posHighlightVerbBackgroundEnabled: true, // 动词背景高亮默认开启
+      posHighlightVerbBackgroundColor: '#FF6B6B40', // 动词默认背景颜色
+      posHighlightVerbBackgroundOpacity: 25, // 动词默认背景透明度
+      posHighlightVerbUnderlineEnabled: true, // 动词下划线默认开启
+      posHighlightVerbUnderlineStyle: 'wavy', // 动词默认下划线样式为波浪线
+      posHighlightVerbUnderlineColor: '#FF6B6B', // 动词默认下划线颜色
+      posHighlightVerbUnderlineThickness: 2, // 动词默认下划线粗度
+      posHighlightVerbUnderlinePosition: 'bottom', // 动词默认下划线位置
+      posHighlightPrepositionEnabled: true, // 介词高亮默认开启
+      posHighlightPrepositionBackgroundEnabled: true, // 介词背景高亮默认开启
+      posHighlightPrepositionBackgroundColor: '#4ECDC440', // 介词默认背景颜色
+      posHighlightPrepositionBackgroundOpacity: 25, // 介词默认背景透明度
+      posHighlightPrepositionUnderlineEnabled: true, // 介词下划线默认开启
+      posHighlightPrepositionUnderlineStyle: 'solid', // 介词默认下划线样式为直线
+      posHighlightPrepositionUnderlineColor: '#4ECDC4', // 介词默认下划线颜色
+      posHighlightPrepositionUnderlineThickness: 2, // 介词默认下划线粗度
+      posHighlightPrepositionUnderlinePosition: 'bottom', // 介词默认下划线位置
 
       // 弹窗背景设置默认为开启，默认使用随机SVG背景
       tooltipBackground: { enabled: true, useCustom: false, defaultType: 'svg' },
@@ -2716,127 +2726,218 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ===== 高亮动词设置 =====
-    const verbHighlightSettingsToggle = document.getElementById('verbHighlightSettingsToggle');
-    const verbHighlightSettings = document.getElementById('verbHighlightSettings');
-    const verbHighlightEnabled = document.getElementById('verbHighlightEnabled');
-    const verbHighlightLanguage = document.getElementById('verbHighlightLanguage');
+    // ===== 词性高亮设置 =====
+    const posHighlightSettingsToggle = document.getElementById('posHighlightSettingsToggle');
+    const posHighlightSettings = document.getElementById('posHighlightSettings');
+    const posHighlightEnabled = document.getElementById('posHighlightEnabled');
+    const posHighlightLanguage = document.getElementById('posHighlightLanguage');
     
-    // 背景高亮设置
-    const verbHighlightBackgroundEnabled = document.getElementById('verbHighlightBackgroundEnabled');
-    const verbHighlightBackgroundSettings = document.getElementById('verbHighlightBackgroundSettings');
-    const verbHighlightBackgroundColor = document.getElementById('verbHighlightBackgroundColor');
-    const verbHighlightBackgroundColorPicker = document.getElementById('verbHighlightBackgroundColorPicker');
-    const verbHighlightBackgroundColorPreview = document.getElementById('verbHighlightBackgroundColorPreview');
-    const verbHighlightBackgroundOpacity = document.getElementById('verbHighlightBackgroundOpacity');
-    const verbHighlightBackgroundOpacityValue = document.getElementById('verbHighlightBackgroundOpacityValue');
+    // 动词高亮设置
+    const posHighlightVerbEnabled = document.getElementById('posHighlightVerbEnabled');
+    const posHighlightVerbSettings = document.getElementById('posHighlightVerbSettings');
+    const posHighlightVerbBackgroundEnabled = document.getElementById('posHighlightVerbBackgroundEnabled');
+    const posHighlightVerbBackgroundSettings = document.getElementById('posHighlightVerbBackgroundSettings');
+    const posHighlightVerbBackgroundColor = document.getElementById('posHighlightVerbBackgroundColor');
+    const posHighlightVerbBackgroundColorPicker = document.getElementById('posHighlightVerbBackgroundColorPicker');
+    const posHighlightVerbBackgroundColorPreview = document.getElementById('posHighlightVerbBackgroundColorPreview');
+    const posHighlightVerbBackgroundOpacity = document.getElementById('posHighlightVerbBackgroundOpacity');
+    const posHighlightVerbBackgroundOpacityValue = document.getElementById('posHighlightVerbBackgroundOpacityValue');
+    const posHighlightVerbUnderlineEnabled = document.getElementById('posHighlightVerbUnderlineEnabled');
+    const posHighlightVerbUnderlineSettings = document.getElementById('posHighlightVerbUnderlineSettings');
+    const posHighlightVerbUnderlineStyle = document.getElementById('posHighlightVerbUnderlineStyle');
+    const posHighlightVerbUnderlineColor = document.getElementById('posHighlightVerbUnderlineColor');
+    const posHighlightVerbUnderlineColorPicker = document.getElementById('posHighlightVerbUnderlineColorPicker');
+    const posHighlightVerbUnderlineColorPreview = document.getElementById('posHighlightVerbUnderlineColorPreview');
+    const posHighlightVerbUnderlineThickness = document.getElementById('posHighlightVerbUnderlineThickness');
+    const posHighlightVerbUnderlineThicknessInput = document.getElementById('posHighlightVerbUnderlineThicknessInput');
+    const posHighlightVerbUnderlinePosition = document.getElementById('posHighlightVerbUnderlinePosition');
     
-    // 下划线设置
-    const verbHighlightUnderlineEnabled = document.getElementById('verbHighlightUnderlineEnabled');
-    const verbHighlightUnderlineSettings = document.getElementById('verbHighlightUnderlineSettings');
-    const verbHighlightUnderlineStyle = document.getElementById('verbHighlightUnderlineStyle');
-    const verbHighlightUnderlineColor = document.getElementById('verbHighlightUnderlineColor');
-    const verbHighlightUnderlineColorPicker = document.getElementById('verbHighlightUnderlineColorPicker');
-    const verbHighlightUnderlineColorPreview = document.getElementById('verbHighlightUnderlineColorPreview');
-    const verbHighlightUnderlineThickness = document.getElementById('verbHighlightUnderlineThickness');
-    const verbHighlightUnderlineThicknessInput = document.getElementById('verbHighlightUnderlineThicknessInput');
-    const verbHighlightUnderlinePosition = document.getElementById('verbHighlightUnderlinePosition');
+    // 介词高亮设置
+    const posHighlightPrepositionEnabled = document.getElementById('posHighlightPrepositionEnabled');
+    const posHighlightPrepositionSettings = document.getElementById('posHighlightPrepositionSettings');
+    const posHighlightPrepositionBackgroundEnabled = document.getElementById('posHighlightPrepositionBackgroundEnabled');
+    const posHighlightPrepositionBackgroundSettings = document.getElementById('posHighlightPrepositionBackgroundSettings');
+    const posHighlightPrepositionBackgroundColor = document.getElementById('posHighlightPrepositionBackgroundColor');
+    const posHighlightPrepositionBackgroundColorPicker = document.getElementById('posHighlightPrepositionBackgroundColorPicker');
+    const posHighlightPrepositionBackgroundColorPreview = document.getElementById('posHighlightPrepositionBackgroundColorPreview');
+    const posHighlightPrepositionBackgroundOpacity = document.getElementById('posHighlightPrepositionBackgroundOpacity');
+    const posHighlightPrepositionBackgroundOpacityValue = document.getElementById('posHighlightPrepositionBackgroundOpacityValue');
+    const posHighlightPrepositionUnderlineEnabled = document.getElementById('posHighlightPrepositionUnderlineEnabled');
+    const posHighlightPrepositionUnderlineSettings = document.getElementById('posHighlightPrepositionUnderlineSettings');
+    const posHighlightPrepositionUnderlineStyle = document.getElementById('posHighlightPrepositionUnderlineStyle');
+    const posHighlightPrepositionUnderlineColor = document.getElementById('posHighlightPrepositionUnderlineColor');
+    const posHighlightPrepositionUnderlineColorPicker = document.getElementById('posHighlightPrepositionUnderlineColorPicker');
+    const posHighlightPrepositionUnderlineColorPreview = document.getElementById('posHighlightPrepositionUnderlineColorPreview');
+    const posHighlightPrepositionUnderlineThickness = document.getElementById('posHighlightPrepositionUnderlineThickness');
+    const posHighlightPrepositionUnderlineThicknessInput = document.getElementById('posHighlightPrepositionUnderlineThicknessInput');
+    const posHighlightPrepositionUnderlinePosition = document.getElementById('posHighlightPrepositionUnderlinePosition');
 
     // 点击按钮展开/收起设置区域
-    if (verbHighlightSettingsToggle) {
-        verbHighlightSettingsToggle.addEventListener('click', function() {
-            verbHighlightSettings.classList.toggle('visible');
+    if (posHighlightSettingsToggle) {
+        posHighlightSettingsToggle.addEventListener('click', function() {
+            posHighlightSettings.classList.toggle('visible');
         });
     }
 
     // 加载设置
     chrome.storage.local.get({
-        verbHighlightEnabled: false,
-        verbHighlightLanguage: 'german',
-        verbHighlightBackgroundEnabled: true,
-        verbHighlightBackgroundColor: '#FF6B6B40',
-        verbHighlightBackgroundOpacity: 25,
-        verbHighlightUnderlineEnabled: true,
-        verbHighlightUnderlineStyle: 'wavy',
-        verbHighlightUnderlineColor: '#FF6B6B',
-        verbHighlightUnderlineThickness: 2,
-        verbHighlightUnderlinePosition: 'bottom'
+        posHighlightEnabled: false,
+        posHighlightLanguage: 'german',
+        posHighlightVerbEnabled: true,
+        posHighlightVerbBackgroundEnabled: true,
+        posHighlightVerbBackgroundColor: '#FF6B6B40',
+        posHighlightVerbBackgroundOpacity: 25,
+        posHighlightVerbUnderlineEnabled: true,
+        posHighlightVerbUnderlineStyle: 'wavy',
+        posHighlightVerbUnderlineColor: '#FF6B6B',
+        posHighlightVerbUnderlineThickness: 2,
+        posHighlightVerbUnderlinePosition: 'bottom',
+        posHighlightPrepositionEnabled: true,
+        posHighlightPrepositionBackgroundEnabled: true,
+        posHighlightPrepositionBackgroundColor: '#4ECDC440',
+        posHighlightPrepositionBackgroundOpacity: 25,
+        posHighlightPrepositionUnderlineEnabled: true,
+        posHighlightPrepositionUnderlineStyle: 'solid',
+        posHighlightPrepositionUnderlineColor: '#4ECDC4',
+        posHighlightPrepositionUnderlineThickness: 2,
+        posHighlightPrepositionUnderlinePosition: 'bottom'
     }, function(result) {
-        if (verbHighlightEnabled) {
-            verbHighlightEnabled.checked = result.verbHighlightEnabled;
+        if (posHighlightEnabled) {
+            posHighlightEnabled.checked = result.posHighlightEnabled;
         }
-        if (verbHighlightLanguage) {
-            verbHighlightLanguage.value = result.verbHighlightLanguage;
+        if (posHighlightLanguage) {
+            posHighlightLanguage.value = result.posHighlightLanguage;
         }
         
-        // 背景设置
-        if (verbHighlightBackgroundEnabled) {
-            verbHighlightBackgroundEnabled.checked = result.verbHighlightBackgroundEnabled;
+        // 动词设置
+        if (posHighlightVerbEnabled) {
+            posHighlightVerbEnabled.checked = result.posHighlightVerbEnabled;
         }
-        if (verbHighlightBackgroundSettings) {
-            verbHighlightBackgroundSettings.style.display = result.verbHighlightBackgroundEnabled ? 'block' : 'none';
+        if (posHighlightVerbSettings) {
+            posHighlightVerbSettings.style.display = result.posHighlightVerbEnabled ? 'block' : 'none';
         }
-        if (verbHighlightBackgroundColor) {
-            verbHighlightBackgroundColor.value = result.verbHighlightBackgroundColor;
+        if (posHighlightVerbBackgroundEnabled) {
+            posHighlightVerbBackgroundEnabled.checked = result.posHighlightVerbBackgroundEnabled;
         }
-        if (verbHighlightBackgroundColorPreview) {
-            verbHighlightBackgroundColorPreview.style.backgroundColor = result.verbHighlightBackgroundColor;
+        if (posHighlightVerbBackgroundSettings) {
+            posHighlightVerbBackgroundSettings.style.display = result.posHighlightVerbBackgroundEnabled ? 'block' : 'none';
         }
-        if (verbHighlightBackgroundColorPicker) {
-            // 从颜色值提取纯色部分
-            const colorMatch = result.verbHighlightBackgroundColor.match(/^#([0-9A-Fa-f]{6})/);
+        if (posHighlightVerbBackgroundColor) {
+            posHighlightVerbBackgroundColor.value = result.posHighlightVerbBackgroundColor;
+        }
+        if (posHighlightVerbBackgroundColorPreview) {
+            posHighlightVerbBackgroundColorPreview.style.backgroundColor = result.posHighlightVerbBackgroundColor;
+        }
+        if (posHighlightVerbBackgroundColorPicker) {
+            const colorMatch = result.posHighlightVerbBackgroundColor.match(/^#([0-9A-Fa-f]{6})/);
             if (colorMatch) {
-                verbHighlightBackgroundColorPicker.value = '#' + colorMatch[1];
+                posHighlightVerbBackgroundColorPicker.value = '#' + colorMatch[1];
             }
         }
-        if (verbHighlightBackgroundOpacity) {
-            verbHighlightBackgroundOpacity.value = result.verbHighlightBackgroundOpacity;
+        if (posHighlightVerbBackgroundOpacity) {
+            posHighlightVerbBackgroundOpacity.value = result.posHighlightVerbBackgroundOpacity;
         }
-        if (verbHighlightBackgroundOpacityValue) {
-            verbHighlightBackgroundOpacityValue.textContent = result.verbHighlightBackgroundOpacity;
+        if (posHighlightVerbBackgroundOpacityValue) {
+            posHighlightVerbBackgroundOpacityValue.textContent = result.posHighlightVerbBackgroundOpacity;
+        }
+        if (posHighlightVerbUnderlineEnabled) {
+            posHighlightVerbUnderlineEnabled.checked = result.posHighlightVerbUnderlineEnabled;
+        }
+        if (posHighlightVerbUnderlineSettings) {
+            posHighlightVerbUnderlineSettings.style.display = result.posHighlightVerbUnderlineEnabled ? 'block' : 'none';
+        }
+        if (posHighlightVerbUnderlineStyle) {
+            posHighlightVerbUnderlineStyle.value = result.posHighlightVerbUnderlineStyle;
+        }
+        if (posHighlightVerbUnderlineColor) {
+            posHighlightVerbUnderlineColor.value = result.posHighlightVerbUnderlineColor;
+        }
+        if (posHighlightVerbUnderlineColorPicker) {
+            posHighlightVerbUnderlineColorPicker.value = result.posHighlightVerbUnderlineColor;
+        }
+        if (posHighlightVerbUnderlineColorPreview) {
+            posHighlightVerbUnderlineColorPreview.style.backgroundColor = result.posHighlightVerbUnderlineColor;
+        }
+        if (posHighlightVerbUnderlineThickness) {
+            posHighlightVerbUnderlineThickness.value = result.posHighlightVerbUnderlineThickness;
+        }
+        if (posHighlightVerbUnderlineThicknessInput) {
+            posHighlightVerbUnderlineThicknessInput.value = result.posHighlightVerbUnderlineThickness;
+        }
+        if (posHighlightVerbUnderlinePosition) {
+            posHighlightVerbUnderlinePosition.value = result.posHighlightVerbUnderlinePosition;
         }
         
-        // 下划线设置
-        if (verbHighlightUnderlineEnabled) {
-            verbHighlightUnderlineEnabled.checked = result.verbHighlightUnderlineEnabled;
+        // 介词设置
+        if (posHighlightPrepositionEnabled) {
+            posHighlightPrepositionEnabled.checked = result.posHighlightPrepositionEnabled;
         }
-        if (verbHighlightUnderlineSettings) {
-            verbHighlightUnderlineSettings.style.display = result.verbHighlightUnderlineEnabled ? 'block' : 'none';
+        if (posHighlightPrepositionSettings) {
+            posHighlightPrepositionSettings.style.display = result.posHighlightPrepositionEnabled ? 'block' : 'none';
         }
-        if (verbHighlightUnderlineStyle) {
-            verbHighlightUnderlineStyle.value = result.verbHighlightUnderlineStyle;
+        if (posHighlightPrepositionBackgroundEnabled) {
+            posHighlightPrepositionBackgroundEnabled.checked = result.posHighlightPrepositionBackgroundEnabled;
         }
-        if (verbHighlightUnderlineColor) {
-            verbHighlightUnderlineColor.value = result.verbHighlightUnderlineColor;
+        if (posHighlightPrepositionBackgroundSettings) {
+            posHighlightPrepositionBackgroundSettings.style.display = result.posHighlightPrepositionBackgroundEnabled ? 'block' : 'none';
         }
-        if (verbHighlightUnderlineColorPicker) {
-            verbHighlightUnderlineColorPicker.value = result.verbHighlightUnderlineColor;
+        if (posHighlightPrepositionBackgroundColor) {
+            posHighlightPrepositionBackgroundColor.value = result.posHighlightPrepositionBackgroundColor;
         }
-        if (verbHighlightUnderlineColorPreview) {
-            verbHighlightUnderlineColorPreview.style.backgroundColor = result.verbHighlightUnderlineColor;
+        if (posHighlightPrepositionBackgroundColorPreview) {
+            posHighlightPrepositionBackgroundColorPreview.style.backgroundColor = result.posHighlightPrepositionBackgroundColor;
         }
-        if (verbHighlightUnderlineThickness) {
-            verbHighlightUnderlineThickness.value = result.verbHighlightUnderlineThickness;
+        if (posHighlightPrepositionBackgroundColorPicker) {
+            const colorMatch = result.posHighlightPrepositionBackgroundColor.match(/^#([0-9A-Fa-f]{6})/);
+            if (colorMatch) {
+                posHighlightPrepositionBackgroundColorPicker.value = '#' + colorMatch[1];
+            }
         }
-        if (verbHighlightUnderlineThicknessInput) {
-            verbHighlightUnderlineThicknessInput.value = result.verbHighlightUnderlineThickness;
+        if (posHighlightPrepositionBackgroundOpacity) {
+            posHighlightPrepositionBackgroundOpacity.value = result.posHighlightPrepositionBackgroundOpacity;
         }
-        if (verbHighlightUnderlinePosition) {
-            verbHighlightUnderlinePosition.value = result.verbHighlightUnderlinePosition;
+        if (posHighlightPrepositionBackgroundOpacityValue) {
+            posHighlightPrepositionBackgroundOpacityValue.textContent = result.posHighlightPrepositionBackgroundOpacity;
+        }
+        if (posHighlightPrepositionUnderlineEnabled) {
+            posHighlightPrepositionUnderlineEnabled.checked = result.posHighlightPrepositionUnderlineEnabled;
+        }
+        if (posHighlightPrepositionUnderlineSettings) {
+            posHighlightPrepositionUnderlineSettings.style.display = result.posHighlightPrepositionUnderlineEnabled ? 'block' : 'none';
+        }
+        if (posHighlightPrepositionUnderlineStyle) {
+            posHighlightPrepositionUnderlineStyle.value = result.posHighlightPrepositionUnderlineStyle;
+        }
+        if (posHighlightPrepositionUnderlineColor) {
+            posHighlightPrepositionUnderlineColor.value = result.posHighlightPrepositionUnderlineColor;
+        }
+        if (posHighlightPrepositionUnderlineColorPicker) {
+            posHighlightPrepositionUnderlineColorPicker.value = result.posHighlightPrepositionUnderlineColor;
+        }
+        if (posHighlightPrepositionUnderlineColorPreview) {
+            posHighlightPrepositionUnderlineColorPreview.style.backgroundColor = result.posHighlightPrepositionUnderlineColor;
+        }
+        if (posHighlightPrepositionUnderlineThickness) {
+            posHighlightPrepositionUnderlineThickness.value = result.posHighlightPrepositionUnderlineThickness;
+        }
+        if (posHighlightPrepositionUnderlineThicknessInput) {
+            posHighlightPrepositionUnderlineThicknessInput.value = result.posHighlightPrepositionUnderlineThickness;
+        }
+        if (posHighlightPrepositionUnderlinePosition) {
+            posHighlightPrepositionUnderlinePosition.value = result.posHighlightPrepositionUnderlinePosition;
         }
     });
 
     // 监听总开关变化
-    if (verbHighlightEnabled) {
-        verbHighlightEnabled.addEventListener('change', function(e) {
+    if (posHighlightEnabled) {
+        posHighlightEnabled.addEventListener('change', function(e) {
             const isEnabled = e.target.checked;
-            chrome.storage.local.set({ verbHighlightEnabled: isEnabled });
+            chrome.storage.local.set({ posHighlightEnabled: isEnabled });
 
-            // 向所有标签页发送切换消息
             chrome.tabs.query({}, function(tabs) {
                 tabs.forEach(tab => {
                     chrome.tabs.sendMessage(tab.id, {
-                        action: "toggleVerbHighlight",
+                        action: "togglePosHighlight",
                         enabled: isEnabled
                     }).catch(() => {});
                 });
@@ -2845,15 +2946,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 监听语言选择变化
-    if (verbHighlightLanguage) {
-        verbHighlightLanguage.addEventListener('change', function(e) {
-            chrome.storage.local.set({ verbHighlightLanguage: e.target.value });
+    if (posHighlightLanguage) {
+        posHighlightLanguage.addEventListener('change', function(e) {
+            chrome.storage.local.set({ posHighlightLanguage: e.target.value });
 
-            // 通知 content script 更新语言
             chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
                 if (tabs[0]) {
                     chrome.tabs.sendMessage(tabs[0].id, {
-                        action: 'updateVerbHighlightLanguage',
+                        action: 'updatePosHighlightLanguage',
                         language: e.target.value
                     }).catch(() => {});
                 }
@@ -2861,186 +2961,350 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 监听背景高亮开关变化
-    if (verbHighlightBackgroundEnabled) {
-        verbHighlightBackgroundEnabled.addEventListener('change', function(e) {
+    // ===== 动词高亮事件监听 =====
+    if (posHighlightVerbEnabled) {
+        posHighlightVerbEnabled.addEventListener('change', function(e) {
             const isEnabled = e.target.checked;
-            chrome.storage.local.set({ verbHighlightBackgroundEnabled: isEnabled });
-            
-            // 显示/隐藏背景设置区域
-            if (verbHighlightBackgroundSettings) {
-                verbHighlightBackgroundSettings.style.display = isEnabled ? 'block' : 'none';
+            chrome.storage.local.set({ posHighlightVerbEnabled: isEnabled });
+            if (posHighlightVerbSettings) {
+                posHighlightVerbSettings.style.display = isEnabled ? 'block' : 'none';
             }
-            
-            notifyStyleUpdate();
+            notifyPosStyleUpdate();
         });
     }
 
-    // 监听背景颜色变化（文本输入）
-    if (verbHighlightBackgroundColor) {
-        verbHighlightBackgroundColor.addEventListener('input', function(e) {
+    if (posHighlightVerbBackgroundEnabled) {
+        posHighlightVerbBackgroundEnabled.addEventListener('change', function(e) {
+            const isEnabled = e.target.checked;
+            chrome.storage.local.set({ posHighlightVerbBackgroundEnabled: isEnabled });
+            if (posHighlightVerbBackgroundSettings) {
+                posHighlightVerbBackgroundSettings.style.display = isEnabled ? 'block' : 'none';
+            }
+            notifyPosStyleUpdate();
+        });
+    }
+
+    if (posHighlightVerbBackgroundColor) {
+        posHighlightVerbBackgroundColor.addEventListener('input', function(e) {
             const color = e.target.value;
-            chrome.storage.local.set({ verbHighlightBackgroundColor: color });
-            if (verbHighlightBackgroundColorPreview) {
-                verbHighlightBackgroundColorPreview.style.backgroundColor = color;
+            chrome.storage.local.set({ posHighlightVerbBackgroundColor: color });
+            if (posHighlightVerbBackgroundColorPreview) {
+                posHighlightVerbBackgroundColorPreview.style.backgroundColor = color;
             }
-            notifyStyleUpdate();
+            notifyPosStyleUpdate();
         });
     }
 
-    // 监听背景颜色选择器变化
-    if (verbHighlightBackgroundColorPicker) {
-        verbHighlightBackgroundColorPicker.addEventListener('input', function(e) {
+    if (posHighlightVerbBackgroundColorPicker) {
+        posHighlightVerbBackgroundColorPicker.addEventListener('input', function(e) {
             const baseColor = e.target.value;
-            // 获取当前透明度
-            const opacity = verbHighlightBackgroundOpacity ? verbHighlightBackgroundOpacity.value : 25;
+            const opacity = posHighlightVerbBackgroundOpacity ? posHighlightVerbBackgroundOpacity.value : 25;
             const opacityHex = Math.round(opacity * 2.55).toString(16).padStart(2, '0');
             const colorWithOpacity = baseColor + opacityHex;
             
-            chrome.storage.local.set({ verbHighlightBackgroundColor: colorWithOpacity });
-            if (verbHighlightBackgroundColor) {
-                verbHighlightBackgroundColor.value = colorWithOpacity;
+            chrome.storage.local.set({ posHighlightVerbBackgroundColor: colorWithOpacity });
+            if (posHighlightVerbBackgroundColor) {
+                posHighlightVerbBackgroundColor.value = colorWithOpacity;
             }
-            if (verbHighlightBackgroundColorPreview) {
-                verbHighlightBackgroundColorPreview.style.backgroundColor = colorWithOpacity;
+            if (posHighlightVerbBackgroundColorPreview) {
+                posHighlightVerbBackgroundColorPreview.style.backgroundColor = colorWithOpacity;
             }
-            notifyStyleUpdate();
+            notifyPosStyleUpdate();
         });
     }
 
-    // 监听背景透明度变化
-    if (verbHighlightBackgroundOpacity) {
-        verbHighlightBackgroundOpacity.addEventListener('input', function(e) {
+    if (posHighlightVerbBackgroundOpacity) {
+        posHighlightVerbBackgroundOpacity.addEventListener('input', function(e) {
             const opacity = parseInt(e.target.value);
-            if (verbHighlightBackgroundOpacityValue) {
-                verbHighlightBackgroundOpacityValue.textContent = opacity;
+            if (posHighlightVerbBackgroundOpacityValue) {
+                posHighlightVerbBackgroundOpacityValue.textContent = opacity;
             }
             
-            // 更新颜色值
-            if (verbHighlightBackgroundColor && verbHighlightBackgroundColorPicker) {
-                const baseColor = verbHighlightBackgroundColorPicker.value;
+            if (posHighlightVerbBackgroundColor && posHighlightVerbBackgroundColorPicker) {
+                const baseColor = posHighlightVerbBackgroundColorPicker.value;
                 const opacityHex = Math.round(opacity * 2.55).toString(16).padStart(2, '0');
                 const colorWithOpacity = baseColor + opacityHex;
                 
-                chrome.storage.local.set({ verbHighlightBackgroundColor: colorWithOpacity });
-                verbHighlightBackgroundColor.value = colorWithOpacity;
-                if (verbHighlightBackgroundColorPreview) {
-                    verbHighlightBackgroundColorPreview.style.backgroundColor = colorWithOpacity;
+                chrome.storage.local.set({ posHighlightVerbBackgroundColor: colorWithOpacity });
+                posHighlightVerbBackgroundColor.value = colorWithOpacity;
+                if (posHighlightVerbBackgroundColorPreview) {
+                    posHighlightVerbBackgroundColorPreview.style.backgroundColor = colorWithOpacity;
                 }
             }
-            notifyStyleUpdate();
+            notifyPosStyleUpdate();
         });
     }
 
-    // 监听下划线开关变化
-    if (verbHighlightUnderlineEnabled) {
-        verbHighlightUnderlineEnabled.addEventListener('change', function(e) {
+    if (posHighlightVerbUnderlineEnabled) {
+        posHighlightVerbUnderlineEnabled.addEventListener('change', function(e) {
             const isEnabled = e.target.checked;
-            chrome.storage.local.set({ verbHighlightUnderlineEnabled: isEnabled });
-            
-            // 显示/隐藏下划线设置区域
-            if (verbHighlightUnderlineSettings) {
-                verbHighlightUnderlineSettings.style.display = isEnabled ? 'block' : 'none';
+            chrome.storage.local.set({ posHighlightVerbUnderlineEnabled: isEnabled });
+            if (posHighlightVerbUnderlineSettings) {
+                posHighlightVerbUnderlineSettings.style.display = isEnabled ? 'block' : 'none';
             }
-            
-            notifyStyleUpdate();
+            notifyPosStyleUpdate();
         });
     }
 
-    // 监听下划线样式变化
-    if (verbHighlightUnderlineStyle) {
-        verbHighlightUnderlineStyle.addEventListener('change', function(e) {
-            chrome.storage.local.set({ verbHighlightUnderlineStyle: e.target.value });
-            notifyStyleUpdate();
+    if (posHighlightVerbUnderlineStyle) {
+        posHighlightVerbUnderlineStyle.addEventListener('change', function(e) {
+            chrome.storage.local.set({ posHighlightVerbUnderlineStyle: e.target.value });
+            notifyPosStyleUpdate();
         });
     }
 
-    // 监听下划线颜色变化（文本输入）
-    if (verbHighlightUnderlineColor) {
-        verbHighlightUnderlineColor.addEventListener('input', function(e) {
+    if (posHighlightVerbUnderlineColor) {
+        posHighlightVerbUnderlineColor.addEventListener('input', function(e) {
             const color = e.target.value;
-            chrome.storage.local.set({ verbHighlightUnderlineColor: color });
-            if (verbHighlightUnderlineColorPreview) {
-                verbHighlightUnderlineColorPreview.style.backgroundColor = color;
+            chrome.storage.local.set({ posHighlightVerbUnderlineColor: color });
+            if (posHighlightVerbUnderlineColorPreview) {
+                posHighlightVerbUnderlineColorPreview.style.backgroundColor = color;
             }
-            if (verbHighlightUnderlineColorPicker) {
-                verbHighlightUnderlineColorPicker.value = color;
+            if (posHighlightVerbUnderlineColorPicker) {
+                posHighlightVerbUnderlineColorPicker.value = color;
             }
-            notifyStyleUpdate();
+            notifyPosStyleUpdate();
         });
     }
 
-    // 监听下划线颜色选择器变化
-    if (verbHighlightUnderlineColorPicker) {
-        verbHighlightUnderlineColorPicker.addEventListener('input', function(e) {
+    if (posHighlightVerbUnderlineColorPicker) {
+        posHighlightVerbUnderlineColorPicker.addEventListener('input', function(e) {
             const color = e.target.value;
-            chrome.storage.local.set({ verbHighlightUnderlineColor: color });
-            if (verbHighlightUnderlineColor) {
-                verbHighlightUnderlineColor.value = color;
+            chrome.storage.local.set({ posHighlightVerbUnderlineColor: color });
+            if (posHighlightVerbUnderlineColor) {
+                posHighlightVerbUnderlineColor.value = color;
             }
-            if (verbHighlightUnderlineColorPreview) {
-                verbHighlightUnderlineColorPreview.style.backgroundColor = color;
+            if (posHighlightVerbUnderlineColorPreview) {
+                posHighlightVerbUnderlineColorPreview.style.backgroundColor = color;
             }
-            notifyStyleUpdate();
+            notifyPosStyleUpdate();
         });
     }
 
-    // 监听下划线粗度变化（滑块）
-    if (verbHighlightUnderlineThickness) {
-        verbHighlightUnderlineThickness.addEventListener('input', function(e) {
+    if (posHighlightVerbUnderlineThickness) {
+        posHighlightVerbUnderlineThickness.addEventListener('input', function(e) {
             const thickness = parseInt(e.target.value);
-            chrome.storage.local.set({ verbHighlightUnderlineThickness: thickness });
-            if (verbHighlightUnderlineThicknessInput) {
-                verbHighlightUnderlineThicknessInput.value = thickness;
+            chrome.storage.local.set({ posHighlightVerbUnderlineThickness: thickness });
+            if (posHighlightVerbUnderlineThicknessInput) {
+                posHighlightVerbUnderlineThicknessInput.value = thickness;
             }
-            notifyStyleUpdate();
+            notifyPosStyleUpdate();
         });
     }
 
-    // 监听下划线粗度变化（数字输入）
-    if (verbHighlightUnderlineThicknessInput) {
-        verbHighlightUnderlineThicknessInput.addEventListener('input', function(e) {
+    if (posHighlightVerbUnderlineThicknessInput) {
+        posHighlightVerbUnderlineThicknessInput.addEventListener('input', function(e) {
             const thickness = parseInt(e.target.value);
             if (!isNaN(thickness) && thickness >= 1 && thickness <= 6) {
-                chrome.storage.local.set({ verbHighlightUnderlineThickness: thickness });
-                if (verbHighlightUnderlineThickness) {
-                    verbHighlightUnderlineThickness.value = thickness;
+                chrome.storage.local.set({ posHighlightVerbUnderlineThickness: thickness });
+                if (posHighlightVerbUnderlineThickness) {
+                    posHighlightVerbUnderlineThickness.value = thickness;
                 }
-                notifyStyleUpdate();
+                notifyPosStyleUpdate();
             }
         });
     }
 
-    // 监听下划线位置变化
-    if (verbHighlightUnderlinePosition) {
-        verbHighlightUnderlinePosition.addEventListener('change', function(e) {
-            chrome.storage.local.set({ verbHighlightUnderlinePosition: e.target.value });
-            notifyStyleUpdate();
+    if (posHighlightVerbUnderlinePosition) {
+        posHighlightVerbUnderlinePosition.addEventListener('change', function(e) {
+            chrome.storage.local.set({ posHighlightVerbUnderlinePosition: e.target.value });
+            notifyPosStyleUpdate();
         });
     }
 
-    // 通知样式更新
-    function notifyStyleUpdate() {
+    // ===== 介词高亮事件监听 =====
+    if (posHighlightPrepositionEnabled) {
+        posHighlightPrepositionEnabled.addEventListener('change', function(e) {
+            const isEnabled = e.target.checked;
+            chrome.storage.local.set({ posHighlightPrepositionEnabled: isEnabled });
+            if (posHighlightPrepositionSettings) {
+                posHighlightPrepositionSettings.style.display = isEnabled ? 'block' : 'none';
+            }
+            notifyPosStyleUpdate();
+        });
+    }
+
+    if (posHighlightPrepositionBackgroundEnabled) {
+        posHighlightPrepositionBackgroundEnabled.addEventListener('change', function(e) {
+            const isEnabled = e.target.checked;
+            chrome.storage.local.set({ posHighlightPrepositionBackgroundEnabled: isEnabled });
+            if (posHighlightPrepositionBackgroundSettings) {
+                posHighlightPrepositionBackgroundSettings.style.display = isEnabled ? 'block' : 'none';
+            }
+            notifyPosStyleUpdate();
+        });
+    }
+
+    if (posHighlightPrepositionBackgroundColor) {
+        posHighlightPrepositionBackgroundColor.addEventListener('input', function(e) {
+            const color = e.target.value;
+            chrome.storage.local.set({ posHighlightPrepositionBackgroundColor: color });
+            if (posHighlightPrepositionBackgroundColorPreview) {
+                posHighlightPrepositionBackgroundColorPreview.style.backgroundColor = color;
+            }
+            notifyPosStyleUpdate();
+        });
+    }
+
+    if (posHighlightPrepositionBackgroundColorPicker) {
+        posHighlightPrepositionBackgroundColorPicker.addEventListener('input', function(e) {
+            const baseColor = e.target.value;
+            const opacity = posHighlightPrepositionBackgroundOpacity ? posHighlightPrepositionBackgroundOpacity.value : 25;
+            const opacityHex = Math.round(opacity * 2.55).toString(16).padStart(2, '0');
+            const colorWithOpacity = baseColor + opacityHex;
+            
+            chrome.storage.local.set({ posHighlightPrepositionBackgroundColor: colorWithOpacity });
+            if (posHighlightPrepositionBackgroundColor) {
+                posHighlightPrepositionBackgroundColor.value = colorWithOpacity;
+            }
+            if (posHighlightPrepositionBackgroundColorPreview) {
+                posHighlightPrepositionBackgroundColorPreview.style.backgroundColor = colorWithOpacity;
+            }
+            notifyPosStyleUpdate();
+        });
+    }
+
+    if (posHighlightPrepositionBackgroundOpacity) {
+        posHighlightPrepositionBackgroundOpacity.addEventListener('input', function(e) {
+            const opacity = parseInt(e.target.value);
+            if (posHighlightPrepositionBackgroundOpacityValue) {
+                posHighlightPrepositionBackgroundOpacityValue.textContent = opacity;
+            }
+            
+            if (posHighlightPrepositionBackgroundColor && posHighlightPrepositionBackgroundColorPicker) {
+                const baseColor = posHighlightPrepositionBackgroundColorPicker.value;
+                const opacityHex = Math.round(opacity * 2.55).toString(16).padStart(2, '0');
+                const colorWithOpacity = baseColor + opacityHex;
+                
+                chrome.storage.local.set({ posHighlightPrepositionBackgroundColor: colorWithOpacity });
+                posHighlightPrepositionBackgroundColor.value = colorWithOpacity;
+                if (posHighlightPrepositionBackgroundColorPreview) {
+                    posHighlightPrepositionBackgroundColorPreview.style.backgroundColor = colorWithOpacity;
+                }
+            }
+            notifyPosStyleUpdate();
+        });
+    }
+
+    if (posHighlightPrepositionUnderlineEnabled) {
+        posHighlightPrepositionUnderlineEnabled.addEventListener('change', function(e) {
+            const isEnabled = e.target.checked;
+            chrome.storage.local.set({ posHighlightPrepositionUnderlineEnabled: isEnabled });
+            if (posHighlightPrepositionUnderlineSettings) {
+                posHighlightPrepositionUnderlineSettings.style.display = isEnabled ? 'block' : 'none';
+            }
+            notifyPosStyleUpdate();
+        });
+    }
+
+    if (posHighlightPrepositionUnderlineStyle) {
+        posHighlightPrepositionUnderlineStyle.addEventListener('change', function(e) {
+            chrome.storage.local.set({ posHighlightPrepositionUnderlineStyle: e.target.value });
+            notifyPosStyleUpdate();
+        });
+    }
+
+    if (posHighlightPrepositionUnderlineColor) {
+        posHighlightPrepositionUnderlineColor.addEventListener('input', function(e) {
+            const color = e.target.value;
+            chrome.storage.local.set({ posHighlightPrepositionUnderlineColor: color });
+            if (posHighlightPrepositionUnderlineColorPreview) {
+                posHighlightPrepositionUnderlineColorPreview.style.backgroundColor = color;
+            }
+            if (posHighlightPrepositionUnderlineColorPicker) {
+                posHighlightPrepositionUnderlineColorPicker.value = color;
+            }
+            notifyPosStyleUpdate();
+        });
+    }
+
+    if (posHighlightPrepositionUnderlineColorPicker) {
+        posHighlightPrepositionUnderlineColorPicker.addEventListener('input', function(e) {
+            const color = e.target.value;
+            chrome.storage.local.set({ posHighlightPrepositionUnderlineColor: color });
+            if (posHighlightPrepositionUnderlineColor) {
+                posHighlightPrepositionUnderlineColor.value = color;
+            }
+            if (posHighlightPrepositionUnderlineColorPreview) {
+                posHighlightPrepositionUnderlineColorPreview.style.backgroundColor = color;
+            }
+            notifyPosStyleUpdate();
+        });
+    }
+
+    if (posHighlightPrepositionUnderlineThickness) {
+        posHighlightPrepositionUnderlineThickness.addEventListener('input', function(e) {
+            const thickness = parseInt(e.target.value);
+            chrome.storage.local.set({ posHighlightPrepositionUnderlineThickness: thickness });
+            if (posHighlightPrepositionUnderlineThicknessInput) {
+                posHighlightPrepositionUnderlineThicknessInput.value = thickness;
+            }
+            notifyPosStyleUpdate();
+        });
+    }
+
+    if (posHighlightPrepositionUnderlineThicknessInput) {
+        posHighlightPrepositionUnderlineThicknessInput.addEventListener('input', function(e) {
+            const thickness = parseInt(e.target.value);
+            if (!isNaN(thickness) && thickness >= 1 && thickness <= 6) {
+                chrome.storage.local.set({ posHighlightPrepositionUnderlineThickness: thickness });
+                if (posHighlightPrepositionUnderlineThickness) {
+                    posHighlightPrepositionUnderlineThickness.value = thickness;
+                }
+                notifyPosStyleUpdate();
+            }
+        });
+    }
+
+    if (posHighlightPrepositionUnderlinePosition) {
+        posHighlightPrepositionUnderlinePosition.addEventListener('change', function(e) {
+            chrome.storage.local.set({ posHighlightPrepositionUnderlinePosition: e.target.value });
+            notifyPosStyleUpdate();
+        });
+    }
+
+    // 通知词性高亮样式更新
+    function notifyPosStyleUpdate() {
         chrome.storage.local.get([
-            'verbHighlightBackgroundEnabled',
-            'verbHighlightBackgroundColor',
-            'verbHighlightUnderlineEnabled',
-            'verbHighlightUnderlineStyle',
-            'verbHighlightUnderlineColor',
-            'verbHighlightUnderlineThickness',
-            'verbHighlightUnderlinePosition'
+            'posHighlightVerbEnabled',
+            'posHighlightVerbBackgroundEnabled',
+            'posHighlightVerbBackgroundColor',
+            'posHighlightVerbUnderlineEnabled',
+            'posHighlightVerbUnderlineStyle',
+            'posHighlightVerbUnderlineColor',
+            'posHighlightVerbUnderlineThickness',
+            'posHighlightVerbUnderlinePosition',
+            'posHighlightPrepositionEnabled',
+            'posHighlightPrepositionBackgroundEnabled',
+            'posHighlightPrepositionBackgroundColor',
+            'posHighlightPrepositionUnderlineEnabled',
+            'posHighlightPrepositionUnderlineStyle',
+            'posHighlightPrepositionUnderlineColor',
+            'posHighlightPrepositionUnderlineThickness',
+            'posHighlightPrepositionUnderlinePosition'
         ], function(result) {
             chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
                 if (tabs[0]) {
                     chrome.tabs.sendMessage(tabs[0].id, {
-                        action: 'updateVerbHighlightStyle',
-                        backgroundEnabled: result.verbHighlightBackgroundEnabled,
-                        backgroundColor: result.verbHighlightBackgroundColor,
-                        underlineEnabled: result.verbHighlightUnderlineEnabled,
-                        style: result.verbHighlightUnderlineStyle,
-                        color: result.verbHighlightUnderlineColor,
-                        thickness: result.verbHighlightUnderlineThickness,
-                        position: result.verbHighlightUnderlinePosition
+                        action: 'updatePosHighlightConfig',
+                        config: {
+                            verbEnabled: result.posHighlightVerbEnabled,
+                            verbBackgroundEnabled: result.posHighlightVerbBackgroundEnabled,
+                            verbBackgroundColor: result.posHighlightVerbBackgroundColor,
+                            verbUnderlineEnabled: result.posHighlightVerbUnderlineEnabled,
+                            verbUnderlineStyle: result.posHighlightVerbUnderlineStyle,
+                            verbUnderlineColor: result.posHighlightVerbUnderlineColor,
+                            verbUnderlineThickness: result.posHighlightVerbUnderlineThickness,
+                            verbUnderlinePosition: result.posHighlightVerbUnderlinePosition,
+                            prepositionEnabled: result.posHighlightPrepositionEnabled,
+                            prepositionBackgroundEnabled: result.posHighlightPrepositionBackgroundEnabled,
+                            prepositionBackgroundColor: result.posHighlightPrepositionBackgroundColor,
+                            prepositionUnderlineEnabled: result.posHighlightPrepositionUnderlineEnabled,
+                            prepositionUnderlineStyle: result.posHighlightPrepositionUnderlineStyle,
+                            prepositionUnderlineColor: result.posHighlightPrepositionUnderlineColor,
+                            prepositionUnderlineThickness: result.posHighlightPrepositionUnderlineThickness,
+                            prepositionUnderlinePosition: result.posHighlightPrepositionUnderlinePosition
+                        }
                     }).catch(() => {});
                 }
             });
@@ -3457,24 +3721,39 @@ const i18n = {
     "underline_position_bottom": "下",
     "underline_position_top": "上",
     "underline_position_both": "上+下",
-    // 高亮动词
-    "verb_highlight": "高亮动词",
-    "verb_highlight_tooltip": "使用NLP识别并高亮文本中的动词",
-    "verb_highlight_language": "高亮语言",
-    "verb_highlight_language_hint": "选择要高亮动词的语言",
+    // 词性高亮
+    "pos_highlight": "词性高亮",
+    "pos_highlight_tooltip": "使用NLP识别并高亮文本中的动词和介词",
+    "pos_highlight_language": "高亮语言",
+    "pos_highlight_language_hint": "选择要高亮词性的语言",
     "language_german": "德语",
     "language_english": "英语",
-    "verb_highlight_background_enabled": "启用背景高亮",
-    "verb_highlight_background_color": "背景颜色",
-    "verb_highlight_background_color_hint": "点击色板选择颜色，拖动滑块调整透明度",
-    "verb_highlight_background_opacity_label": "透明度",
-    "verb_highlight_underline_enabled": "启用下划线",
-    "verb_highlight_underline_style": "下划线样式",
+    "pos_verb_section": "动词高亮",
+    "pos_verb_background_enabled": "启用背景高亮",
+    "pos_verb_background_color": "背景颜色",
+    "pos_verb_background_color_hint": "点击色板选择颜色，拖动滑块调整透明度",
+    "pos_verb_background_opacity_label": "透明度",
+    "pos_verb_underline_enabled": "启用下划线",
+    "pos_verb_underline_style": "下划线样式",
+    "pos_verb_underline_color": "下划线颜色",
+    "pos_verb_underline_thickness": "下划线粗度 (px)",
+    "pos_verb_underline_position": "下划线位置",
+    "pos_preposition_section": "介词高亮",
+    "pos_preposition_background_enabled": "启用背景高亮",
+    "pos_preposition_background_color": "背景颜色",
+    "pos_preposition_background_color_hint": "点击色板选择颜色，拖动滑块调整透明度",
+    "pos_preposition_background_opacity_label": "透明度",
+    "pos_preposition_underline_enabled": "启用下划线",
+    "pos_preposition_underline_style": "下划线样式",
+    "pos_preposition_underline_color": "下划线颜色",
+    "pos_preposition_underline_thickness": "下划线粗度 (px)",
+    "pos_preposition_underline_position": "下划线位置",
+    "underline_style_wavy": "波浪线",
+    "underline_style_solid": "直线",
+    "underline_style_dotted": "点线",
     "underline_style_dashed": "虚线",
-    "verb_highlight_underline_color": "下划线颜色",
-    "verb_highlight_underline_color_hint": "点击色板选择颜色",
-    "verb_highlight_underline_thickness": "下划线粗度 (px)",
-    "verb_highlight_underline_position": "下划线位置",
+    "underline_position_bottom": "下",
+    "underline_position_top": "上",
   },
   en: {
     // 标题
@@ -3641,24 +3920,39 @@ const i18n = {
     "underline_position_bottom": "Bottom",
     "underline_position_top": "Top",
     "underline_position_both": "Both",
-    // Verb Highlight
-    "verb_highlight": "Highlight Verbs",
-    "verb_highlight_tooltip": "Use NLP to identify and highlight verbs in text",
-    "verb_highlight_language": "Highlight Language",
-    "verb_highlight_language_hint": "Select the language to highlight verbs",
+    // POS Highlight
+    "pos_highlight": "POS Highlight",
+    "pos_highlight_tooltip": "Use NLP to identify and highlight verbs and prepositions in text",
+    "pos_highlight_language": "Highlight Language",
+    "pos_highlight_language_hint": "Select the language to highlight parts of speech",
     "language_german": "German",
     "language_english": "English",
-    "verb_highlight_background_enabled": "Enable Background Highlight",
-    "verb_highlight_background_color": "Background Color",
-    "verb_highlight_background_color_hint": "Click color palette to select color, drag slider to adjust opacity",
-    "verb_highlight_background_opacity_label": "Opacity",
-    "verb_highlight_underline_enabled": "Enable Underline",
-    "verb_highlight_underline_style": "Underline Style",
+    "pos_verb_section": "Verb Highlight",
+    "pos_verb_background_enabled": "Enable Background Highlight",
+    "pos_verb_background_color": "Background Color",
+    "pos_verb_background_color_hint": "Click color palette to select color, drag slider to adjust opacity",
+    "pos_verb_background_opacity_label": "Opacity",
+    "pos_verb_underline_enabled": "Enable Underline",
+    "pos_verb_underline_style": "Underline Style",
+    "pos_verb_underline_color": "Underline Color",
+    "pos_verb_underline_thickness": "Underline Thickness (px)",
+    "pos_verb_underline_position": "Underline Position",
+    "pos_preposition_section": "Preposition Highlight",
+    "pos_preposition_background_enabled": "Enable Background Highlight",
+    "pos_preposition_background_color": "Background Color",
+    "pos_preposition_background_color_hint": "Click color palette to select color, drag slider to adjust opacity",
+    "pos_preposition_background_opacity_label": "Opacity",
+    "pos_preposition_underline_enabled": "Enable Underline",
+    "pos_preposition_underline_style": "Underline Style",
+    "pos_preposition_underline_color": "Underline Color",
+    "pos_preposition_underline_thickness": "Underline Thickness (px)",
+    "pos_preposition_underline_position": "Underline Position",
+    "underline_style_wavy": "Wavy",
+    "underline_style_solid": "Solid",
+    "underline_style_dotted": "Dotted",
     "underline_style_dashed": "Dashed",
-    "verb_highlight_underline_color": "Underline Color",
-    "verb_highlight_underline_color_hint": "Click color palette to select color",
-    "verb_highlight_underline_thickness": "Underline Thickness (px)",
-    "verb_highlight_underline_position": "Underline Position",
+    "underline_position_bottom": "Bottom",
+    "underline_position_top": "Top",
   },
   zh_TW: {
     "popupTitle": "設定",
@@ -3791,24 +4085,39 @@ const i18n = {
     "underline_position_bottom": "下",
     "underline_position_top": "上",
     "underline_position_both": "上+下",
-    // 高亮動詞
-    "verb_highlight": "高亮動詞",
-    "verb_highlight_tooltip": "使用NLP識別並高亮文字中的動詞",
-    "verb_highlight_language": "高亮語言",
-    "verb_highlight_language_hint": "選擇要高亮動詞的語言",
+    // 詞性高亮
+    "pos_highlight": "詞性高亮",
+    "pos_highlight_tooltip": "使用NLP識別並高亮文字中的動詞和介詞",
+    "pos_highlight_language": "高亮語言",
+    "pos_highlight_language_hint": "選擇要高亮詞性的語言",
     "language_german": "德語",
     "language_english": "英語",
-    "verb_highlight_background_enabled": "啟用背景高亮",
-    "verb_highlight_background_color": "背景顏色",
-    "verb_highlight_background_color_hint": "點擊色盤選擇顏色，拖動滑桿調整透明度",
-    "verb_highlight_background_opacity_label": "透明度",
-    "verb_highlight_underline_enabled": "啟用底線",
-    "verb_highlight_underline_style": "底線樣式",
+    "pos_verb_section": "動詞高亮",
+    "pos_verb_background_enabled": "啟用背景高亮",
+    "pos_verb_background_color": "背景顏色",
+    "pos_verb_background_color_hint": "點擊色盤選擇顏色，拖動滑桿調整透明度",
+    "pos_verb_background_opacity_label": "透明度",
+    "pos_verb_underline_enabled": "啟用底線",
+    "pos_verb_underline_style": "底線樣式",
+    "pos_verb_underline_color": "底線顏色",
+    "pos_verb_underline_thickness": "底線粗度 (px)",
+    "pos_verb_underline_position": "底線位置",
+    "pos_preposition_section": "介詞高亮",
+    "pos_preposition_background_enabled": "啟用背景高亮",
+    "pos_preposition_background_color": "背景顏色",
+    "pos_preposition_background_color_hint": "點擊色盤選擇顏色，拖動滑桿調整透明度",
+    "pos_preposition_background_opacity_label": "透明度",
+    "pos_preposition_underline_enabled": "啟用底線",
+    "pos_preposition_underline_style": "底線樣式",
+    "pos_preposition_underline_color": "底線顏色",
+    "pos_preposition_underline_thickness": "底線粗度 (px)",
+    "pos_preposition_underline_position": "底線位置",
+    "underline_style_wavy": "波浪線",
+    "underline_style_solid": "直線",
+    "underline_style_dotted": "點線",
     "underline_style_dashed": "虛線",
-    "verb_highlight_underline_color": "底線顏色",
-    "verb_highlight_underline_color_hint": "點擊色盤選擇顏色",
-    "verb_highlight_underline_thickness": "底線粗度 (px)",
-    "verb_highlight_underline_position": "底線位置",
+    "underline_position_bottom": "下",
+    "underline_position_top": "上",
   },
   de: {
         "popupTitle": "Einstellungen",
@@ -3937,24 +4246,39 @@ const i18n = {
         "underline_position_bottom": "Unten",
         "underline_position_top": "Oben",
         "underline_position_both": "Oben+Unten",
-        // Verb Hervorhebung
-        "verb_highlight": "Verben hervorheben",
-        "verb_highlight_tooltip": "NLP verwenden, um Verben im Text zu erkennen und hervorzuheben",
-        "verb_highlight_language": "Hervorhebungssprache",
-        "verb_highlight_language_hint": "Wählen Sie die Sprache, um Verben hervorzuheben",
+        // POS-Hervorhebung
+        "pos_highlight": "Wortart-Hervorhebung",
+        "pos_highlight_tooltip": "NLP verwenden, um Verben und Präpositionen im Text zu erkennen und hervorzuheben",
+        "pos_highlight_language": "Hervorhebungssprache",
+        "pos_highlight_language_hint": "Wählen Sie die Sprache, um Wortarten hervorzuheben",
         "language_german": "Deutsch",
         "language_english": "Englisch",
-        "verb_highlight_background_enabled": "Hintergrundhervorhebung aktivieren",
-        "verb_highlight_background_color": "Hintergrundfarbe",
-        "verb_highlight_background_color_hint": "Klicken Sie auf die Farbpalette, um eine Farbe auszuwählen, ziehen Sie den Schieberegler, um die Transparenz anzupassen",
-        "verb_highlight_background_opacity_label": "Transparenz",
-        "verb_highlight_underline_enabled": "Unterstreichen aktivieren",
-        "verb_highlight_underline_style": "Unterstrichstil",
+        "pos_verb_section": "Verb-Hervorhebung",
+        "pos_verb_background_enabled": "Hintergrundhervorhebung aktivieren",
+        "pos_verb_background_color": "Hintergrundfarbe",
+        "pos_verb_background_color_hint": "Klicken Sie auf die Farbpalette, um eine Farbe auszuwählen, ziehen Sie den Schieberegler, um die Transparenz anzupassen",
+        "pos_verb_background_opacity_label": "Transparenz",
+        "pos_verb_underline_enabled": "Unterstreichen aktivieren",
+        "pos_verb_underline_style": "Unterstrichstil",
+        "pos_verb_underline_color": "Unterstrichfarbe",
+        "pos_verb_underline_thickness": "Unterstrichstärke (px)",
+        "pos_verb_underline_position": "Unterstrichposition",
+        "pos_preposition_section": "Präposition-Hervorhebung",
+        "pos_preposition_background_enabled": "Hintergrundhervorhebung aktivieren",
+        "pos_preposition_background_color": "Hintergrundfarbe",
+        "pos_preposition_background_color_hint": "Klicken Sie auf die Farbpalette, um eine Farbe auszuwählen, ziehen Sie den Schieberegler, um die Transparenz anzupassen",
+        "pos_preposition_background_opacity_label": "Transparenz",
+        "pos_preposition_underline_enabled": "Unterstreichen aktivieren",
+        "pos_preposition_underline_style": "Unterstrichstil",
+        "pos_preposition_underline_color": "Unterstrichfarbe",
+        "pos_preposition_underline_thickness": "Unterstrichstärke (px)",
+        "pos_preposition_underline_position": "Unterstrichposition",
+        "underline_style_wavy": "Wellenlinie",
+        "underline_style_solid": "Durchgehend",
+        "underline_style_dotted": "Gepunktet",
         "underline_style_dashed": "Gestrichelt",
-        "verb_highlight_underline_color": "Unterstrichfarbe",
-        "verb_highlight_underline_color_hint": "Klicken Sie auf die Farbpalette, um eine Farbe auszuwählen",
-        "verb_highlight_underline_thickness": "Unterstrichstärke (px)",
-        "verb_highlight_underline_position": "Unterstrichposition",
+        "underline_position_bottom": "Unten",
+        "underline_position_top": "Oben",
       },
     fr: {
         "popupTitle": "Paramètres",
@@ -4085,24 +4409,39 @@ const i18n = {
         "underline_position_bottom": "Bas",
         "underline_position_top": "Haut",
         "underline_position_both": "Haut+Bas",
-        // Surlignage des verbes
-        "verb_highlight": "Surligner les verbes",
-        "verb_highlight_tooltip": "Utiliser le NLP pour identifier et surligner les verbes dans le texte",
-        "verb_highlight_language": "Langue de surlignage",
-        "verb_highlight_language_hint": "Sélectionnez la langue pour surligner les verbes",
+        // Surlignage des parties du discours
+        "pos_highlight": "Surlignage des parties du discours",
+        "pos_highlight_tooltip": "Utiliser le NLP pour identifier et surligner les verbes et prépositions dans le texte",
+        "pos_highlight_language": "Langue de surlignage",
+        "pos_highlight_language_hint": "Sélectionnez la langue pour surligner les parties du discours",
         "language_german": "Allemand",
         "language_english": "Anglais",
-        "verb_highlight_background_enabled": "Activer le surlignage d'arrière-plan",
-        "verb_highlight_background_color": "Couleur d'arrière-plan",
-        "verb_highlight_background_color_hint": "Cliquez sur la palette de couleurs pour sélectionner une couleur, faites glisser le curseur pour ajuster l'opacité",
-        "verb_highlight_background_opacity_label": "Opacité",
-        "verb_highlight_underline_enabled": "Activer le soulignement",
-        "verb_highlight_underline_style": "Style de soulignement",
+        "pos_verb_section": "Surlignage des verbes",
+        "pos_verb_background_enabled": "Activer le surlignage d'arrière-plan",
+        "pos_verb_background_color": "Couleur d'arrière-plan",
+        "pos_verb_background_color_hint": "Cliquez sur la palette de couleurs pour sélectionner une couleur, faites glisser le curseur pour ajuster l'opacité",
+        "pos_verb_background_opacity_label": "Opacité",
+        "pos_verb_underline_enabled": "Activer le soulignement",
+        "pos_verb_underline_style": "Style de soulignement",
+        "pos_verb_underline_color": "Couleur du soulignement",
+        "pos_verb_underline_thickness": "Épaisseur du soulignement (px)",
+        "pos_verb_underline_position": "Position du soulignement",
+        "pos_preposition_section": "Surlignage des prépositions",
+        "pos_preposition_background_enabled": "Activer le surlignage d'arrière-plan",
+        "pos_preposition_background_color": "Couleur d'arrière-plan",
+        "pos_preposition_background_color_hint": "Cliquez sur la palette de couleurs pour sélectionner une couleur, faites glisser le curseur pour ajuster l'opacité",
+        "pos_preposition_background_opacity_label": "Opacité",
+        "pos_preposition_underline_enabled": "Activer le soulignement",
+        "pos_preposition_underline_style": "Style de soulignement",
+        "pos_preposition_underline_color": "Couleur du soulignement",
+        "pos_preposition_underline_thickness": "Épaisseur du soulignement (px)",
+        "pos_preposition_underline_position": "Position du soulignement",
+        "underline_style_wavy": "Ondulé",
+        "underline_style_solid": "Solide",
+        "underline_style_dotted": "Pointillé",
         "underline_style_dashed": "Tirets",
-        "verb_highlight_underline_color": "Couleur du soulignement",
-        "verb_highlight_underline_color_hint": "Cliquez sur la palette de couleurs pour sélectionner une couleur",
-        "verb_highlight_underline_thickness": "Épaisseur du soulignement (px)",
-        "verb_highlight_underline_position": "Position du soulignement",
+        "underline_position_bottom": "Bas",
+        "underline_position_top": "Haut",
       },
     es: {
         "popupTitle": "Configuración",
@@ -4234,24 +4573,39 @@ const i18n = {
         "underline_position_bottom": "Abajo",
         "underline_position_top": "Arriba",
         "underline_position_both": "Arriba+Abajo",
-        // Resaltado de verbos
-        "verb_highlight": "Resaltar verbos",
-        "verb_highlight_tooltip": "Usar NLP para identificar y resaltar verbos en el texto",
-        "verb_highlight_language": "Idioma de resaltado",
-        "verb_highlight_language_hint": "Seleccione el idioma para resaltar verbos",
+        // Resaltado de partes del discurso
+        "pos_highlight": "Resaltado de partes del discurso",
+        "pos_highlight_tooltip": "Usar NLP para identificar y resaltar verbos y preposiciones en el texto",
+        "pos_highlight_language": "Idioma de resaltado",
+        "pos_highlight_language_hint": "Seleccione el idioma para resaltar partes del discurso",
         "language_german": "Alemán",
         "language_english": "Inglés",
-        "verb_highlight_background_enabled": "Activar resaltado de fondo",
-        "verb_highlight_background_color": "Color de fondo",
-        "verb_highlight_background_color_hint": "Haga clic en la paleta de colores para seleccionar un color, arrastre el control deslizante para ajustar la opacidad",
-        "verb_highlight_background_opacity_label": "Opacidad",
-        "verb_highlight_underline_enabled": "Activar subrayado",
-        "verb_highlight_underline_style": "Estilo de subrayado",
+        "pos_verb_section": "Resaltado de verbos",
+        "pos_verb_background_enabled": "Activar resaltado de fondo",
+        "pos_verb_background_color": "Color de fondo",
+        "pos_verb_background_color_hint": "Haga clic en la paleta de colores para seleccionar un color, arrastre el control deslizante para ajustar la opacidad",
+        "pos_verb_background_opacity_label": "Opacidad",
+        "pos_verb_underline_enabled": "Activar subrayado",
+        "pos_verb_underline_style": "Estilo de subrayado",
+        "pos_verb_underline_color": "Color del subrayado",
+        "pos_verb_underline_thickness": "Grosor del subrayado (px)",
+        "pos_verb_underline_position": "Posición del subrayado",
+        "pos_preposition_section": "Resaltado de preposiciones",
+        "pos_preposition_background_enabled": "Activar resaltado de fondo",
+        "pos_preposition_background_color": "Color de fondo",
+        "pos_preposition_background_color_hint": "Haga clic en la paleta de colores para seleccionar un color, arrastre el control deslizante para ajustar la opacidad",
+        "pos_preposition_background_opacity_label": "Opacidad",
+        "pos_preposition_underline_enabled": "Activar subrayado",
+        "pos_preposition_underline_style": "Estilo de subrayado",
+        "pos_preposition_underline_color": "Color del subrayado",
+        "pos_preposition_underline_thickness": "Grosor del subrayado (px)",
+        "pos_preposition_underline_position": "Posición del subrayado",
+        "underline_style_wavy": "Ondulado",
+        "underline_style_solid": "Sólido",
+        "underline_style_dotted": "Punteado",
         "underline_style_dashed": "Guiones",
-        "verb_highlight_underline_color": "Color del subrayado",
-        "verb_highlight_underline_color_hint": "Haga clic en la paleta de colores para seleccionar un color",
-        "verb_highlight_underline_thickness": "Grosor del subrayado (px)",
-        "verb_highlight_underline_position": "Posición del subrayado",
+        "underline_position_bottom": "Abajo",
+        "underline_position_top": "Arriba",
       },
     ja: {
           "popupTitle": "設定",
@@ -4383,24 +4737,39 @@ const i18n = {
           "underline_position_bottom": "下",
           "underline_position_top": "上",
           "underline_position_both": "上+下",
-          // 動詞ハイライト
-          "verb_highlight": "動詞をハイライト",
-          "verb_highlight_tooltip": "NLPを使用してテキスト内の動詞を識別しハイライトする",
-          "verb_highlight_language": "ハイライト言語",
-          "verb_highlight_language_hint": "動詞をハイライトする言語を選択",
+          // 品詞ハイライト
+          "pos_highlight": "品詞ハイライト",
+          "pos_highlight_tooltip": "NLPを使用してテキスト内の動詞と前置詞を識別しハイライトする",
+          "pos_highlight_language": "ハイライト言語",
+          "pos_highlight_language_hint": "品詞をハイライトする言語を選択",
           "language_german": "ドイツ語",
           "language_english": "英語",
-          "verb_highlight_background_enabled": "背景ハイライトを有効にする",
-          "verb_highlight_background_color": "背景色",
-          "verb_highlight_background_color_hint": "カラーパレットをクリックして色を選択し、スライダーをドラッグして不透明度を調整します",
-          "verb_highlight_background_opacity_label": "不透明度",
-          "verb_highlight_underline_enabled": "下線を有効にする",
-          "verb_highlight_underline_style": "下線スタイル",
+          "pos_verb_section": "動詞ハイライト",
+          "pos_verb_background_enabled": "背景ハイライトを有効にする",
+          "pos_verb_background_color": "背景色",
+          "pos_verb_background_color_hint": "カラーパレットをクリックして色を選択し、スライダーをドラッグして不透明度を調整します",
+          "pos_verb_background_opacity_label": "不透明度",
+          "pos_verb_underline_enabled": "下線を有効にする",
+          "pos_verb_underline_style": "下線スタイル",
+          "pos_verb_underline_color": "下線の色",
+          "pos_verb_underline_thickness": "下線の太さ (px)",
+          "pos_verb_underline_position": "下線の位置",
+          "pos_preposition_section": "前置詞ハイライト",
+          "pos_preposition_background_enabled": "背景ハイライトを有効にする",
+          "pos_preposition_background_color": "背景色",
+          "pos_preposition_background_color_hint": "カラーパレットをクリックして色を選択し、スライダーをドラッグして不透明度を調整します",
+          "pos_preposition_background_opacity_label": "不透明度",
+          "pos_preposition_underline_enabled": "下線を有効にする",
+          "pos_preposition_underline_style": "下線スタイル",
+          "pos_preposition_underline_color": "下線の色",
+          "pos_preposition_underline_thickness": "下線の太さ (px)",
+          "pos_preposition_underline_position": "下線の位置",
+          "underline_style_wavy": "波線",
+          "underline_style_solid": "実線",
+          "underline_style_dotted": "点線",
           "underline_style_dashed": "破線",
-          "verb_highlight_underline_color": "下線の色",
-          "verb_highlight_underline_color_hint": "カラーパレットをクリックして色を選択",
-          "verb_highlight_underline_thickness": "下線の太さ (px)",
-          "verb_highlight_underline_position": "下線の位置",
+          "underline_position_bottom": "下",
+          "underline_position_top": "上",
       },
     ko: {
           "popupTitle": "설정",
@@ -4530,24 +4899,39 @@ const i18n = {
           "underline_position_bottom": "아래",
           "underline_position_top": "위",
           "underline_position_both": "위+아래",
-          // 동사 강조
-          "verb_highlight": "동사 강조",
-          "verb_highlight_tooltip": "NLP를 사용하여 텍스트의 동사를 식별하고 강조",
-          "verb_highlight_language": "강조 언어",
-          "verb_highlight_language_hint": "동사를 강조할 언어 선택",
+          // 품사 강조
+          "pos_highlight": "품사 강조",
+          "pos_highlight_tooltip": "NLP를 사용하여 텍스트의 동사와 전치사를 식별하고 강조",
+          "pos_highlight_language": "강조 언어",
+          "pos_highlight_language_hint": "품사를 강조할 언어 선택",
           "language_german": "독일어",
           "language_english": "영어",
-          "verb_highlight_background_enabled": "배경 강조 활성화",
-          "verb_highlight_background_color": "배경색",
-          "verb_highlight_background_color_hint": "색상 팔레트를 클릭하여 색상을 선택하고 슬라이더를 드래그하여 불투명도를 조정합니다",
-          "verb_highlight_background_opacity_label": "불투명도",
-          "verb_highlight_underline_enabled": "밑줄 활성화",
-          "verb_highlight_underline_style": "밑줄 스타일",
+          "pos_verb_section": "동사 강조",
+          "pos_verb_background_enabled": "배경 강조 활성화",
+          "pos_verb_background_color": "배경색",
+          "pos_verb_background_color_hint": "색상 팔레트를 클릭하여 색상을 선택하고 슬라이더를 드래그하여 불투명도를 조정합니다",
+          "pos_verb_background_opacity_label": "불투명도",
+          "pos_verb_underline_enabled": "밑줄 활성화",
+          "pos_verb_underline_style": "밑줄 스타일",
+          "pos_verb_underline_color": "밑줄 색상",
+          "pos_verb_underline_thickness": "밑줄 두께 (px)",
+          "pos_verb_underline_position": "밑줄 위치",
+          "pos_preposition_section": "전치사 강조",
+          "pos_preposition_background_enabled": "배경 강조 활성화",
+          "pos_preposition_background_color": "배경색",
+          "pos_preposition_background_color_hint": "색상 팔레트를 클릭하여 색상을 선택하고 슬라이더를 드래그하여 불투명도를 조정합니다",
+          "pos_preposition_background_opacity_label": "불투명도",
+          "pos_preposition_underline_enabled": "밑줄 활성화",
+          "pos_preposition_underline_style": "밑줄 스타일",
+          "pos_preposition_underline_color": "밑줄 색상",
+          "pos_preposition_underline_thickness": "밑줄 두께 (px)",
+          "pos_preposition_underline_position": "밑줄 위치",
+          "underline_style_wavy": "물결",
+          "underline_style_solid": "실선",
+          "underline_style_dotted": "점선",
           "underline_style_dashed": "파선",
-          "verb_highlight_underline_color": "밑줄 색상",
-          "verb_highlight_underline_color_hint": "색상 팔레트를 클릭하여 색상을 선택",
-          "verb_highlight_underline_thickness": "밑줄 두께 (px)",
-          "verb_highlight_underline_position": "밑줄 위치",
+          "underline_position_bottom": "아래",
+          "underline_position_top": "위",
       },
     ru: {
           "popupTitle": "Настройки",
@@ -4668,24 +5052,39 @@ const i18n = {
           "underline_position_bottom": "Снизу",
           "underline_position_top": "Сверху",
           "underline_position_both": "Сверху+Снизу",
-          // Подсветка глаголов
-          "verb_highlight": "Подсветка глаголов",
-          "verb_highlight_tooltip": "Использовать NLP для идентификации и подсветки глаголов в тексте",
-          "verb_highlight_language": "Язык подсветки",
-          "verb_highlight_language_hint": "Выберите язык для подсветки глаголов",
+          // Подсветка частей речи
+          "pos_highlight": "Подсветка частей речи",
+          "pos_highlight_tooltip": "Использовать NLP для идентификации и подсветки глаголов и предлогов в тексте",
+          "pos_highlight_language": "Язык подсветки",
+          "pos_highlight_language_hint": "Выберите язык для подсветки частей речи",
           "language_german": "Немецкий",
           "language_english": "Английский",
-          "verb_highlight_background_enabled": "Включить подсветку фона",
-          "verb_highlight_background_color": "Цвет фона",
-          "verb_highlight_background_color_hint": "Нажмите на палитру цветов, чтобы выбрать цвет, перетащите ползунок, чтобы настроить прозрачность",
-          "verb_highlight_background_opacity_label": "Прозрачность",
-          "verb_highlight_underline_enabled": "Включить подчеркивание",
-          "verb_highlight_underline_style": "Стиль подчеркивания",
+          "pos_verb_section": "Подсветка глаголов",
+          "pos_verb_background_enabled": "Включить подсветку фона",
+          "pos_verb_background_color": "Цвет фона",
+          "pos_verb_background_color_hint": "Нажмите на палитру цветов, чтобы выбрать цвет, перетащите ползунок, чтобы настроить прозрачность",
+          "pos_verb_background_opacity_label": "Прозрачность",
+          "pos_verb_underline_enabled": "Включить подчеркивание",
+          "pos_verb_underline_style": "Стиль подчеркивания",
+          "pos_verb_underline_color": "Цвет подчеркивания",
+          "pos_verb_underline_thickness": "Толщина подчеркивания (px)",
+          "pos_verb_underline_position": "Положение подчеркивания",
+          "pos_preposition_section": "Подсветка предлогов",
+          "pos_preposition_background_enabled": "Включить подсветку фона",
+          "pos_preposition_background_color": "Цвет фона",
+          "pos_preposition_background_color_hint": "Нажмите на палитру цветов, чтобы выбрать цвет, перетащите ползунок, чтобы настроить прозрачность",
+          "pos_preposition_background_opacity_label": "Прозрачность",
+          "pos_preposition_underline_enabled": "Включить подчеркивание",
+          "pos_preposition_underline_style": "Стиль подчеркивания",
+          "pos_preposition_underline_color": "Цвет подчеркивания",
+          "pos_preposition_underline_thickness": "Толщина подчеркивания (px)",
+          "pos_preposition_underline_position": "Положение подчеркивания",
+          "underline_style_wavy": "Волнистый",
+          "underline_style_solid": "Сплошной",
+          "underline_style_dotted": "Точечный",
           "underline_style_dashed": "Штриховой",
-          "verb_highlight_underline_color": "Цвет подчеркивания",
-          "verb_highlight_underline_color_hint": "Нажмите на палитру цветов, чтобы выбрать цвет",
-          "verb_highlight_underline_thickness": "Толщина подчеркивания (px)",
-          "verb_highlight_underline_position": "Положение подчеркивания",
+          "underline_position_bottom": "Снизу",
+          "underline_position_top": "Сверху",
     },
     it: {
           "popupTitle": "Impostazioni",
