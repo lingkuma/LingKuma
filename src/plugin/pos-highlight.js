@@ -392,8 +392,9 @@
                     }
                 });
 
-                // 提取介词 - 使用 offset 获取精确位置
-                const prepMatches = doc.prepositions().out('offset');
+                // 提取介词 - 使用 match('#Preposition') 获取
+                // 注意：compromise/de-compromise 没有 prepositions() 方法
+                const prepMatches = doc.match('#Preposition').out('offset');
                 prepMatches.forEach(match => {
                     if (match.offset && match.offset.start !== undefined && match.offset.length !== undefined) {
                         result.prepositions.push({
