@@ -5,6 +5,59 @@
     // 词性高亮插件 - 使用 compromise/de-compromise 识别动词和介词
     // =======================
 
+    // =======================
+    // 黑名单检查（与其他插件同步）
+    // =======================
+    let isInBlacklist = true; // 当前网站是否在黑名单中（默认为true，等待异步检查完成后更新）
+
+    // 检查URL是否匹配黑名单模式
+    function isUrlInBlacklist(url, blacklistPatterns) {
+        if (!blacklistPatterns) return false;
+
+        const patterns = blacklistPatterns.split(';').filter(pattern => pattern.trim() !== '');
+
+        for (const pattern of patterns) {
+            const trimmedPattern = pattern.trim();
+            if (trimmedPattern === '') continue;
+
+            // 将通配符模式转换为正则表达式
+            const regexPattern = trimmedPattern
+                .replace(/\./g, '\\.')
+                .replace(/\*/g, '.*')
+                .replace(/\?/g, '.');
+
+            const regex = new RegExp(`^${regexPattern}$`);
+
+            if (regex.test(url)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // 立即执行黑名单检查（在脚本加载时）
+    (function() {
+        chrome.storage.local.get(['pluginBlacklistWebsites'], function(result) {
+            const currentUrl = window.location.href;
+            const blacklistPatterns = result.pluginBlacklistWebsites || '*://music.youtube.com/*;*ohmygpt*';
+
+            console.log('[PosHighlight] 黑名单检查 - blacklistPatterns:', blacklistPatterns);
+            console.log('[PosHighlight] 黑名单检查 - currentUrl:', currentUrl);
+
+            // 如果当前URL在黑名单中，则设置标志并不执行高亮功能
+            if (isUrlInBlacklist(currentUrl, blacklistPatterns)) {
+                isInBlacklist = true;
+                console.log('[PosHighlight] 当前网站在黑名单中，不启用词性高亮功能');
+                return;
+            }
+
+            // 不在黑名单中，设置标志
+            isInBlacklist = false;
+            console.log('[PosHighlight] 当前网站不在黑名单中，启用词性高亮功能');
+        });
+    })();
+
     // 配置项（从storage加载）
     let posHighlightConfig = {
         enabled: false, // 功能总开关
@@ -45,6 +98,12 @@
     // 初始化：加载配置并启动
     // =======================
     function initPosHighlight() {
+        // 检查是否在黑名单中
+        if (isInBlacklist) {
+            console.log('[PosHighlight] 当前网站在黑名单中，跳过初始化');
+            return;
+        }
+
         chrome.storage.local.get([
             'posHighlightEnabled',
             'posHighlightLanguage',
