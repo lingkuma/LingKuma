@@ -4710,8 +4710,8 @@ function injectExplosionStyles() {
       font-size: 12px;
       font-weight: 500;
       color: #333;
-      margin-bottom: 6px;
-      padding: 4px 6px;
+      margin-bottom: 2px;
+      padding: 2px 4px;
       background: #f8f9fa;
       border-radius: 7px;
       border-left: 2px solid #4CAF50;
@@ -4773,16 +4773,16 @@ function injectExplosionStyles() {
 
     /* 句子翻译 */
     .word-explosion-sentence-translations {
-      margin-bottom: 6px;
+      margin-bottom: 2px;
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 2px;
     }
     /* 句子翻译 font-size: 11px;*/
     .word-explosion-sentence-translation {
       
       color: #555;
-      padding: 3px 6px;
+      padding: 1px 4px;
       background: #fff3cd;
       border-radius: 7px;
       border: 1px solid #ffc107;
@@ -4793,13 +4793,13 @@ function injectExplosionStyles() {
     .word-explosion-separator {
       height: 1px;
       background: #e0e0e0;
-      margin: 8px 0;
+      margin: 3px 0;
     }
 
     /* 单词列表容器 */
     .word-explosion-words {
       display: flex;
-      gap: 8px;
+      gap: 3px;
     }
 
     /* 垂直布局 */
@@ -4813,9 +4813,9 @@ function injectExplosionStyles() {
       flex-wrap: wrap;
     }
 
-    /* 单词项 */
+    /* 单词项 padding: 2px 4px; */
     .word-explosion-word-item {
-      padding: 4px 6px;
+      padding: 0px 1px 3px 5px;
       background: #f5f5f5;
       border-radius: 7px;
       border: 1px solid #e0e0e0;
@@ -4844,12 +4844,12 @@ function injectExplosionStyles() {
       min-width: 150px;
     }
 
-    /* 单词标题font-size: 13px; */
+    /* 单词标题font-size: 13px;  margin-bottom: 3px; */
     .word-explosion-word-title {
       
       font-weight: 600;
       color: #2c3e50;
-      margin-bottom: 3px;
+      margin-top: -2px;
       display: flex;
       align-items: center;
       gap: 4px;
@@ -4906,14 +4906,14 @@ function injectExplosionStyles() {
     .word-explosion-word-translations {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 2px;
     }
 
     /* 单词翻译项   font-size: 11px; */
     .word-explosion-word-translation {
    
       color: #555;
-      padding: 2px 6px;
+      padding: 1px 3px;
       background: #f0f0f0;
       border-radius: 7px;
       border: 1px solid #ddd;
