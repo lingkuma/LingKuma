@@ -212,9 +212,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const doc = parser.parseFromString(fileContent, 'text/html'); // text/html 更宽容
                 const bodyContent = doc.body ? doc.body.innerHTML : fileContent; // 如果没有body，则使用完整内容
 
+                // 清理软连字符（soft hyphen, U+00AD），防止高亮位移和点击问题
+                // 软连字符在EPUB中用于指示换行位置，但在Telegraph中会导致显示和交互问题
+                const cleanedContent = bodyContent.replace(/\u00ad/g, '');
+                
                 epubChapters.push({
                     fileName: fileName,
-                    htmlContent: bodyContent 
+                    htmlContent: cleanedContent 
                 });
                 console.log(`- 已提取: ${fileName}`);
             }
