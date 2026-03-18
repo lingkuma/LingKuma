@@ -57,6 +57,7 @@
       "src/service/a5_custom_word_selection.js",
       "src/service/a6_custom_highlight.js",
       "src/service/a7_words_boom.js",
+      "src/service/a7.1_sentence_navigator.js",
       "src/plugin/tts.js",
       "src/plugin/edge_tts.js",
       "src/plugin/orion_tts.js",

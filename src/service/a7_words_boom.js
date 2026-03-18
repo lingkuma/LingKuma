@@ -1196,6 +1196,12 @@ function showWordExplosion(sentence, sentenceRect = null, sentenceInfo = null) {
   currentExplosionSentence = sentence;
   currentExplosionSentenceInfo = sentenceInfo; // 保存句子详细信息用于逐词高亮
 
+  // === 激活句子导航器 ===
+  if (typeof window.sentenceNavigator !== 'undefined' && window.sentenceNavigator.activate) {
+    window.sentenceNavigator.activate(sentenceInfo);
+  }
+  // === 导航器激活结束 ===
+
   // 重置翻译计数器
   lastSentenceTranslationCount = (explosionSentenceTranslationsCache[sentence] || []).length;
 
