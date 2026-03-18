@@ -2813,9 +2813,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (posHighlightVerbEnabled) {
             posHighlightVerbEnabled.checked = result.posHighlightVerbEnabled;
         }
-        if (posHighlightVerbSettings) {
-            posHighlightVerbSettings.style.display = result.posHighlightVerbEnabled ? 'block' : 'none';
-        }
+        // 不再自动展开详细设置，默认收起
         if (posHighlightVerbBackgroundEnabled) {
             posHighlightVerbBackgroundEnabled.checked = result.posHighlightVerbBackgroundEnabled;
         }
@@ -2872,9 +2870,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (posHighlightPrepositionEnabled) {
             posHighlightPrepositionEnabled.checked = result.posHighlightPrepositionEnabled;
         }
-        if (posHighlightPrepositionSettings) {
-            posHighlightPrepositionSettings.style.display = result.posHighlightPrepositionEnabled ? 'block' : 'none';
-        }
+        // 不再自动展开详细设置，默认收起
         if (posHighlightPrepositionBackgroundEnabled) {
             posHighlightPrepositionBackgroundEnabled.checked = result.posHighlightPrepositionBackgroundEnabled;
         }
@@ -2962,13 +2958,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ===== 动词高亮事件监听 =====
+    // 动词高亮设置展开/收起按钮
+    const posHighlightVerbSettingsToggle = document.getElementById('posHighlightVerbSettingsToggle');
+    if (posHighlightVerbSettingsToggle && posHighlightVerbSettings) {
+        posHighlightVerbSettingsToggle.addEventListener('click', function() {
+            posHighlightVerbSettings.classList.toggle('visible');
+        });
+    }
+
     if (posHighlightVerbEnabled) {
         posHighlightVerbEnabled.addEventListener('change', function(e) {
             const isEnabled = e.target.checked;
             chrome.storage.local.set({ posHighlightVerbEnabled: isEnabled });
-            if (posHighlightVerbSettings) {
-                posHighlightVerbSettings.style.display = isEnabled ? 'block' : 'none';
-            }
+            // 不再自动展开详细设置，用户需要手动点击设置按钮展开
             notifyPosStyleUpdate();
         });
     }
@@ -3113,13 +3115,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ===== 介词高亮事件监听 =====
+    // 介词高亮设置展开/收起按钮
+    const posHighlightPrepositionSettingsToggle = document.getElementById('posHighlightPrepositionSettingsToggle');
+    if (posHighlightPrepositionSettingsToggle && posHighlightPrepositionSettings) {
+        posHighlightPrepositionSettingsToggle.addEventListener('click', function() {
+            posHighlightPrepositionSettings.classList.toggle('visible');
+        });
+    }
+
     if (posHighlightPrepositionEnabled) {
         posHighlightPrepositionEnabled.addEventListener('change', function(e) {
             const isEnabled = e.target.checked;
             chrome.storage.local.set({ posHighlightPrepositionEnabled: isEnabled });
-            if (posHighlightPrepositionSettings) {
-                posHighlightPrepositionSettings.style.display = isEnabled ? 'block' : 'none';
-            }
+            // 不再自动展开详细设置，用户需要手动点击设置按钮展开
             notifyPosStyleUpdate();
         });
     }
