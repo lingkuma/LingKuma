@@ -8,7 +8,7 @@
     // 配置项（从storage加载）
     let posHighlightConfig = {
         enabled: false, // 功能总开关
-        language: 'german', // 高亮语言：german, english
+        language: 'english', // 高亮语言：german, english
         
         // 动词高亮设置
         verbEnabled: true, // 动词高亮开关
@@ -23,10 +23,10 @@
         // 介词高亮设置
         prepositionEnabled: true, // 介词高亮开关
         prepositionBackgroundEnabled: true, // 介词背景高亮开关
-        prepositionBackgroundColor: '#4ECDC440', // 介词背景颜色
+        prepositionBackgroundColor: '#f2935440', // 介词背景颜色
         prepositionUnderlineEnabled: true, // 介词下划线开关
         prepositionUnderlineStyle: 'solid', // 介词下划线样式
-        prepositionUnderlineColor: '#4ECDC4', // 介词下划线颜色
+        prepositionUnderlineColor: '#f29354', // 介词下划线颜色
         prepositionUnderlineThickness: 2, // 介词下划线粗度
         prepositionUnderlinePosition: 'bottom' // 介词下划线位置
     };
@@ -81,10 +81,10 @@
             // 介词设置
             posHighlightConfig.prepositionEnabled = result.posHighlightPrepositionEnabled !== false;
             posHighlightConfig.prepositionBackgroundEnabled = result.posHighlightPrepositionBackgroundEnabled !== false;
-            posHighlightConfig.prepositionBackgroundColor = result.posHighlightPrepositionBackgroundColor || '#4ECDC440';
+            posHighlightConfig.prepositionBackgroundColor = result.posHighlightPrepositionBackgroundColor || '#f2935440';
             posHighlightConfig.prepositionUnderlineEnabled = result.posHighlightPrepositionUnderlineEnabled !== false;
             posHighlightConfig.prepositionUnderlineStyle = result.posHighlightPrepositionUnderlineStyle || 'solid';
-            posHighlightConfig.prepositionUnderlineColor = result.posHighlightPrepositionUnderlineColor || '#4ECDC4';
+            posHighlightConfig.prepositionUnderlineColor = result.posHighlightPrepositionUnderlineColor || '#f29354';
             posHighlightConfig.prepositionUnderlineThickness = result.posHighlightPrepositionUnderlineThickness || 2;
             posHighlightConfig.prepositionUnderlinePosition = result.posHighlightPrepositionUnderlinePosition || 'bottom';
 

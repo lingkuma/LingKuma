@@ -516,7 +516,7 @@ function initializeSettings() {
 
       // 高亮动词功能默认设置
       posHighlightEnabled: false, // 词性高亮默认关闭
-      posHighlightLanguage: 'german', // 默认语言为德语
+      posHighlightLanguage: 'english', // 默认语言为德语
       posHighlightVerbEnabled: true, // 动词高亮默认开启
       posHighlightVerbBackgroundEnabled: true, // 动词背景高亮默认开启
       posHighlightVerbBackgroundColor: '#FF6B6B40', // 动词默认背景颜色
@@ -528,11 +528,11 @@ function initializeSettings() {
       posHighlightVerbUnderlinePosition: 'bottom', // 动词默认下划线位置
       posHighlightPrepositionEnabled: true, // 介词高亮默认开启
       posHighlightPrepositionBackgroundEnabled: true, // 介词背景高亮默认开启
-      posHighlightPrepositionBackgroundColor: '#4ECDC440', // 介词默认背景颜色
+      posHighlightPrepositionBackgroundColor: '#f2935440', // 介词默认背景颜色
       posHighlightPrepositionBackgroundOpacity: 25, // 介词默认背景透明度
       posHighlightPrepositionUnderlineEnabled: true, // 介词下划线默认开启
       posHighlightPrepositionUnderlineStyle: 'solid', // 介词默认下划线样式为直线
-      posHighlightPrepositionUnderlineColor: '#4ECDC4', // 介词默认下划线颜色
+      posHighlightPrepositionUnderlineColor: '#f29354', // 介词默认下划线颜色
       posHighlightPrepositionUnderlineThickness: 2, // 介词默认下划线粗度
       posHighlightPrepositionUnderlinePosition: 'bottom', // 介词默认下划线位置
 
@@ -2794,11 +2794,11 @@ document.addEventListener('DOMContentLoaded', function() {
         posHighlightVerbUnderlinePosition: 'bottom',
         posHighlightPrepositionEnabled: true,
         posHighlightPrepositionBackgroundEnabled: true,
-        posHighlightPrepositionBackgroundColor: '#4ECDC440',
+        posHighlightPrepositionBackgroundColor: '#f2935440',
         posHighlightPrepositionBackgroundOpacity: 25,
         posHighlightPrepositionUnderlineEnabled: true,
         posHighlightPrepositionUnderlineStyle: 'solid',
-        posHighlightPrepositionUnderlineColor: '#4ECDC4',
+        posHighlightPrepositionUnderlineColor: '#f29354',
         posHighlightPrepositionUnderlineThickness: 2,
         posHighlightPrepositionUnderlinePosition: 'bottom'
     }, function(result) {
