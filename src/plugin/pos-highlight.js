@@ -52,9 +52,12 @@
                 return;
             }
 
-            // 不在黑名单中，设置标志
+            // 不在黑名单中，设置标志并初始化
             isInBlacklist = false;
             console.log('[PosHighlight] 当前网站不在黑名单中，启用词性高亮功能');
+
+            // 黑名单检查完成后，初始化词性高亮
+            initPosHighlight();
         });
     })();
 
@@ -98,12 +101,6 @@
     // 初始化：加载配置并启动
     // =======================
     function initPosHighlight() {
-        // 检查是否在黑名单中
-        if (isInBlacklist) {
-            console.log('[PosHighlight] 当前网站在黑名单中，跳过初始化');
-            return;
-        }
-
         chrome.storage.local.get([
             'posHighlightEnabled',
             'posHighlightLanguage',
@@ -719,14 +716,5 @@
         
         return true;
     });
-
-    // =======================
-    // 启动
-    // =======================
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initPosHighlight);
-    } else {
-        initPosHighlight();
-    }
 
 })();
