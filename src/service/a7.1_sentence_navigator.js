@@ -378,8 +378,8 @@ function checkAndScroll(sentenceInfo, direction) {
 
   if (direction === 'next') {
     // 向右导航（下一句）：判断句子是否在底部70%区域
-    // 底部70%区域 = 从视口30%到底部
-    const bottomThreshold = viewportHeight * 0.3; // 视口30%位置
+    // 底部70%区域 = 从视口70%位置到底部
+    const bottomThreshold = viewportHeight * 0.7; // 视口70%位置
     
     if (sentenceTop > bottomThreshold) {
       // 句子在底部70%区域，需要向上滚动页面（显示下面的内容）
@@ -394,12 +394,12 @@ function checkAndScroll(sentenceInfo, direction) {
       });
     }
   } else if (direction === 'prev') {
-    // 向左导航（上一句）：判断句子是否在底部70%区域
-    // 底部70%区域 = 从视口30%到底部
-    const bottomThreshold = viewportHeight * 0.3; // 视口30%位置
+    // 向左导航（上一句）：判断句子是否在顶部20%区域或在视口上方
+    // 顶部20%区域 = 从顶部到视口20%
+    const topThreshold = viewportHeight * 0.2; // 视口20%位置
     
-    if (sentenceTop > bottomThreshold) {
-      // 句子在底部70%区域，需要向下滚动页面（显示上面的内容）
+    if (sentenceTop < topThreshold) {
+      // 句子在顶部20%区域或在视口上方，需要向下滚动页面（显示上面的内容）
       // 将句子滚动到距离顶部70%的位置
       const targetPosition = viewportHeight * 0.7;
       const scrollTarget = sentenceTop + window.scrollY - targetPosition;
