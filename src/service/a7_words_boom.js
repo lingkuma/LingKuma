@@ -4846,7 +4846,7 @@ function injectExplosionStyles() {
     .word-explosion-words-layout-triple-column .word-explosion-word-item {
       break-inside: avoid;
       page-break-inside: avoid;
-      width: 100%;
+      
       min-width: unset;
       flex: none;
       margin-bottom: 3px;
