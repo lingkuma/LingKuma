@@ -96,11 +96,13 @@ function activateNavigator(sentenceInfo) {
   }
 
   console.log('[SentenceNavigator] 激活导航器');
-  
-  // 立即更新句子列表，确保导航时数据已准备好
-  updateSentenceList();
-  sentenceListNeedsUpdate = false;
-  
+
+  // 只有列表为空或被标记为脏时才重建句子列表
+  if (sentenceList.length === 0 || sentenceListNeedsUpdate) {
+    updateSentenceList();
+    sentenceListNeedsUpdate = false;
+  }
+
   // 找到当前句子在列表中的索引
   if (sentenceInfo && sentenceInfo.sentence && sentenceList.length > 0) {
     currentSentenceIndex = findSentenceIndex(sentenceInfo.sentence, sentenceInfo);
@@ -108,7 +110,7 @@ function activateNavigator(sentenceInfo) {
   } else {
     currentSentenceIndex = -1;
   }
-  
+
   isNavigatorActive = true;
 }
 
