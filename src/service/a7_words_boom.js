@@ -4809,8 +4809,7 @@ function injectExplosionStyles() {
 
     /* 水平布局 */
     .word-explosion-layout-horizontal {
-      flex-direction: row;
-      flex-wrap: wrap;
+       flex-direction: column;
     }
 
     /* 单词项 padding: 2px 4px; */
@@ -4924,6 +4923,23 @@ function injectExplosionStyles() {
       color: #999;
       margin-right: 2px;
       font-weight: 500;
+    }
+
+    /* 水平布局下的翻译列表 - 翻译元素水平排列，自动换行，宽度自适应 */
+    .word-explosion-layout-horizontal .word-explosion-word-translations {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+
+    /* 垂直布局下的翻译列表 - 每个翻译独占一行，宽度自适应 */
+    .word-explosion-layout-vertical .word-explosion-word-translations {
+      flex-direction: column;
+      flex-wrap: nowrap;
+    }
+
+    /* 垂直布局下的翻译项 - 宽度自适应 */
+    .word-explosion-layout-vertical .word-explosion-word-translation {
+      width: fit-content;
     }
 
     /* 加载中 */
