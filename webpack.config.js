@@ -33,6 +33,7 @@ module.exports = {
     a5_custom_word_selection: "./src/service/a5_custom_word_selection.js",
     a6_custom_highlight: "./src/service/a6_custom_highlight.js",
     a7_words_boom: "./src/service/a7_words_boom.js",
+    a7_1_sentence_navigator: "./src/service/a7.1_sentence_navigator.js",
     tts: "./src/plugin/tts.js",
     orion_tts: "./src/plugin/orion_tts.js",
     edge_tts: "./src/plugin/edge_tts.js", 
@@ -115,6 +116,9 @@ module.exports = {
       } 
       if (pathData.chunk.name === 'a7_words_boom') {
         return 'src/service/a7_words_boom.js';
+      }
+      if (pathData.chunk.name === 'a7_1_sentence_navigator') {
+        return 'src/service/a7.1_sentence_navigator.js';
       }
 
 
@@ -232,6 +236,8 @@ module.exports = {
         { from: '_locales', to: '_locales', noErrorOnMissing: true },
         { from: 'src/utils/lingqBlocker.js', to: 'src/utils/lingqBlocker.js' ,info: { minimized: true }},
         { from: 'src/plugin/youtubeVideoOverlay.js', to: 'src/plugin/youtubeVideoOverlay.js' ,info: { minimized: true }},
+        { from: 'src/plugin/min/*.js', to: 'src/plugin/min/[name][ext]' ,info: { minimized: true }},
+        { from: 'src/plugin/pos-highlight.js', to: 'src/plugin/pos-highlight.js' ,info: { minimized: true }},
         
         // { from: 'src/options/options.js', to: 'src/options/options.js' ,info: { minimized: true }},
         // 添加其他需要复制的资源
