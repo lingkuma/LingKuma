@@ -97,10 +97,11 @@ function activateNavigator(sentenceInfo) {
 
   console.log('[SentenceNavigator] 激活导航器');
   
-  // 标记列表需要更新，但不立即更新（避免阻塞UI）
-  sentenceListNeedsUpdate = true;
+  // 立即更新句子列表，确保导航时数据已准备好
+  updateSentenceList();
+  sentenceListNeedsUpdate = false;
   
-  // 找到当前句子在列表中的索引（如果列表已存在）
+  // 找到当前句子在列表中的索引
   if (sentenceInfo && sentenceInfo.sentence && sentenceList.length > 0) {
     currentSentenceIndex = findSentenceIndex(sentenceInfo.sentence, sentenceInfo);
     console.log('[SentenceNavigator] 当前句子索引:', currentSentenceIndex);
@@ -109,24 +110,6 @@ function activateNavigator(sentenceInfo) {
   }
   
   isNavigatorActive = true;
-  
-  // 在浏览器空闲时更新句子列表（不阻塞UI）
-  if (typeof requestIdleCallback !== 'undefined') {
-    requestIdleCallback(() => {
-      if (sentenceListNeedsUpdate) {
-        updateSentenceList();
-        sentenceListNeedsUpdate = false;
-      }
-    }, { timeout: 2000 });
-  } else {
-    // 降级方案：延迟执行
-    setTimeout(() => {
-      if (sentenceListNeedsUpdate) {
-        updateSentenceList();
-        sentenceListNeedsUpdate = false;
-      }
-    }, 100);
-  }
 }
 
 // 停用导航器
