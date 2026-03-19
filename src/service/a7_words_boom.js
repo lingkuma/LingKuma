@@ -51,7 +51,8 @@ let wordExplosionConfig = {
   triggerMode: 'click', // 'click' 或 'hover'
   positionMode: 'auto', // 'auto' 或 'manual'
   preferUp: true, // 优先向上显示
-  layout: 'vertical', // 'vertical' 或 'horizontal'
+  layout: 'vertical', // 'vertical' 或 'horizontal' - 单词对象内部翻译的排列
+  wordsLayout: 'single-column', // 'single-column' 或 'double-column' - 单词列表在窗口内的排列
   translationCount: 'all', // 显示翻译数量: 1, 2, 3, 或 'all'
   highlightSentence: true, // 高亮当前爆炸的句子，默认开启
   highlightColor: '#955FBD40', // 高亮背景颜色，默认紫色半透明
@@ -74,6 +75,7 @@ function initWordExplosion() {
     'wordExplosionMaxWidth',
     'wordExplosionPreferUp',
     'wordExplosionLayout',
+    'wordExplosionWordsLayout',
     'wordExplosionTranslationCount',
     'wordExplosionSavedPosition',
     'wordExplosionHighlightSentence',
@@ -100,6 +102,7 @@ function initWordExplosion() {
     wordExplosionMaxWidth = result.wordExplosionMaxWidth !== undefined ? result.wordExplosionMaxWidth : 772;
     wordExplosionConfig.preferUp = result.wordExplosionPreferUp !== undefined ? result.wordExplosionPreferUp : true;
     wordExplosionConfig.layout = result.wordExplosionLayout || 'vertical';
+    wordExplosionConfig.wordsLayout = result.wordExplosionWordsLayout || 'single-column';
     wordExplosionConfig.translationCount = result.wordExplosionTranslationCount || 'all';
     wordExplosionConfig.highlightSentence = result.wordExplosionHighlightSentence !== undefined ? result.wordExplosionHighlightSentence : true;
     wordExplosionConfig.highlightColor = result.wordExplosionHighlightColor !== undefined ? result.wordExplosionHighlightColor : '#955FBD40';
@@ -237,6 +240,12 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
     }
     if (changes.wordExplosionLayout) {
       wordExplosionConfig.layout = changes.wordExplosionLayout.newValue;
+      if (wordExplosionEl) {
+        updateWordExplosionLayout();
+      }
+    }
+    if (changes.wordExplosionWordsLayout) {
+      wordExplosionConfig.wordsLayout = changes.wordExplosionWordsLayout.newValue;
       if (wordExplosionEl) {
         updateWordExplosionLayout();
       }
@@ -2792,7 +2801,7 @@ async function renderWordExplosionContent(container, unknownWords, forceRefresh 
 
   // 添加单词列表(不等待句子翻译)
   const wordsContainer = document.createElement('div');
-  wordsContainer.className = `word-explosion-words word-explosion-layout-${wordExplosionConfig.layout}`;
+  wordsContainer.className = `word-explosion-words word-explosion-layout-${wordExplosionConfig.layout} word-explosion-words-layout-${wordExplosionConfig.wordsLayout}`;
 
   for (const wordInfo of unknownWords) {
     const wordDiv = await createWordItem(wordInfo, forceRefresh);
@@ -3407,7 +3416,7 @@ function updateWordExplosionLayout() {
 
   const wordsContainer = wordExplosionEl.querySelector('.word-explosion-words');
   if (wordsContainer) {
-    wordsContainer.className = `word-explosion-words word-explosion-layout-${wordExplosionConfig.layout}`;
+    wordsContainer.className = `word-explosion-words word-explosion-layout-${wordExplosionConfig.layout} word-explosion-words-layout-${wordExplosionConfig.wordsLayout}`;
   }
 }
 
@@ -4810,6 +4819,37 @@ function injectExplosionStyles() {
     /* 水平布局 */
     .word-explosion-layout-horizontal {
        flex-direction: column;
+    }
+
+    /* 单词列表单列布局（默认） */
+    .word-explosion-words-layout-single-column {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 单词列表双列布局 - 蛇形排列，从上到下填满后流向下一列 */
+    .word-explosion-words-layout-double-column {
+      display: block !important;
+      column-count: 2;
+      column-gap: 12px;
+    }
+
+    /* 单词列表三列布局 - 蛇形排列 */
+    .word-explosion-words-layout-triple-column {
+      display: block !important;
+      column-count: 3;
+      column-gap: 12px;
+    }
+
+    /* 多列布局下的单词项 - 防止被分割 */
+    .word-explosion-words-layout-double-column .word-explosion-word-item,
+    .word-explosion-words-layout-triple-column .word-explosion-word-item {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      width: 100%;
+      min-width: unset;
+      flex: none;
+      margin-bottom: 3px;
     }
 
     /* 单词项 padding: 2px 4px; */

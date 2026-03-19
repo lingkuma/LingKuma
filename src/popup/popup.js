@@ -2282,6 +2282,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const wordExplosionMaxWidth = document.getElementById('wordExplosionMaxWidth');
     const wordExplosionPreferUp = document.getElementById('wordExplosionPreferUp');
     const wordExplosionLayout = document.getElementById('wordExplosionLayout');
+    const wordExplosionWordsLayout = document.getElementById('wordExplosionWordsLayout');
     const wordExplosionTranslationCount = document.getElementById('wordExplosionTranslationCount');
     const explosionSentenceTranslationCount = document.getElementById('explosionSentenceTranslationCount');
     const wordExplosionHighlightSentence = document.getElementById('wordExplosionHighlightSentence');
@@ -2312,6 +2313,7 @@ document.addEventListener('DOMContentLoaded', function() {
         wordExplosionMaxWidth: 772,
         wordExplosionPreferUp: true,
         wordExplosionLayout: 'vertical',
+        wordExplosionWordsLayout: 'single-column',
         wordExplosionTranslationCount: 'all',
         explosionSentenceTranslationCount: 1,
         wordExplosionHighlightSentence: true,
@@ -2329,6 +2331,7 @@ document.addEventListener('DOMContentLoaded', function() {
         wordExplosionMaxWidth.value = result.wordExplosionMaxWidth;
         wordExplosionPreferUp.checked = result.wordExplosionPreferUp;
         wordExplosionLayout.value = result.wordExplosionLayout;
+        wordExplosionWordsLayout.value = result.wordExplosionWordsLayout;
         wordExplosionTranslationCount.value = result.wordExplosionTranslationCount;
         explosionSentenceTranslationCount.value = result.explosionSentenceTranslationCount;
         wordExplosionHighlightSentence.checked = result.wordExplosionHighlightSentence;
@@ -2410,6 +2413,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     wordExplosionLayout.addEventListener('change', function(e) {
         chrome.storage.local.set({ wordExplosionLayout: e.target.value });
+    });
+
+    wordExplosionWordsLayout.addEventListener('change', function(e) {
+        chrome.storage.local.set({ wordExplosionWordsLayout: e.target.value });
     });
 
     wordExplosionTranslationCount.addEventListener('change', function(e) {
@@ -3702,7 +3709,11 @@ const i18n = {
     "word_explosion_word_translation_layout": "单词翻译布局",
     "word_explosion_word_translation_layout_vertical": "垂直排列",
     "word_explosion_word_translation_layout_horizontal": "水平排列",
-    "word_explosion_translation_count": "单词翻译显示数量",
+    "word_explosion_words_layout": "单词列表排列",
+     "word_explosion_words_layout_single_column": "垂直单列",
+     "word_explosion_words_layout_double_column": "双列模式",
+     "word_explosion_words_layout_triple_column": "三列模式",
+     "word_explosion_translation_count": "单词翻译显示数量",
     "explosion_sentence_translation_request_count": "句子翻译请求数量",
     "explosion_sentence_translation_request_hint": "独立请求AI翻译，不依赖单词例句",
     "word_explosion_sentence_translation_count": "句子翻译显示数量",
@@ -3901,7 +3912,11 @@ const i18n = {
     "word_explosion_word_translation_layout": "Word Translation Layout",
     "word_explosion_word_translation_layout_vertical": "Vertical",
     "word_explosion_word_translation_layout_horizontal": "Horizontal",
-    "word_explosion_translation_count": "Word Translation Count",
+    "word_explosion_words_layout": "Word List Layout",
+     "word_explosion_words_layout_single_column": "Single Column",
+     "word_explosion_words_layout_double_column": "Double Column",
+     "word_explosion_words_layout_triple_column": "Triple Column",
+     "word_explosion_translation_count": "Word Translation Count",
     "explosion_sentence_translation_request_count": "Sentence Translation Request Count",
     "explosion_sentence_translation_request_hint": "Request AI translation independently, not dependent on word example sentences",
     "explosion_highlight_with_tts": "Trigger Word-by-Word Highlight (TTS)",
@@ -4066,7 +4081,11 @@ const i18n = {
     "word_explosion_word_translation_layout": "單字翻譯佈局",
     "word_explosion_word_translation_layout_vertical": "垂直排列",
     "word_explosion_word_translation_layout_horizontal": "水平排列",
-    "word_explosion_translation_count": "單字翻譯顯示數量",
+    "word_explosion_words_layout": "單字列表排列",
+     "word_explosion_words_layout_single_column": "垂直單列",
+     "word_explosion_words_layout_double_column": "雙列模式",
+     "word_explosion_words_layout_triple_column": "三列模式",
+     "word_explosion_translation_count": "單字翻譯顯示數量",
     "explosion_sentence_translation_request_count": "句子翻譯請求數量",
     "explosion_sentence_translation_request_hint": "獨立請求AI翻譯，不依賴單字例句",
     "word_explosion_sentence_translation_count": "句子翻譯顯示數量",
@@ -4233,7 +4252,11 @@ const i18n = {
         "word_explosion_word_translation_layout": "Wort-Übersetzungs-LayoutLayout",
         "word_explosion_word_translation_layout_vertical": "Vertikal",
         "word_explosion_word_translation_layout_horizontal": "Horizontal",
-        "word_explosion_translation_count": "Wort-Übersetzungsanzahl",
+        "word_explosion_words_layout": "Wortlisten-Layout",
+         "word_explosion_words_layout_single_column": "Einzelspalte",
+         "word_explosion_words_layout_double_column": "Doppelspalte",
+         "word_explosion_words_layout_triple_column": "Dreifachspalte",
+         "word_explosion_translation_count": "Wort-Übersetzungsanzahl",
         "explosion_sentence_translation_request_count": "Satz-Übersetzungsanfrage-Anzahl",
         "explosion_sentence_translation_request_hint": "AI-Übersetzung unabhängig anfordern, nicht abhängig von Wortbeispielsätzen",
         "explosion_highlight_with_tts": "Wort-für-Wort-Hervorhebung auslösen (TTS)",
@@ -4392,7 +4415,11 @@ const i18n = {
         "word_explosion_word_translation_layout": "Disposition des mots et de traductions",
         "word_explosion_word_translation_layout_vertical": "Vertical",
         "word_explosion_word_translation_layout_horizontal": "Horizontal",
-        "word_explosion_translation_count": "Nombre de traductions de mots",
+        "word_explosion_words_layout": "Disposition de la liste de mots",
+         "word_explosion_words_layout_single_column": "Colonne unique",
+         "word_explosion_words_layout_double_column": "Double colonne",
+         "word_explosion_words_layout_triple_column": "Triple colonne",
+         "word_explosion_translation_count": "Nombre de traductions de mots",
         "explosion_sentence_translation_request_count": "Nombre de demandes de traduction de phrases",
         "explosion_sentence_translation_request_hint": "Demander la traduction AI indépendamment, sans dépendre des exemples de mots",
         "explosion_highlight_with_tts": "Déclencher la mise en évidence mot par mot (TTS)",
@@ -4556,7 +4583,11 @@ const i18n = {
         "word_explosion_word_translation_layout": "Disposición de palabras y traducciones",
         "word_explosion_word_translation_layout_vertical": "Vertical",
         "word_explosion_word_translation_layout_horizontal": "Horizontal",
-        "word_explosion_translation_count": "Cantidad de traducciones de palabras",
+        "word_explosion_words_layout": "Disposición de lista de palabras",
+         "word_explosion_words_layout_single_column": "Columna única",
+         "word_explosion_words_layout_double_column": "Columna doble",
+         "word_explosion_words_layout_triple_column": "Columna triple",
+         "word_explosion_translation_count": "Cantidad de traducciones de palabras",
         "explosion_sentence_translation_request_count": "Cantidad de solicitudes de traducción de oraciones",
         "explosion_sentence_translation_request_hint": "Solicitar traducción AI independientemente, sin depender de ejemplos de palabras",
         "explosion_highlight_with_tts": "Activar resaltado palabra por palabra (TTS)",
@@ -4720,7 +4751,11 @@ const i18n = {
           "word_explosion_word_translation_layout": "単語翻訳用レイアウト",
           "word_explosion_word_translation_layout_vertical": "垂直",
           "word_explosion_word_translation_layout_horizontal": "水平",
-          "word_explosion_translation_count": "単語翻訳数",
+          "word_explosion_words_layout": "単語リスト配置",
+           "word_explosion_words_layout_single_column": "単一列",
+           "word_explosion_words_layout_double_column": "二列",
+           "word_explosion_words_layout_triple_column": "三列",
+           "word_explosion_translation_count": "単語翻訳数",
           "explosion_sentence_translation_request_count": "文翻訳リクエスト数",
           "explosion_sentence_translation_request_hint": "AI翻訳を独立してリクエストし、単語例文に依存しない",
           "explosion_highlight_with_tts": "単語ごとのハイライトをトリガー（TTS）",
@@ -4882,7 +4917,11 @@ const i18n = {
           "word_explosion_word_translation_layout": "단어 번역용 레이아웃",
           "word_explosion_word_translation_layout_vertical": "수직",
           "word_explosion_word_translation_layout_horizontal": "수평",
-          "word_explosion_translation_count": "단어 번역 수",
+          "word_explosion_words_layout": "단어 목록 배치",
+           "word_explosion_words_layout_single_column": "단일 열",
+           "word_explosion_words_layout_double_column": "이중 열",
+           "word_explosion_words_layout_triple_column": "삼중 열",
+           "word_explosion_translation_count": "단어 번역 수",
           "explosion_sentence_translation_request_count": "문장 번역 요청 수",
           "explosion_sentence_translation_request_hint": "단어 예문에 의존하지 않고 AI 번역을 독립적으로 요청합니다",
           "explosion_highlight_with_tts": "단어별 강조 트리거 (TTS)",
@@ -5035,7 +5074,11 @@ const i18n = {
           "word_explosion_word_translation_layout": "Макет слов и их переводов",
           "word_explosion_word_translation_layout_vertical": "Вертикальный",
           "word_explosion_word_translation_layout_horizontal": "Горизонтальный",
-          "word_explosion_translation_count": "Количество переводов слов",
+          "word_explosion_words_layout": "Расположение списка слов",
+           "word_explosion_words_layout_single_column": "Одиночная колонка",
+           "word_explosion_words_layout_double_column": "Двойная колонка",
+           "word_explosion_words_layout_triple_column": "Тройная колонка",
+           "word_explosion_translation_count": "Количество переводов слов",
           "explosion_sentence_translation_request_count": "Количество запросов перевода предложений",
           "explosion_sentence_translation_request_hint": "Запрашивать перевод AI независимо, не завися от примеров слов",
           "explosion_highlight_with_tts": "Триггер подсветки слово за словом (TTS)",
@@ -5185,7 +5228,11 @@ const i18n = {
           "word_explosion_word_translation_layout": "Layout parole traduzioni",
           "word_explosion_word_translation_layout_vertical": "Verticale",
           "word_explosion_word_translation_layout_horizontal": "Orizzontale",
-          "word_explosion_translation_count": "Numero traduzioni parole",
+          "word_explosion_words_layout": "Layout lista parole",
+           "word_explosion_words_layout_single_column": "Colonna singola",
+           "word_explosion_words_layout_double_column": "Colonna doppia",
+           "word_explosion_words_layout_triple_column": "Colonna tripla",
+           "word_explosion_translation_count": "Numero traduzioni parole",
           "explosion_sentence_translation_request_count": "Numero richieste traduzione frasi",
           "explosion_sentence_translation_request_hint": "Richiedi traduzione AI indipendentemente, senza dipendere da esempi di parole",
           "explosion_highlight_with_tts": "Attiva evidenziazione parola per parola (TTS)",
