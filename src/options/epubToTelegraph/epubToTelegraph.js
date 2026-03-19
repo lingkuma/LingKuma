@@ -21,6 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const TELEGRAPH_SHORT_NAME = 'EPUBConverterExtension'; // 插件的简称，用于创建账户
     // const TELEGRAPH_AUTHOR_NAME = ''; // 可选的作者名
 
+    // Telegraph 内容大小限制（字节）
+    // Telegraph API 的限制约为 64KB，但实际安全值更低
+    // 设置为 55KB 以留出安全余量（考虑 JSON 序列化开销和导航链接）
+    const TELEGRAPH_CONTENT_LIMIT = 55000;
+
     let epubChapters = []; // 用于存储提取的章节 { fileName: string, htmlContent: string }
     let sharedRandomIdentifier = ''; // 新增：共享随机标识符
     let utcDateString = ''; // 新增：UTC 日期字符串 MM-DD
@@ -103,6 +108,279 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 如果经过所有处理（包括截断）后为空，则返回默认值
         return sanitized || 'untitled';
+    }
+
+    // 辅助函数：估算 Telegraph 内容大小（字节）
+    // 将 HTML 转换为 Telegraph 节点后，计算 JSON 字符串的字节大小
+    function estimateContentSize(htmlContent, chapterFileName = '未知章节') {
+        // 使用现有的 htmlToTelegraphNodes 函数转换内容
+        const nodes = htmlToTelegraphNodes(htmlContent, chapterFileName);
+        if (!nodes || nodes.length === 0) {
+            return 0;
+        }
+        // 计算 JSON 字符串的字节大小
+        const jsonString = JSON.stringify(nodes);
+        return new Blob([jsonString]).size;
+    }
+
+    // 辅助函数：智能切分大章节
+    // 返回切分后的章节数组，每个元素包含 { fileName: string, htmlContent: string, isSplit: boolean, splitIndex: number, originalFileName: string }
+    function splitLargeChapter(chapter, maxSize = TELEGRAPH_CONTENT_LIMIT) {
+        const originalFileName = chapter.fileName;
+        const htmlContent = chapter.htmlContent;
+        
+        // 首先检查是否需要切分
+        const estimatedSize = estimateContentSize(htmlContent, originalFileName);
+        console.log(`章节 "${originalFileName}" 预估大小: ${estimatedSize} 字节 (限制: ${maxSize})`);
+        
+        if (estimatedSize <= maxSize) {
+            // 不需要切分，返回原章节（添加标记）
+            return [{
+                ...chapter,
+                isSplit: false,
+                splitIndex: 0,
+                originalFileName: originalFileName
+            }];
+        }
+
+        console.log(`章节 "${originalFileName}" 超过大小限制，开始智能切分...`);
+        
+        // 解析 HTML 内容
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, 'text/html');
+        const body = doc.body;
+        
+        if (!body) {
+            console.warn(`章节 "${originalFileName}" 无法解析 body，返回原内容`);
+            return [{
+                ...chapter,
+                isSplit: false,
+                splitIndex: 0,
+                originalFileName: originalFileName
+            }];
+        }
+
+        // 获取所有顶级块级元素作为切分单元
+        const blockElements = [];
+        const supportedBlockTags = ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'ul', 'ol', 'table', 'figure', 'aside', 'hr', 'br'];
+        
+        // 收集所有子节点
+        const collectNodes = (parent) => {
+            const nodes = [];
+            parent.childNodes.forEach(child => {
+                if (child.nodeType === Node.ELEMENT_NODE) {
+                    nodes.push(child);
+                } else if (child.nodeType === Node.TEXT_NODE) {
+                    const text = child.textContent.trim();
+                    if (text) {
+                        // 将独立文本节点包装为段落
+                        const wrapper = doc.createElement('p');
+                        wrapper.textContent = text;
+                        nodes.push(wrapper);
+                    }
+                }
+            });
+            return nodes;
+        };
+
+        const allNodes = collectNodes(body);
+        
+        // 将节点分组，每组不超过大小限制
+        const splitParts = [];
+        let currentPart = [];
+        let currentSize = 0;
+        
+        // 估算单个节点的 Telegraph 内容大小
+        const estimateNodeSize = (node) => {
+            const tempDiv = doc.createElement('div');
+            tempDiv.appendChild(node.cloneNode(true));
+            const tempNodes = htmlToTelegraphNodes(tempDiv.innerHTML, 'temp');
+            if (!tempNodes || tempNodes.length === 0) return 0;
+            return new Blob([JSON.stringify(tempNodes)]).size;
+        };
+
+        for (const node of allNodes) {
+            const nodeSize = estimateNodeSize(node);
+            
+            // 如果单个节点就超过限制，需要进一步切分
+            if (nodeSize > maxSize) {
+                // 先保存当前部分
+                if (currentPart.length > 0) {
+                    splitParts.push(currentPart);
+                    currentPart = [];
+                    currentSize = 0;
+                }
+                
+                // 对超大节点进行细粒度切分
+                const subParts = splitLargeNode(node, maxSize, doc);
+                for (const subPart of subParts) {
+                    splitParts.push([subPart]);
+                }
+            } else if (currentSize + nodeSize > maxSize) {
+                // 当前部分已满，开始新部分
+                if (currentPart.length > 0) {
+                    splitParts.push(currentPart);
+                }
+                currentPart = [node];
+                currentSize = nodeSize;
+            } else {
+                // 添加到当前部分
+                currentPart.push(node);
+                currentSize += nodeSize;
+            }
+        }
+        
+        // 保存最后一部分
+        if (currentPart.length > 0) {
+            splitParts.push(currentPart);
+        }
+
+        // 将节点组转换回 HTML 内容
+        const result = splitParts.map((partNodes, index) => {
+            const tempDiv = doc.createElement('div');
+            partNodes.forEach(node => {
+                tempDiv.appendChild(node.cloneNode(true));
+            });
+            
+            // 生成新的文件名：原名称-序号
+            const newFileName = `${originalFileName}-${index + 1}`;
+            
+            return {
+                fileName: newFileName,
+                htmlContent: tempDiv.innerHTML,
+                isSplit: true,
+                splitIndex: index + 1,
+                originalFileName: originalFileName,
+                totalSplitParts: splitParts.length
+            };
+        });
+
+        console.log(`章节 "${originalFileName}" 已切分为 ${result.length} 部分`);
+        return result;
+    }
+
+    // 辅助函数：切分超大节点（按句子边界切分）
+    function splitLargeNode(node, maxSize, doc) {
+        const tagName = node.nodeName.toLowerCase();
+        
+        // 对于段落等文本节点，按句子切分
+        if (['p', 'div', 'blockquote', 'li', 'td', 'th'].includes(tagName)) {
+            const text = node.textContent;
+            
+            // 如果文本很短，直接返回
+            if (new Blob([text]).size <= maxSize) {
+                return [node];
+            }
+            
+            // 按句子切分（使用中英文句子边界）
+            const sentences = text.split(/(?<=[。！？!?.\n])/g);
+            const parts = [];
+            let currentText = '';
+            
+            for (const sentence of sentences) {
+                const testText = currentText + sentence;
+                // 估算大小（简化计算，实际 Telegraph 节点会有额外开销）
+                if (new Blob([testText]).size > maxSize * 0.8 && currentText.length > 0) {
+                    // 创建新段落
+                    const newP = doc.createElement('p');
+                    newP.textContent = currentText.trim();
+                    if (newP.textContent) {
+                        parts.push(newP);
+                    }
+                    currentText = sentence;
+                } else {
+                    currentText = testText;
+                }
+            }
+            
+            // 保存最后一段
+            if (currentText.trim()) {
+                const newP = doc.createElement('p');
+                newP.textContent = currentText.trim();
+                parts.push(newP);
+            }
+            
+            return parts.length > 0 ? parts : [node];
+        }
+        
+        // 对于其他类型的节点，尝试递归处理子节点
+        if (node.childNodes && node.childNodes.length > 0) {
+            const childParts = [];
+            let currentGroup = [];
+            let currentSize = 0;
+            
+            node.childNodes.forEach(child => {
+                if (child.nodeType === Node.TEXT_NODE) {
+                    const text = child.textContent;
+                    const textSize = new Blob([text]).size;
+                    
+                    if (currentSize + textSize > maxSize && currentGroup.length > 0) {
+                        // 创建包含当前组的容器
+                        const container = doc.createElement(tagName);
+                        currentGroup.forEach(c => container.appendChild(c.cloneNode(true)));
+                        childParts.push(container);
+                        currentGroup = [child.cloneNode(true)];
+                        currentSize = textSize;
+                    } else {
+                        currentGroup.push(child.cloneNode(true));
+                        currentSize += textSize;
+                    }
+                } else if (child.nodeType === Node.ELEMENT_NODE) {
+                    const childSize = estimateNodeSizeSimple(child);
+                    
+                    if (childSize > maxSize) {
+                        // 递归切分
+                        const subParts = splitLargeNode(child, maxSize, doc);
+                        if (currentGroup.length > 0) {
+                            const container = doc.createElement(tagName);
+                            currentGroup.forEach(c => container.appendChild(c.cloneNode(true)));
+                            childParts.push(container);
+                            currentGroup = [];
+                            currentSize = 0;
+                        }
+                        childParts.push(...subParts);
+                    } else if (currentSize + childSize > maxSize && currentGroup.length > 0) {
+                        const container = doc.createElement(tagName);
+                        currentGroup.forEach(c => container.appendChild(c.cloneNode(true)));
+                        childParts.push(container);
+                        currentGroup = [child.cloneNode(true)];
+                        currentSize = childSize;
+                    } else {
+                        currentGroup.push(child.cloneNode(true));
+                        currentSize += childSize;
+                    }
+                }
+            });
+            
+            if (currentGroup.length > 0) {
+                const container = doc.createElement(tagName);
+                currentGroup.forEach(c => container.appendChild(c.cloneNode(true)));
+                childParts.push(container);
+            }
+            
+            return childParts.length > 0 ? childParts : [node];
+        }
+        
+        // 无法切分，返回原节点
+        return [node];
+    }
+
+    // 辅助函数：简单估算节点大小
+    function estimateNodeSizeSimple(node) {
+        return new Blob([node.outerHTML || node.textContent || '']).size;
+    }
+
+    // 辅助函数：处理所有章节，进行切分判断
+    function processChaptersWithSplitting(chapters) {
+        const processedChapters = [];
+        
+        for (const chapter of chapters) {
+            const splitResult = splitLargeChapter(chapter);
+            processedChapters.push(...splitResult);
+        }
+        
+        console.log(`章节处理完成：原始 ${chapters.length} 章，处理后 ${processedChapters.length} 章`);
+        return processedChapters;
     }
 
 
@@ -224,8 +502,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (epubChapters.length > 0) {
-                statusArea.innerHTML = `成功提取 ${epubChapters.length} 个章节：<br> - ${epubChapters.map(c => c.fileName).join('<br> - ')} <br><br>准备发布到 Telegra.ph...`;
+                statusArea.innerHTML = `成功提取 ${epubChapters.length} 个章节：<br> - ${epubChapters.map(c => c.fileName).join('<br> - ')} <br><br>正在检查章节大小并进行智能切分...`;
                 console.log('提取完成的章节数据:', epubChapters);
+                
+                // 检查章节大小并进行智能切分
+                const originalCount = epubChapters.length;
+                epubChapters = processChaptersWithSplitting(epubChapters);
+                const finalCount = epubChapters.length;
+                
+                // 统计切分情况
+                const splitChapters = epubChapters.filter(c => c.isSplit);
+                if (splitChapters.length > 0) {
+                    const splitOriginals = [...new Set(splitChapters.map(c => c.originalFileName))];
+                    statusArea.innerHTML = `章节处理完成：原始 ${originalCount} 章，处理后 ${finalCount} 章<br>其中 ${splitOriginals.length} 个章节被切分为 ${splitChapters.length} 部分<br><br>准备发布到 Telegra.ph...`;
+                    console.log(`切分统计：${splitOriginals.length} 个原始章节被切分，共产生 ${splitChapters.length} 个子章节`);
+                } else {
+                    statusArea.innerHTML = `成功提取 ${epubChapters.length} 个章节，无需切分。<br><br>准备发布到 Telegra.ph...`;
+                }
                 
                 // 开始发布流程
                 initiateTelegraphPublishing();
@@ -456,8 +749,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     successCount++;
                     const actualUrl = pageResult.url; // Telegra.ph 返回的实际 URL
                     console.log(`章节 "${displayChapterTitle}" (API title: "${titleForTelegraphApi}") 发布成功: ${actualUrl}`);
-                    // publishedPagesInfo 存储时，title 可以用 displayChapterTitle 或 originalFileName，url 是实际的
-                    publishedPagesInfo.push({ title: displayChapterTitle, url: actualUrl, originalFileName: originalFileName });
+                    
+                    // 存储发布信息，包含切分相关的元数据
+                    publishedPagesInfo.push({ 
+                        title: displayChapterTitle, 
+                        url: actualUrl, 
+                        originalFileName: originalFileName,
+                        // 如果是切分章节，添加额外信息
+                        isSplit: chapter.isSplit || false,
+                        splitIndex: chapter.splitIndex || 0,
+                        originalChapterName: chapter.originalFileName || originalFileName,
+                        totalSplitParts: chapter.totalSplitParts || 1
+                    });
                     
                     if (linksContainer) {
                         const p = document.createElement('p');
@@ -498,14 +801,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const epubFileName = epubFileInput.files[0] ? epubFileInput.files[0].name.replace(/\.epub$/i, '') : 'EPUB';
             const tocTitle = `${epubFileName} - 目录`;
             const tocNodes = [{ tag: 'h3', children: [tocTitle] }];
-            const ulChildren = publishedPagesInfo.map(page => ({
-                tag: 'li',
-                children: [{
-                    tag: 'a',
-                    attrs: { href: page.url },
-                    children: [page.originalFileName || page.title] // 优先使用原始文件名
-                }]
-            }));
+            
+            // 生成目录项，支持切分章节的友好显示
+            const ulChildren = publishedPagesInfo.map(page => {
+                // 生成显示名称
+                let displayName = page.originalFileName || page.title;
+                
+                // 如果是切分章节，显示更友好的名称
+                if (page.isSplit && page.totalSplitParts > 1) {
+                    // 格式：原章节名-序号 或 原章节名 (序号/总数)
+                    // 使用 "原章节名-序号" 格式
+                    displayName = `${page.originalChapterName}-${page.splitIndex}`;
+                }
+                
+                return {
+                    tag: 'li',
+                    children: [{
+                        tag: 'a',
+                        attrs: { href: page.url },
+                        children: [displayName]
+                    }]
+                };
+            });
             tocNodes.push({ tag: 'ul', children: ulChildren });
 
             try {
