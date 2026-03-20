@@ -763,7 +763,9 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
       padding: 10px 14px;
+      padding-right: 30px;
       margin-bottom: 12px;
       background: linear-gradient(135deg, rgba(0, 122, 255, 0.15) 0%, rgba(52, 199, 89, 0.15) 100%);
       border: 1px solid rgba(0, 122, 255, 0.3);
@@ -771,6 +773,7 @@
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       animation: slideDown 0.3s ease-out;
+      position: relative;
     }
 
     @keyframes slideDown {
@@ -802,6 +805,16 @@
       font-weight: 500;
     }
 
+    .update-message {
+      font-size: 12px;
+      color: var(--ios-text);
+      opacity: 0.75;
+      width: 100%;
+      margin-top: 6px;
+      padding-left: 24px;
+      line-height: 1.5;
+    }
+
     .update-link {
       font-size: 13px;
       color: var(--ios-blue);
@@ -824,6 +837,9 @@
       line-height: 1;
       opacity: 0.6;
       transition: opacity 0.2s;
+      position: absolute;
+      top: 8px;
+      right: 8px;
     }
 
     .update-close-btn:hover {
@@ -878,6 +894,10 @@
       <span class="update-text" id="update-text">版本已更新</span>
       <a href="#" id="update-link" class="update-link">what's new?</a>
     </div>
+    <span class="update-message" id="update-message">
+      1.verb-hightlight
+      <br>2.left/right key switch sentence hightlight
+     </span>
     <button id="update-close-btn" class="update-close-btn" title="关闭">×</button>
   </div>
   <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 16px;">
