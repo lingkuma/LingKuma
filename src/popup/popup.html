@@ -1214,36 +1214,62 @@
         <small style="display: block; margin-top: 4px; color: var(--ios-secondary);" data-i18n="explosion_sentence_translation_request_hint">独立请求AI翻译，不依赖单词例句</small>
       </div>
 
+      <!-- 高亮当前爆炸的句子 - 使用设置按钮展开 -->
       <div class="toggle">
-        <label for="wordExplosionHighlightSentence" data-i18n="word_explosion_highlight_sentence">高亮当前爆炸的句子</label>
-        <input type="checkbox" id="wordExplosionHighlightSentence" checked>
-      </div>
-
-      <div class="select-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
-        <label for="wordExplosionHighlightColor" style="display: block; margin-bottom: 8px;" data-i18n="word_explosion_highlight_color">高亮背景颜色</label>
-        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
-          <input type="text" id="wordExplosionHighlightColor" value="#955FBD40" placeholder="#955FBD40" style="flex: 1; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text); font-family: monospace;">
-          <div id="wordExplosionHighlightColorPreview" style="width: 40px; height: 40px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: #955FBD40; cursor: pointer;"></div>
-        </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <input type="color" id="wordExplosionHighlightColorPicker" value="#955FBD" style="width: 60px; height: 32px; border: 1px solid var(--ios-border); border-radius: 4px; cursor: pointer;">
-          <div style="flex: 1;">
-            <div style="display: flex; align-items: center;">
-              <label for="wordExplosionHighlightOpacity" style="font-size: 12px; color: var(--ios-text); margin-right: 8px;" data-i18n="word_explosion_highlight_opacity_label">透明度:</label>
-              <span id="wordExplosionHighlightOpacityValue" style="font-size: 12px; color: var(--ios-text);">25</span>%
-            </div>
-            <input type="range" id="wordExplosionHighlightOpacity" min="0" max="100" value="25" style="width: 100%;">
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+          <label for="wordExplosionHighlightSentence" style="font-weight: 600;" data-i18n="word_explosion_highlight_sentence">高亮当前爆炸的句子</label>
+          <div style="display: flex; align-items: center;">
+            <button class="settings-toggle-button" id="wordExplosionHighlightSettingsToggle" style="margin-right: 8px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82-.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </button>
+            <input type="checkbox" id="wordExplosionHighlightSentence" checked>
           </div>
         </div>
-        <small style="display: block; margin-top: 4px; color: var(--ios-text);" data-i18n="word_explosion_highlight_color_hint">点击色板选择颜色，拖动滑块调整透明度</small>
       </div>
 
+      <!-- 高亮背景颜色设置区域（可折叠） -->
+      <div id="wordExplosionHighlightSettings" class="settings-section">
+        <div class="select-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
+          <label for="wordExplosionHighlightColor" style="display: block; margin-bottom: 8px;" data-i18n="word_explosion_highlight_color">高亮背景颜色</label>
+          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+            <input type="text" id="wordExplosionHighlightColor" value="#955FBD40" placeholder="#955FBD40" style="flex: 1; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text); font-family: monospace;">
+            <div id="wordExplosionHighlightColorPreview" style="width: 40px; height: 40px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: #955FBD40; cursor: pointer;"></div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="color" id="wordExplosionHighlightColorPicker" value="#955FBD" style="width: 60px; height: 32px; border: 1px solid var(--ios-border); border-radius: 4px; cursor: pointer;">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center;">
+                <label for="wordExplosionHighlightOpacity" style="font-size: 12px; color: var(--ios-text); margin-right: 8px;" data-i18n="word_explosion_highlight_opacity_label">透明度:</label>
+                <span id="wordExplosionHighlightOpacityValue" style="font-size: 12px; color: var(--ios-text);">25</span>%
+              </div>
+              <input type="range" id="wordExplosionHighlightOpacity" min="0" max="100" value="25" style="width: 100%;">
+            </div>
+          </div>
+          <small style="display: block; margin-top: 4px; color: var(--ios-text);" data-i18n="word_explosion_highlight_color_hint">点击色板选择颜色，拖动滑块调整透明度</small>
+        </div>
+      </div>
+
+      <!-- 启用下划线 - 使用设置按钮展开 -->
       <div class="toggle">
-        <label for="wordExplosionUnderlineEnabled" data-i18n="word_explosion_underline_enabled">启用下划线</label>
-        <input type="checkbox" id="wordExplosionUnderlineEnabled">
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+          <label for="wordExplosionUnderlineEnabled" style="font-weight: 600;" data-i18n="word_explosion_underline_enabled">启用下划线</label>
+          <div style="display: flex; align-items: center;">
+            <button class="settings-toggle-button" id="wordExplosionUnderlineSettingsToggle" style="margin-right: 8px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82-.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </button>
+            <input type="checkbox" id="wordExplosionUnderlineEnabled">
+          </div>
+        </div>
       </div>
 
-      <div id="wordExplosionUnderlineSettings" style="display: none;">
+      <!-- 下划线详细设置区域（可折叠） -->
+      <div id="wordExplosionUnderlineSettings" class="settings-section">
         <div class="select-setting" style="padding: 12px 16px; border-bottom: 1px solid var(--ios-border);">
           <label for="wordExplosionUnderlineStyle" style="display: block; margin-bottom: 8px;" data-i18n="word_explosion_underline_style">下划线样式</label>
           <select id="wordExplosionUnderlineStyle" style="width: 100%; padding: 8px; border: 1px solid var(--ios-border); border-radius: 4px; background-color: var(--ios-bg); color: var(--ios-text);">

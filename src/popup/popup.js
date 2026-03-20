@@ -2304,6 +2304,24 @@ document.addEventListener('DOMContentLoaded', function() {
         wordExplosionSettings.classList.toggle('visible');
     });
 
+    // 高亮背景颜色设置展开/收起按钮
+    const wordExplosionHighlightSettingsToggle = document.getElementById('wordExplosionHighlightSettingsToggle');
+    const wordExplosionHighlightSettings = document.getElementById('wordExplosionHighlightSettings');
+    if (wordExplosionHighlightSettingsToggle && wordExplosionHighlightSettings) {
+        wordExplosionHighlightSettingsToggle.addEventListener('click', function() {
+            wordExplosionHighlightSettings.classList.toggle('visible');
+        });
+    }
+
+    // 下划线设置展开/收起按钮
+    const wordExplosionUnderlineSettingsToggle = document.getElementById('wordExplosionUnderlineSettingsToggle');
+    const wordExplosionUnderlineSettings = document.getElementById('wordExplosionUnderlineSettings');
+    if (wordExplosionUnderlineSettingsToggle && wordExplosionUnderlineSettings) {
+        wordExplosionUnderlineSettingsToggle.addEventListener('click', function() {
+            wordExplosionUnderlineSettings.classList.toggle('visible');
+        });
+    }
+
     // 加载设置
     chrome.storage.local.get({
         wordExplosionEnabled: true,
@@ -2379,11 +2397,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // 初始化下划线设置显示状态
-        const wordExplosionUnderlineSettings = document.getElementById('wordExplosionUnderlineSettings');
-        if (wordExplosionUnderlineSettings) {
-            wordExplosionUnderlineSettings.style.display = result.wordExplosionUnderlineEnabled ? 'block' : 'none';
-        }
+        // 下划线设置区域现在使用 settings-section 类，默认收起，用户手动点击设置按钮展开
     });
 
     // 监听变化并自动保存
@@ -2527,20 +2541,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 下划线设置容器
-    const wordExplosionUnderlineSettings = document.getElementById('wordExplosionUnderlineSettings');
-
-    // 切换下划线设置显示/隐藏
-    function toggleUnderlineSettings(enabled) {
-        if (wordExplosionUnderlineSettings) {
-            wordExplosionUnderlineSettings.style.display = enabled ? 'block' : 'none';
-        }
-    }
-
     wordExplosionUnderlineEnabled.addEventListener('change', function(e) {
         const enabled = e.target.checked;
         chrome.storage.local.set({ wordExplosionUnderlineEnabled: enabled });
-        toggleUnderlineSettings(enabled);
+        // 下划线设置区域现在使用 settings-section 类，用户手动点击设置按钮展开
     });
 
     wordExplosionUnderlineStyle.addEventListener('change', function(e) {
