@@ -870,11 +870,64 @@ function createCrossElementSentenceRange(sentence, sentenceInfo) {
 
   console.log('[WordExplosion] 找到文本节点数量:', textNodes.length);
 
+  // 辅助函数：检测两个文本节点之间是否有 br 标签
+  function hasBrBetween(node1, node2) {
+    if (!node1 || !node2) return false;
+    
+    // 获取两个节点的共同祖先
+    let ancestor = node1.parentElement;
+    while (ancestor) {
+      if (ancestor.contains(node2)) break;
+      ancestor = ancestor.parentElement;
+    }
+    if (!ancestor) return false;
+    
+    // 使用更简单的方法：遍历共同祖先的所有后代节点，检查两个文本节点之间是否有 br 标签
+    const walker = document.createTreeWalker(
+      ancestor,
+      NodeFilter.SHOW_ALL,
+      null,
+      false
+    );
+    
+    let foundFirst = false;
+    let currentNode;
+    while ((currentNode = walker.nextNode())) {
+      // 找到第一个文本节点
+      if (currentNode === node1) {
+        foundFirst = true;
+        continue;
+      }
+      // 找到第二个文本节点，结束搜索
+      if (foundFirst && currentNode === node2) {
+        break;
+      }
+      // 在两个文本节点之间发现 br 标签
+      if (foundFirst && currentNode.nodeType === Node.ELEMENT_NODE && currentNode.tagName === 'BR') {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // 构建完整的规范化文本，并记录每个字符对应的文本节点和偏移量
   let fullNormalizedText = '';
   const charMap = []; // 每个规范化字符对应的 {node, originalOffset}
+  let lastTextNode = null; // 记录上一个文本节点，用于检测 br 标签
 
   for (const textNodeInfo of textNodes) {
+    // 检查两个文本节点之间是否有 br 标签
+    if (lastTextNode && hasBrBetween(lastTextNode, textNodeInfo.node)) {
+      // 如果有 br 标签，添加空格
+      charMap.push({
+        node: lastTextNode,
+        originalOffset: 0,
+        isSpace: true,
+        isBrBoundary: true
+      });
+      fullNormalizedText += ' ';
+    }
+    
     const originalText = textNodeInfo.originalText;
     const normalizedText = textNodeInfo.normalizedText;
     
@@ -917,6 +970,8 @@ function createCrossElementSentenceRange(sentence, sentenceInfo) {
         normalizedOffset++;
       }
     }
+    
+    lastTextNode = textNodeInfo.node; // 更新上一个文本节点
   }
 
   console.log('[WordExplosion] 完整规范化文本长度:', fullNormalizedText.length);

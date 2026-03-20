@@ -352,10 +352,10 @@ function getSentenceForWord(detail) {
     }
     if (!ancestor) return false;
     
-    // 在共同祖先中查找两个节点之间的 br 标签
+    // 使用更简单的方法：遍历共同祖先的所有后代节点，检查两个文本节点之间是否有 br 标签
     const walker = document.createTreeWalker(
       ancestor,
-      NodeFilter.SHOW_ELEMENT,
+      NodeFilter.SHOW_ALL,
       null,
       false
     );
@@ -363,14 +363,17 @@ function getSentenceForWord(detail) {
     let foundFirst = false;
     let currentNode;
     while ((currentNode = walker.nextNode())) {
-      if (currentNode.contains(node1)) {
+      // 找到第一个文本节点
+      if (currentNode === node1) {
         foundFirst = true;
         continue;
       }
-      if (foundFirst && currentNode.contains(node2)) {
+      // 找到第二个文本节点，结束搜索
+      if (foundFirst && currentNode === node2) {
         break;
       }
-      if (foundFirst && currentNode.tagName === 'BR') {
+      // 在两个文本节点之间发现 br 标签
+      if (foundFirst && currentNode.nodeType === Node.ELEMENT_NODE && currentNode.tagName === 'BR') {
         return true;
       }
     }
