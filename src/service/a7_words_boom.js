@@ -52,7 +52,7 @@ let wordExplosionConfig = {
   positionMode: 'auto', // 'auto' 或 'manual'
   preferUp: true, // 优先向上显示
   layout: 'vertical', // 'vertical' 或 'horizontal' - 单词对象内部翻译的排列
-  wordsLayout: 'single-column', // 'single-column' 或 'double-column' - 单词列表在窗口内的排列
+  wordsLayout: 'triple-column', // 'single-column' 或 'double-column' 或 'triple-column' - 单词列表在窗口内的排列
   translationCount: 'all', // 显示翻译数量: 1, 2, 3, 或 'all'
   highlightSentence: true, // 高亮当前爆炸的句子，默认开启
   highlightColor: '#955FBD40', // 高亮背景颜色，默认紫色半透明
@@ -61,7 +61,7 @@ let wordExplosionConfig = {
   underlinePosition: 'bottom', // 下划线位置：bottom/top/both
   underlineColor: '#955FBD80', // 下划线颜色，默认紫色
   underlineThickness: 3, // 下划线粗度，默认3px
-  showExplosionSentence: true // 显示爆炸原句，默认开启
+  showExplosionSentence: false // 显示爆炸原句，默认关闭
 };
 
 // 初始化：加载配置
@@ -102,7 +102,7 @@ function initWordExplosion() {
     wordExplosionMaxWidth = result.wordExplosionMaxWidth !== undefined ? result.wordExplosionMaxWidth : 772;
     wordExplosionConfig.preferUp = result.wordExplosionPreferUp !== undefined ? result.wordExplosionPreferUp : true;
     wordExplosionConfig.layout = result.wordExplosionLayout || 'vertical';
-    wordExplosionConfig.wordsLayout = result.wordExplosionWordsLayout || 'single-column';
+    wordExplosionConfig.wordsLayout = result.wordExplosionWordsLayout || 'triple-column';
     wordExplosionConfig.translationCount = result.wordExplosionTranslationCount || 'all';
     wordExplosionConfig.highlightSentence = result.wordExplosionHighlightSentence !== undefined ? result.wordExplosionHighlightSentence : true;
     wordExplosionConfig.highlightColor = result.wordExplosionHighlightColor !== undefined ? result.wordExplosionHighlightColor : '#955FBD40';
@@ -111,7 +111,7 @@ function initWordExplosion() {
     wordExplosionConfig.underlinePosition = result.wordExplosionUnderlinePosition || 'bottom';
     wordExplosionConfig.underlineColor = result.wordExplosionUnderlineColor !== undefined ? result.wordExplosionUnderlineColor : '#955FBD80';
     wordExplosionConfig.underlineThickness = result.wordExplosionUnderlineThickness !== undefined ? result.wordExplosionUnderlineThickness : 3;
-    wordExplosionConfig.showExplosionSentence = result.showExplosionSentence !== undefined ? result.showExplosionSentence : true;
+    wordExplosionConfig.showExplosionSentence = result.showExplosionSentence !== undefined ? result.showExplosionSentence : false;
     wordExplosionSavedPosition = result.wordExplosionSavedPosition || null;
     explosionThemeMode = result.tooltipThemeMode || 'auto';
 

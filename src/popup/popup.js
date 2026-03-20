@@ -518,7 +518,7 @@ function initializeSettings() {
       posHighlightEnabled: false, // 词性高亮默认关闭
       posHighlightLanguage: 'english', // 默认语言为德语
       posHighlightVerbEnabled: true, // 动词高亮默认开启
-      posHighlightVerbBackgroundEnabled: true, // 动词背景高亮默认开启
+      posHighlightVerbBackgroundEnabled: false, // 动词背景高亮默认关闭
       posHighlightVerbBackgroundColor: '#FF6B6B40', // 动词默认背景颜色
       posHighlightVerbBackgroundOpacity: 25, // 动词默认背景透明度
       posHighlightVerbUnderlineEnabled: true, // 动词下划线默认开启
@@ -527,7 +527,7 @@ function initializeSettings() {
       posHighlightVerbUnderlineThickness: 2, // 动词默认下划线粗度
       posHighlightVerbUnderlinePosition: 'bottom', // 动词默认下划线位置
       posHighlightPrepositionEnabled: true, // 介词高亮默认开启
-      posHighlightPrepositionBackgroundEnabled: true, // 介词背景高亮默认开启
+      posHighlightPrepositionBackgroundEnabled: false, // 介词背景高亮默认关闭
       posHighlightPrepositionBackgroundColor: '#f2935440', // 介词默认背景颜色
       posHighlightPrepositionBackgroundOpacity: 25, // 介词默认背景透明度
       posHighlightPrepositionUnderlineEnabled: true, // 介词下划线默认开启
@@ -2331,7 +2331,7 @@ document.addEventListener('DOMContentLoaded', function() {
         wordExplosionMaxWidth: 772,
         wordExplosionPreferUp: true,
         wordExplosionLayout: 'vertical',
-        wordExplosionWordsLayout: 'single-column',
+        wordExplosionWordsLayout: 'triple-column',
         wordExplosionTranslationCount: 'all',
         explosionSentenceTranslationCount: 1,
         wordExplosionHighlightSentence: true,
@@ -2637,7 +2637,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (showExplosionSentence) {
         // 加载设置
         chrome.storage.local.get('showExplosionSentence', function(result) {
-            showExplosionSentence.checked = result.showExplosionSentence !== undefined ? result.showExplosionSentence : true;
+            showExplosionSentence.checked = result.showExplosionSentence !== undefined ? result.showExplosionSentence : false;
         });
 
         // 监听变化
