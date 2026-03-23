@@ -3649,6 +3649,9 @@ max_tokens=4096" style="width: 100%; padding: 8px; min-height: 80px; resize: ver
  <div class="multilingual-note">
     <div class="note-title" data-i18n="noteImportant">EN</div>
     <div class="note-content">
+
+     
+      <br>
       <span class="lang-tag lang-en">EN</span>
       <span>
         <br><a href="https://next.ohmygpt.com/i/G59XB6M4" target="_blank">get api key from Ohmygpt， Ohmygpt is a powerful AI transfer platform,</a>
@@ -3684,6 +3687,50 @@ max_tokens=4096" style="width: 100%; padding: 8px; min-height: 80px; resize: ver
         <br>model:  deepseek-chat     -->
 
       </span>
+      <br>
+      <span class="lang-tag lang-en">key</span>
+
+<br>GPT
+<br>reasoning={"effort": "low"}        # 新端点 none / low / medium / high
+<br>reasoning_effort="low"             # 旧端点 none / low / medium / high
+<br>
+<br>Gemini 2.5
+<br>thinking_budget=1024               # 0=关闭 / 1~24576 / -1=动态
+<br>
+<br>Gemini 3
+<br>thinking_level="minimal"           # minimal / low / medium / high
+<br>
+<br>Claude 4.5
+<br>thinking={"type": "enabled", "budget_tokens": 1024}  # 最小1024
+<br>
+<br>Claude 4.6
+<br>thinking={"type": "adaptive"}
+<br>output_config={"effort": "low"}    # low / medium / high / max
+<br>
+<br>DeepSeek
+<br># 方式一：直接用推理模型
+<br>model="deepseek-reasoner"          # 开启思考
+<br>model="deepseek-chat"              # 关闭思考
+<br>
+<br># 方式二：参数控制（OpenAI SDK 需放 extra_body）
+<br>thinking={"type": "enabled"}       # 开启
+<br>thinking={"type": "disabled"}      # 关闭
+<br>
+<br>Kimi（Moonshot）
+<br># 方式一：直接用思考模型
+<br>model="kimi-k2-thinking"           # 开启思考
+<br>model="kimi-k2"                    # 关闭思考
+<br>
+<br># 方式二：kimi-k2.5 参数控制（extra_body）
+<br>chat_template_kwargs={"thinking": True}   # 开启（默认）
+<br>chat_template_kwargs={"thinking": False}  # 关闭
+<br>
+<br>智谱 GLM-4.7
+<br># 方式一：选模型控制（轮级思考）
+<br># thinking_mode 按轮控制，在 extra_body 中传入
+<br>thinking={"type": "enabled"}       # 开启本轮思考
+<br>thinking={"type": "disabled"}      # 关闭本轮思考
+
     </div>
 </div>
 
