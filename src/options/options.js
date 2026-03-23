@@ -621,6 +621,8 @@ const i18n = {
     'profileName': '配置名称:',
     'enableApiPollingLabel': '启用轮询',
     'profileEnablePollingLabel': '参与轮询',
+    'customRequestBodyLabel': '自定义请求体参数 (每行一个键值对，格式: key="value"):',
+    'customRequestBodyHint': '示例: reasoning={"effort": "none"}  或 max_tokens=4096，每行一个参数',
     'languageDetectionPrompt': '语言检测AI提示词:',
     'tagAnalysisPrompt': '词性标签分析提示词:',
     'wordExplanationPrompt': '单词解释AI提示词:',
@@ -988,6 +990,8 @@ Lingkuma完全开源免费，软件维护不易，如果您感觉该软件对你
     'addProfileBtn': '+ 新增設定',
     'profileName': '設定名稱:',
     'profileEnablePollingLabel': '參與輪詢',
+    'customRequestBodyLabel': '自訂請求體參數 (每行一個鍵值對，格式: key="value"):',
+    'customRequestBodyHint': '範例: reasoning={"effort": "none"}  或 max_tokens=4096，每行一個參數',
     'languageDetectionPrompt': '語言偵測AI提示詞:',
     'tagAnalysisPrompt': '詞性標籤分析提示詞:',
     'wordExplanationPrompt': '單字解釋AI提示詞:',
@@ -1405,6 +1409,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'profileName': 'Config Name:',
     'enableApiPollingLabel': 'Enable Polling',
     'profileEnablePollingLabel': 'Participate in Polling',
+    'customRequestBodyLabel': 'Custom Request Body Parameters (one key-value pair per line, format: key="value"):',
+    'customRequestBodyHint': 'Example: reasoning={"effort": "none"}  or max_tokens=4096, one parameter per line',
     'languageDetectionPrompt': 'Language Detection AI Prompt:',
     'tagAnalysisPrompt': 'Part of Speech Analysis Prompt:',
     'wordExplanationPrompt': 'Word Explanation AI Prompt:',
@@ -1654,6 +1660,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'addProfileBtn': '+ Konfiguration hinzufügen',
     'profileName': 'Konfigurationsname:',
     'profileEnablePollingLabel': 'An der Umfrage teilnehmen',
+    'customRequestBodyLabel': 'Benutzerdefinierte Anfragekörper-Parameter (ein Schlüssel-Wert-Paar pro Zeile, Format: key="value"):',
+    'customRequestBodyHint': 'Beispiel: reasoning={"effort": "none"}  oder max_tokens=4096, ein Parameter pro Zeile',
     'languageDetectionPrompt': 'KI-Eingabeaufforderung zur Spracherkennung:',
     'tagAnalysisPrompt': 'Stichwortanalyse-Eingabeaufforderung:',
     'wordExplanationPrompt': 'KI-Eingabeaufforderung zur Worterklärung:',
@@ -1894,6 +1902,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'addProfileBtn': '+ Ajouter une configuration',
     'profileName': 'Nom de la configuration :',
     'profileEnablePollingLabel': 'Participer au sondage',
+    'customRequestBodyLabel': 'Paramètres du corps de requête personnalisés (une paire clé-valeur par ligne, format : key="value") :',
+    'customRequestBodyHint': 'Exemple : reasoning={"effort": "none"}  ou max_tokens=4096, un paramètre par ligne',
     'languageDetectionPrompt': 'Invite IA de détection de la langue :',
     'tagAnalysisPrompt': 'Invite d\'analyse des parties du discours :',
     'wordExplanationPrompt': 'Invite IA d\'explication des mots :',
@@ -2106,6 +2116,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'addProfileBtn': '+ Agregar configuración',
     'profileName': 'Nombre de la configuración:',
     'profileEnablePollingLabel': 'Participar en el sondeo',
+    'customRequestBodyLabel': 'Parámetros del cuerpo de solicitud personalizados (un par clave-valor por línea, formato: key="value"):',
+    'customRequestBodyHint': 'Ejemplo: reasoning={"effort": "none"}  o max_tokens=4096, un parámetro por línea',
     'languageDetectionPrompt': 'Indicación de IA de detección de idioma:',
     'tagAnalysisPrompt': 'Indicación de análisis de partes del discurso:',
     'wordExplanationPrompt': 'Indicación de IA de explicación de palabras:',
@@ -2153,6 +2165,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'profileName': '구성 이름:',
     'enableApiPollingLabel': '폴링 활성화',
     'profileEnablePollingLabel': '폴링 참여',
+    'customRequestBodyLabel': '사용자 정의 요청 본문 매개변수 (한 줄에 하나의 키-값 쌍, 형식: key="value"):',
+    'customRequestBodyHint': '예: reasoning={"effort": "none"}  또는 max_tokens=4096, 한 줄에 하나의 매개변수',
     'languageDetectionPrompt': '언어 감지 AI 프롬프트:',
     'tagAnalysisPrompt': '품사 분석 프롬프트:',
     'wordExplanationPrompt': '단어 설명 AI 프롬프트:',
@@ -2328,6 +2342,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'profileName': 'Имя конфигурации:',
     'enableApiPollingLabel': 'Включить опрос',
     'profileEnablePollingLabel': 'Участвовать в опросе',
+    'customRequestBodyLabel': 'Пользовательские параметры тела запроса (одна пара ключ-значение на строку, формат: key="value"):',
+    'customRequestBodyHint': 'Пример: reasoning={"effort": "none"}  или max_tokens=4096, один параметр на строку',
     'languageDetectionPrompt': 'Подсказка AI для определения языка:',
     'tagAnalysisPrompt': 'Подсказка для анализа частей речи:',
     'wordExplanationPrompt': 'Подсказка AI для объяснения слов:',
@@ -2591,6 +2607,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'profileName': '設定名:',
     'enableApiPollingLabel': 'ポーリングを有効にする',
     'profileEnablePollingLabel': 'ポーリングに参加',
+    'customRequestBodyLabel': 'カスタムリクエストボディパラメータ (1行に1つのキーと値のペア、形式: key="value"):',
+    'customRequestBodyHint': '例: reasoning={"effort": "none"}  または max_tokens=4096、1行に1つのパラメータ',
     'ohmygptBaseUrlLabel': 'OhMyGpt Base URL:',
     'ohmygptBaseUrlRecommended': '推奨',
     'ohmygptBaseUrlRecommendedDesc': 'US Direct | Enterprise',
@@ -2806,6 +2824,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'profileName': 'Nome configurazione:',
     'enableApiPollingLabel': 'Abilita polling',
     'profileEnablePollingLabel': 'Partecipa al polling',
+    'customRequestBodyLabel': 'Parametri personalizzati del corpo della richiesta (una coppia chiave-valore per riga, formato: key="value"):',
+    'customRequestBodyHint': 'Esempio: reasoning={"effort": "none"}  o max_tokens=4096, un parametro per riga',
     'ohmygptBaseUrlLabel': 'OhMyGpt Base URL:',
     'ohmygptBaseUrlRecommended': 'Raccomandato',
     'ohmygptBaseUrlRecommendedDesc': 'US Direct | Enterprise',
@@ -4559,6 +4579,8 @@ function loadProfileToForm(profileId) {
   document.getElementById('apiModel').value = profile.apiModel || '';
   document.getElementById('apiTemperature').value = profile.apiTemperature !== undefined ? profile.apiTemperature : 1;
   document.getElementById('profileEnablePolling').checked = profile.enablePolling !== false;
+  // 加载自定义请求体参数
+  document.getElementById('customRequestBody').value = profile.customRequestBody || '';
   
   renderCustomApiTabs();
 }
@@ -4580,6 +4602,8 @@ function saveCurrentProfile() {
   profile.apiModel = document.getElementById('apiModel').value;
   profile.apiTemperature = parseFloat(document.getElementById('apiTemperature').value) || 1;
   profile.enablePolling = document.getElementById('profileEnablePolling').checked;
+  // 保存自定义请求体参数
+  profile.customRequestBody = document.getElementById('customRequestBody').value || '';
   
   saveCustomApiProfiles();
   renderCustomApiTabs();
@@ -4600,7 +4624,8 @@ function addNewProfile() {
     apiKey: '',
     apiModel: '',
     apiTemperature: 1,
-    enablePolling: true
+    enablePolling: true,
+    customRequestBody: '' // 初始化自定义请求体参数
   };
   
   customApiProfiles.profiles.push(newProfile);
@@ -4684,7 +4709,8 @@ function initCustomApiProfilesManager() {
           apiKey: aiConfig.apiKey || '',
           apiModel: aiConfig.apiModel || '',
           apiTemperature: aiConfig.apiTemperature !== undefined ? aiConfig.apiTemperature : 1,
-          enablePolling: true
+          enablePolling: true,
+          customRequestBody: '' // 初始化自定义请求体参数
         };
         
         customApiProfiles.profiles.push(defaultProfile);
@@ -4723,7 +4749,7 @@ function initCustomApiProfilesManager() {
     });
   }
   
-  const inputs = ['profileName', 'apiBaseURL', 'apiKey', 'apiModel', 'apiTemperature'];
+  const inputs = ['profileName', 'apiBaseURL', 'apiKey', 'apiModel', 'apiTemperature', 'customRequestBody'];
   inputs.forEach(id => {
     const el = document.getElementById(id);
     if (el) {

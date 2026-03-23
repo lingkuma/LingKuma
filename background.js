@@ -1956,21 +1956,110 @@ function convertMessagesToInput(messages) {
 
 /**
  * 从 Responses API 格式的响应中提取内容
+ * 支持包含 reasoning 的响应格式
  * @param {Object} data - Responses API 响应数据
  * @returns {string} - 提取的文本内容
  */
 function extractResponsesContent(data) {
-  // Responses API 格式: output[0].content[0].text
+  // Responses API 格式: output[].content[].text
+  // 当启用 reasoning 时，output 数组可能包含多个对象：
+  // - type: "reasoning" (推理过程)
+  // - type: "message" (实际消息)
   if (data.output && Array.isArray(data.output) && data.output.length > 0) {
-    const output = data.output[0];
-    if (output.content && Array.isArray(output.content) && output.content.length > 0) {
-      const contentItem = output.content[0];
-      if (contentItem.type === 'output_text' && contentItem.text) {
+    // 优先查找 type: "message" 的 output 对象
+    let messageOutput = data.output.find(o => o.type === 'message');
+    
+    // 如果没有找到 message 类型，使用第一个 output
+    if (!messageOutput) {
+      messageOutput = data.output[0];
+    }
+    
+    if (messageOutput && messageOutput.content && Array.isArray(messageOutput.content) && messageOutput.content.length > 0) {
+      // 查找 type: "output_text" 的 content 项
+      const contentItem = messageOutput.content.find(c => c.type === 'output_text' && c.text);
+      if (contentItem) {
         return contentItem.text;
+      }
+      // 如果没有找到，尝试第一个 content
+      const firstContent = messageOutput.content[0];
+      if (firstContent && firstContent.type === 'output_text' && firstContent.text) {
+        return firstContent.text;
       }
     }
   }
   return '';
+}
+
+/**
+ * 解析自定义请求体参数字符串
+ * 支持格式:
+ * - key="value" (字符串值)
+ * - key=123 (数字值)
+ * - key=true/false (布尔值)
+ * - key={"key": "value"} (JSON对象值)
+ * 每行一个参数，支持逗号分隔
+ * @param {string} customRequestBodyStr - 用户输入的自定义参数字符串
+ * @returns {Object} - 解析后的参数对象
+ */
+function parseCustomRequestBody(customRequestBodyStr) {
+  const result = {};
+  if (!customRequestBodyStr || typeof customRequestBodyStr !== 'string') {
+    return result;
+  }
+  
+  // 按行分割（不再按逗号分割，因为JSON对象内部可能有逗号）
+  const lines = customRequestBodyStr.split(/\n/).map(line => line.trim()).filter(line => line);
+  
+  for (const line of lines) {
+    // 匹配 key="value" 格式
+    const stringMatch = line.match(/^(\w+)="([^"]*)"$/);
+    // 匹配 key=123 格式（数字）
+    const numberMatch = line.match(/^(\w+)=(\d+(?:\.\d+)?)$/);
+    // 匹配 key=true/false 格式（布尔值）
+    const booleanMatch = line.match(/^(\w+)=(true|false)$/);
+    // 匹配 key={...} 格式（JSON对象）
+    const jsonObjectMatch = line.match(/^(\w+)=(\{.*\})$/);
+    // 匹配 key=[...] 格式（JSON数组）
+    const jsonArrayMatch = line.match(/^(\w+)=(\[.*\])$/);
+    
+    if (stringMatch) {
+      result[stringMatch[1]] = stringMatch[2];
+    } else if (numberMatch) {
+      result[numberMatch[1]] = parseFloat(numberMatch[2]);
+    } else if (booleanMatch) {
+      result[booleanMatch[1]] = booleanMatch[2] === 'true';
+    } else if (jsonObjectMatch) {
+      // 尝试解析JSON对象
+      try {
+        result[jsonObjectMatch[1]] = JSON.parse(jsonObjectMatch[2]);
+      } catch (e) {
+        console.warn(`[background.js] 无法解析JSON对象: ${jsonObjectMatch[2]}`, e);
+        result[jsonObjectMatch[1]] = jsonObjectMatch[2];
+      }
+    } else if (jsonArrayMatch) {
+      // 尝试解析JSON数组
+      try {
+        result[jsonArrayMatch[1]] = JSON.parse(jsonArrayMatch[2]);
+      } catch (e) {
+        console.warn(`[background.js] 无法解析JSON数组: ${jsonArrayMatch[2]}`, e);
+        result[jsonArrayMatch[1]] = jsonArrayMatch[2];
+      }
+    } else {
+      // 尝试简单的 key=value 格式
+      const simpleMatch = line.match(/^(\w+)=(.+)$/);
+      if (simpleMatch) {
+        let value = simpleMatch[2].trim();
+        // 移除可能的引号
+        if ((value.startsWith('"') && value.endsWith('"')) || 
+            (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1);
+        }
+        result[simpleMatch[1]] = value;
+      }
+    }
+  }
+  
+  return result;
 }
 
 // ============================
@@ -2016,14 +2105,31 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
               config.apiModel = selectedProfile.apiModel || "";
               config.apiKey = selectedProfile.apiKey || "";
               config.temperature = selectedProfile.apiTemperature !== undefined ? selectedProfile.apiTemperature : temperature;
+              // 获取自定义请求体参数
+              config.customRequestBody = selectedProfile.customRequestBody || '';
               console.log(`[background.js] 轮询使用配置 [${apiPollingIndex}/${pollingProfiles.length}]: ${selectedProfile.name}`);
             } else {
               // 没有启用轮询的profile，使用默认配置
               await applyDefaultConfig(config, responseConfig, temperature, reject);
             }
           } else {
-            // 否则，使用默认的 API 配置项
-            await applyDefaultConfig(config, responseConfig, temperature, reject);
+            // 非轮询模式：优先使用 customApiProfiles 中的激活配置
+            const profiles = result.customApiProfiles?.profiles || [];
+            const activeProfileId = result.customApiProfiles?.activeProfileId;
+            const activeProfile = profiles.find(p => p.id === activeProfileId);
+            
+            if (activeProfile) {
+              config.apiBaseURL = activeProfile.apiBaseURL || "";
+              config.apiModel = activeProfile.apiModel || "";
+              config.apiKey = activeProfile.apiKey || "";
+              config.temperature = activeProfile.apiTemperature !== undefined ? activeProfile.apiTemperature : temperature;
+              // 获取自定义请求体参数
+              config.customRequestBody = activeProfile.customRequestBody || '';
+              console.log(`[background.js] 使用激活配置: ${activeProfile.name}`);
+            } else {
+              // 没有激活配置，使用默认的 API 配置项
+              await applyDefaultConfig(config, responseConfig, temperature, reject);
+            }
           }
         }
         if (!config.apiKey && !config.apiBaseURL) {
@@ -2066,6 +2172,15 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
             temperature: config.temperature !== undefined ? config.temperature : temperature
           };
           console.log("[background.js] 使用 Chat Completions API 格式");
+        }
+
+        // 合并自定义请求体参数
+        if (config.customRequestBody) {
+          const customParams = parseCustomRequestBody(config.customRequestBody);
+          if (Object.keys(customParams).length > 0) {
+            requestBody = { ...requestBody, ...customParams };
+            console.log("[background.js] 合并自定义请求体参数:", customParams);
+          }
         }
 
         const response = await fetch(config.apiBaseURL, {

@@ -3556,6 +3556,16 @@
             <label for="profileEnablePolling" style="font-size: 12px; white-space: nowrap; margin: 0;" data-i18n="profileEnablePollingLabel">参与轮询</label>
           </div>
         </div>
+        <!-- 自定义请求体参数 -->
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="customRequestBody" style="display: block; margin-bottom: 5px;" data-i18n="customRequestBodyLabel">自定义请求体参数 (每行一个键值对，格式: key="value"):</label>
+          <textarea id="customRequestBody" placeholder="reasoning={&quot;effort&quot;: &quot;none&quot;} 
+thinking_level=&quot;minimal&quot;
+thinking_budget=1024
+max_tokens=4096" style="width: 100%; padding: 8px; min-height: 80px; resize: vertical; font-family: monospace;" rows="4"></textarea>
+          <small style="color: var(--text-secondary, #666); font-size: 11px;" data-i18n="customRequestBodyHint">示例: reasoning={"effort": "none"}  或 max_tokens=4096，每行一个参数</small>
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
       </div>
     </div>
 
