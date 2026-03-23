@@ -1914,6 +1914,66 @@ async function applyDefaultConfig(config, responseConfig, temperature, reject) {
 }
 
 // ============================
+// API 类型检测函数
+// ============================
+
+/**
+ * 根据 URL 检测 API 类型
+ * @param {string} url - API 的 URL
+ * @returns {'responses'|'chat'} - 返回 API 类型
+ */
+function detectApiType(url) {
+  if (!url) return 'chat';
+  
+  // Responses API 的 URL 通常包含 /v1/responses 或 /responses
+  if (url.includes('/v1/responses') || url.includes('/responses')) {
+    return 'responses';
+  }
+  
+  // Chat Completions API 的 URL 通常包含 /v1/chat/completions 或 /chat/completions
+  // 其他情况默认使用 chat 格式
+  return 'chat';
+}
+
+/**
+ * 从 messages 数组中提取 input 内容（用于 Responses API）
+ * @param {Array} messages - Chat Completions 格式的 messages 数组
+ * @returns {string|Array} - Responses API 格式的 input
+ */
+function convertMessagesToInput(messages) {
+  if (!messages || messages.length === 0) {
+    return '';
+  }
+  
+  // 如果只有一条用户消息，直接返回字符串
+  if (messages.length === 1 && messages[0].role === 'user') {
+    return messages[0].content;
+  }
+  
+  // 多条消息时，保持数组格式（Responses API 也支持）
+  return messages;
+}
+
+/**
+ * 从 Responses API 格式的响应中提取内容
+ * @param {Object} data - Responses API 响应数据
+ * @returns {string} - 提取的文本内容
+ */
+function extractResponsesContent(data) {
+  // Responses API 格式: output[0].content[0].text
+  if (data.output && Array.isArray(data.output) && data.output.length > 0) {
+    const output = data.output[0];
+    if (output.content && Array.isArray(output.content) && output.content.length > 0) {
+      const contentItem = output.content[0];
+      if (contentItem.type === 'output_text' && contentItem.text) {
+        return contentItem.text;
+      }
+    }
+  }
+  return '';
+}
+
+// ============================
 // AI 请求处理函数（避免 Firefox CSP 限制）
 // ============================
 async function handleAIRequest({ word, sentence, stream = false, messages, model = null, temperature = 1, tabId = null, isSidebarRequest = false }) {
@@ -1973,6 +2033,10 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
 
         console.log("[background.js] 发起 AI 请求到:", config.apiBaseURL);
 
+        // 检测 API 类型
+        const apiType = detectApiType(config.apiBaseURL);
+        console.log("[background.js] 检测到 API 类型:", apiType);
+
         const headers = {
           "Content-Type": "application/json",
           "x-gemini-legacy-support": "true",
@@ -1982,15 +2046,32 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
           headers["Authorization"] = `Bearer ${config.apiKey}`;
         }
 
-        const response = await fetch(config.apiBaseURL, {
-          method: "POST",
-          headers: headers,
-          body: JSON.stringify({
+        // 根据 API 类型构建请求体
+        let requestBody;
+        if (apiType === 'responses') {
+          // Responses API 格式
+          requestBody = {
+            model: model || config.apiModel,
+            input: convertMessagesToInput(messages),
+            stream: stream,
+            temperature: config.temperature !== undefined ? config.temperature : temperature
+          };
+          console.log("[background.js] 使用 Responses API 格式，input:", requestBody.input);
+        } else {
+          // Chat Completions API 格式
+          requestBody = {
             model: model || config.apiModel,
             messages: messages,
             stream: stream,
             temperature: config.temperature !== undefined ? config.temperature : temperature
-          })
+          };
+          console.log("[background.js] 使用 Chat Completions API 格式");
+        }
+
+        const response = await fetch(config.apiBaseURL, {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
@@ -2010,11 +2091,31 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
 
         if (stream) {
           // 处理流式响应
-          console.log("[background.js] 开始处理流式响应");
+          console.log("[background.js] 开始处理流式响应，API类型:", apiType);
 
           const reader = response.body.getReader();
           let buffer = '';
           let isFirstChunk = true;
+
+          /**
+           * 从流式数据中提取内容
+           * @param {Object} data - 流式数据对象
+           * @param {string} apiType - API 类型
+           * @returns {string|null} - 提取的内容，如果没有则返回 null
+           */
+          const extractStreamContent = (data, apiType) => {
+            if (apiType === 'responses') {
+              // Responses API 流式格式
+              // 事件类型: response.output_text.delta
+              if (data.type === 'response.output_text.delta' && data.delta) {
+                return data.delta;
+              }
+              return null;
+            } else {
+              // Chat Completions API 流式格式
+              return data.choices?.[0]?.delta?.content || null;
+            }
+          };
 
           const processStream = async () => {
             try {
@@ -2026,7 +2127,7 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
                   if (buffer.trim()) {
                     try {
                       const data = JSON.parse(buffer);
-                      const content = data.choices?.[0]?.delta?.content;
+                      const content = extractStreamContent(data, apiType);
                       if (content) {
                         if (isSidebarRequest) {
                           // 发送流式数据到侧栏
@@ -2090,7 +2191,7 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
 
                     try {
                       const data = JSON.parse(dataStr);
-                      const content = data.choices?.[0]?.delta?.content;
+                      const content = extractStreamContent(data, apiType);
 
                       if (content) {
                         if (isSidebarRequest) {
@@ -2149,7 +2250,36 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
           processStream();
         } else {
           const data = await response.json();
-          resolve(data);
+          
+          // 根据 API 类型转换响应格式
+          if (apiType === 'responses') {
+            // 将 Responses API 格式转换为 Chat Completions 格式，保持兼容性
+            const content = extractResponsesContent(data);
+            const convertedData = {
+              id: data.id,
+              object: 'chat.completion',
+              created: data.created_at,
+              model: data.model,
+              choices: [{
+                index: 0,
+                message: {
+                  role: 'assistant',
+                  content: content
+                },
+                finish_reason: data.status === 'completed' ? 'stop' : null
+              }],
+              usage: {
+                prompt_tokens: data.usage?.input_tokens || 0,
+                completion_tokens: data.usage?.output_tokens || 0,
+                total_tokens: data.usage?.total_tokens || 0
+              }
+            };
+            console.log("[background.js] Responses API 响应已转换为 Chat Completions 格式");
+            resolve(convertedData);
+          } else {
+            // Chat Completions API 格式，直接返回
+            resolve(data);
+          }
         }
       } catch (error) {
         console.error("[background.js] AI 请求错误:", error);
