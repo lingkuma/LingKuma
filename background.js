@@ -1942,15 +1942,11 @@ function detectApiType(url) {
  */
 function convertMessagesToInput(messages) {
   if (!messages || messages.length === 0) {
-    return '';
+    return [];
   }
   
-  // 如果只有一条用户消息，直接返回字符串
-  if (messages.length === 1 && messages[0].role === 'user') {
-    return messages[0].content;
-  }
-  
-  // 多条消息时，保持数组格式（Responses API 也支持）
+  // Responses API 要求 input 必须是数组格式
+  // 始终返回消息数组，不返回裸字符串
   return messages;
 }
 
