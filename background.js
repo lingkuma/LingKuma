@@ -2103,6 +2103,8 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
               config.temperature = selectedProfile.apiTemperature !== undefined ? selectedProfile.apiTemperature : temperature;
               // 获取自定义请求体参数
               config.customRequestBody = selectedProfile.customRequestBody || '';
+              // 获取 excludeTemperature 开关状态
+              config.excludeTemperature = selectedProfile.excludeTemperature === true;
               console.log(`[background.js] 轮询使用配置 [${apiPollingIndex}/${pollingProfiles.length}]: ${selectedProfile.name}`);
             } else {
               // 没有启用轮询的profile，使用默认配置
@@ -2121,6 +2123,8 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
               config.temperature = activeProfile.apiTemperature !== undefined ? activeProfile.apiTemperature : temperature;
               // 获取自定义请求体参数
               config.customRequestBody = activeProfile.customRequestBody || '';
+              // 获取 excludeTemperature 开关状态
+              config.excludeTemperature = activeProfile.excludeTemperature === true;
               console.log(`[background.js] 使用激活配置: ${activeProfile.name}`);
             } else {
               // 没有激活配置，使用默认的 API 配置项
@@ -2168,6 +2172,12 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
             temperature: config.temperature !== undefined ? config.temperature : temperature
           };
           console.log("[background.js] 使用 Chat Completions API 格式");
+        }
+
+        // 如果配置了 excludeTemperature，则移除 temperature 参数
+        if (config.excludeTemperature) {
+          delete requestBody.temperature;
+          console.log("[background.js] 已排除 temperature 参数");
         }
 
         // 合并自定义请求体参数

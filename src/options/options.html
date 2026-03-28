@@ -3552,6 +3552,13 @@
         </div>
         <div class="setting-item" style="margin-bottom: 10px;">
           <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="excludeTemperature">
+            <label for="excludeTemperature" style="font-size: 12px; white-space: nowrap; margin: 0;" data-i18n="excludeTemperatureLabel">不发送 temperature 参数</label>
+          </div>
+          <small style="color: var(--text-secondary, #666); font-size: 11px;" data-i18n="excludeTemperatureHint">某些 API 不支持 temperature 参数，勾选此项可排除该参数</small>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
             <input type="checkbox" id="profileEnablePolling">
             <label for="profileEnablePolling" style="font-size: 12px; white-space: nowrap; margin: 0;" data-i18n="profileEnablePollingLabel">参与轮询</label>
           </div>

@@ -621,6 +621,8 @@ const i18n = {
     'profileName': '配置名称:',
     'enableApiPollingLabel': '启用轮询',
     'profileEnablePollingLabel': '参与轮询',
+    'excludeTemperatureLabel': '不发送 temperature 参数',
+    'excludeTemperatureHint': '某些 API 不支持 temperature 参数，勾选此项可排除该参数',
     'customRequestBodyLabel': '自定义请求体参数 (每行一个键值对，格式: key="value"):',
     'customRequestBodyHint': '示例: reasoning={"effort": "none"}  或 max_tokens=4096，每行一个参数',
     'languageDetectionPrompt': '语言检测AI提示词:',
@@ -990,6 +992,8 @@ Lingkuma完全开源免费，软件维护不易，如果您感觉该软件对你
     'addProfileBtn': '+ 新增設定',
     'profileName': '設定名稱:',
     'profileEnablePollingLabel': '參與輪詢',
+    'excludeTemperatureLabel': '不傳送 temperature 參數',
+    'excludeTemperatureHint': '某些 API 不支援 temperature 參數，勾選此項可排除該參數',
     'customRequestBodyLabel': '自訂請求體參數 (每行一個鍵值對，格式: key="value"):',
     'customRequestBodyHint': '範例: reasoning={"effort": "none"}  或 max_tokens=4096，每行一個參數',
     'languageDetectionPrompt': '語言偵測AI提示詞:',
@@ -1409,6 +1413,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'profileName': 'Config Name:',
     'enableApiPollingLabel': 'Enable Polling',
     'profileEnablePollingLabel': 'Participate in Polling',
+    'excludeTemperatureLabel': 'Exclude temperature parameter',
+    'excludeTemperatureHint': 'Some APIs do not support the temperature parameter, check this option to exclude it',
     'customRequestBodyLabel': 'Custom Request Body Parameters (one key-value pair per line, format: key="value"):',
     'customRequestBodyHint': 'Example: reasoning={"effort": "none"}  or max_tokens=4096, one parameter per line',
     'languageDetectionPrompt': 'Language Detection AI Prompt:',
@@ -1660,6 +1666,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'addProfileBtn': '+ Konfiguration hinzufügen',
     'profileName': 'Konfigurationsname:',
     'profileEnablePollingLabel': 'An der Umfrage teilnehmen',
+    'excludeTemperatureLabel': 'Temperature-Parameter ausschließen',
+    'excludeTemperatureHint': 'Einige APIs unterstützen den Temperature-Parameter nicht, aktivieren Sie diese Option, um ihn auszuschließen',
     'customRequestBodyLabel': 'Benutzerdefinierte Anfragekörper-Parameter (ein Schlüssel-Wert-Paar pro Zeile, Format: key="value"):',
     'customRequestBodyHint': 'Beispiel: reasoning={"effort": "none"}  oder max_tokens=4096, ein Parameter pro Zeile',
     'languageDetectionPrompt': 'KI-Eingabeaufforderung zur Spracherkennung:',
@@ -1902,6 +1910,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'addProfileBtn': '+ Ajouter une configuration',
     'profileName': 'Nom de la configuration :',
     'profileEnablePollingLabel': 'Participer au sondage',
+    'excludeTemperatureLabel': 'Exclure le paramètre temperature',
+    'excludeTemperatureHint': 'Certaines API ne prennent pas en charge le paramètre temperature, cochez cette option pour l\'exclure',
     'customRequestBodyLabel': 'Paramètres du corps de requête personnalisés (une paire clé-valeur par ligne, format : key="value") :',
     'customRequestBodyHint': 'Exemple : reasoning={"effort": "none"}  ou max_tokens=4096, un paramètre par ligne',
     'languageDetectionPrompt': 'Invite IA de détection de la langue :',
@@ -2116,6 +2126,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'addProfileBtn': '+ Agregar configuración',
     'profileName': 'Nombre de la configuración:',
     'profileEnablePollingLabel': 'Participar en el sondeo',
+    'excludeTemperatureLabel': 'Excluir parámetro temperature',
+    'excludeTemperatureHint': 'Algunas APIs no soportan el parámetro temperature, marca esta opción para excluirlo',
     'customRequestBodyLabel': 'Parámetros del cuerpo de solicitud personalizados (un par clave-valor por línea, formato: key="value"):',
     'customRequestBodyHint': 'Ejemplo: reasoning={"effort": "none"}  o max_tokens=4096, un parámetro por línea',
     'languageDetectionPrompt': 'Indicación de IA de detección de idioma:',
@@ -2165,6 +2177,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'profileName': '구성 이름:',
     'enableApiPollingLabel': '폴링 활성화',
     'profileEnablePollingLabel': '폴링 참여',
+    'excludeTemperatureLabel': 'temperature 매개변수 제외',
+    'excludeTemperatureHint': '일부 API는 temperature 매개변수를 지원하지 않습니다. 이 옵션을 선택하여 제외하세요',
     'customRequestBodyLabel': '사용자 정의 요청 본문 매개변수 (한 줄에 하나의 키-값 쌍, 형식: key="value"):',
     'customRequestBodyHint': '예: reasoning={"effort": "none"}  또는 max_tokens=4096, 한 줄에 하나의 매개변수',
     'languageDetectionPrompt': '언어 감지 AI 프롬프트:',
@@ -2342,6 +2356,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'profileName': 'Имя конфигурации:',
     'enableApiPollingLabel': 'Включить опрос',
     'profileEnablePollingLabel': 'Участвовать в опросе',
+    'excludeTemperatureLabel': 'Исключить параметр temperature',
+    'excludeTemperatureHint': 'Некоторые API не поддерживают параметр temperature, установите этот флажок, чтобы исключить его',
     'customRequestBodyLabel': 'Пользовательские параметры тела запроса (одна пара ключ-значение на строку, формат: key="value"):',
     'customRequestBodyHint': 'Пример: reasoning={"effort": "none"}  или max_tokens=4096, один параметр на строку',
     'languageDetectionPrompt': 'Подсказка AI для определения языка:',
@@ -2607,6 +2623,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'profileName': '設定名:',
     'enableApiPollingLabel': 'ポーリングを有効にする',
     'profileEnablePollingLabel': 'ポーリングに参加',
+    'excludeTemperatureLabel': 'temperatureパラメータを除外',
+    'excludeTemperatureHint': '一部のAPIはtemperatureパラメータに対応していません。このオプションをチェックして除外してください',
     'customRequestBodyLabel': 'カスタムリクエストボディパラメータ (1行に1つのキーと値のペア、形式: key="value"):',
     'customRequestBodyHint': '例: reasoning={"effort": "none"}  または max_tokens=4096、1行に1つのパラメータ',
     'ohmygptBaseUrlLabel': 'OhMyGpt Base URL:',
@@ -2824,6 +2842,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'profileName': 'Nome configurazione:',
     'enableApiPollingLabel': 'Abilita polling',
     'profileEnablePollingLabel': 'Partecipa al polling',
+    'excludeTemperatureLabel': 'Escludi parametro temperature',
+    'excludeTemperatureHint': 'Alcune API non supportano il parametro temperature, seleziona questa opzione per escluderlo',
     'customRequestBodyLabel': 'Parametri personalizzati del corpo della richiesta (una coppia chiave-valore per riga, formato: key="value"):',
     'customRequestBodyHint': 'Esempio: reasoning={"effort": "none"}  o max_tokens=4096, un parametro per riga',
     'ohmygptBaseUrlLabel': 'OhMyGpt Base URL:',
@@ -4579,6 +4599,8 @@ function loadProfileToForm(profileId) {
   document.getElementById('apiModel').value = profile.apiModel || '';
   document.getElementById('apiTemperature').value = profile.apiTemperature !== undefined ? profile.apiTemperature : 1;
   document.getElementById('profileEnablePolling').checked = profile.enablePolling !== false;
+  // 加载 excludeTemperature 开关状态
+  document.getElementById('excludeTemperature').checked = profile.excludeTemperature === true;
   // 加载自定义请求体参数
   document.getElementById('customRequestBody').value = profile.customRequestBody || '';
   
@@ -4602,6 +4624,8 @@ function saveCurrentProfile() {
   profile.apiModel = document.getElementById('apiModel').value;
   profile.apiTemperature = parseFloat(document.getElementById('apiTemperature').value) || 1;
   profile.enablePolling = document.getElementById('profileEnablePolling').checked;
+  // 保存 excludeTemperature 开关状态
+  profile.excludeTemperature = document.getElementById('excludeTemperature').checked;
   // 保存自定义请求体参数
   profile.customRequestBody = document.getElementById('customRequestBody').value || '';
   
@@ -4625,6 +4649,7 @@ function addNewProfile() {
     apiModel: '',
     apiTemperature: 1,
     enablePolling: true,
+    excludeTemperature: false, // 默认不排除 temperature 参数
     customRequestBody: '' // 初始化自定义请求体参数
   };
   
@@ -4710,6 +4735,7 @@ function initCustomApiProfilesManager() {
           apiModel: aiConfig.apiModel || '',
           apiTemperature: aiConfig.apiTemperature !== undefined ? aiConfig.apiTemperature : 1,
           enablePolling: true,
+          excludeTemperature: false, // 默认不排除 temperature 参数
           customRequestBody: '' // 初始化自定义请求体参数
         };
         
@@ -4762,6 +4788,14 @@ function initCustomApiProfilesManager() {
   const profilePollingCheckbox = document.getElementById('profileEnablePolling');
   if (profilePollingCheckbox) {
     profilePollingCheckbox.addEventListener('change', function() {
+      saveCurrentProfile();
+    });
+  }
+  
+  // excludeTemperature 开关事件监听
+  const excludeTemperatureCheckbox = document.getElementById('excludeTemperature');
+  if (excludeTemperatureCheckbox) {
+    excludeTemperatureCheckbox.addEventListener('change', function() {
       saveCurrentProfile();
     });
   }
