@@ -1987,6 +1987,150 @@ function extractResponsesContent(data) {
 }
 
 /**
+ * 检测响应是否为流式格式（SSE）
+ * @param {Response} response - fetch 响应对象
+ * @returns {boolean} - 是否为流式响应
+ */
+function isStreamResponse(response) {
+  const contentType = response.headers.get('content-type') || '';
+  return contentType.includes('text/event-stream') || contentType.includes('application/x-ndjson');
+}
+
+/**
+ * 从流式响应中收集完整内容（用于处理强制流式响应）
+ * 支持 Responses API 和 Chat Completions API 两种格式
+ * @param {Response} response - fetch 响应对象
+ * @param {string} apiType - API 类型 ('responses' 或 'chat')
+ * @returns {Promise<Object>} - 合并后的响应数据
+ */
+async function collectStreamResponse(response, apiType) {
+  const reader = response.body.getReader();
+  let buffer = '';
+  let fullContent = '';
+  let lastData = null; // 保存最后一个完整的响应数据，用于获取 usage 等信息
+
+  /**
+   * 从流式数据中提取内容
+   * @param {Object} data - 流式数据对象
+   * @returns {string|null} - 提取的内容
+   */
+  const extractContent = (data) => {
+    if (apiType === 'responses') {
+      // Responses API 流式格式
+      if (data.type === 'response.output_text.delta' && data.delta) {
+        return data.delta;
+      }
+      return null;
+    } else {
+      // Chat Completions API 流式格式
+      return data.choices?.[0]?.delta?.content || null;
+    }
+  };
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        // 处理最后可能残留的数据
+        if (buffer.trim()) {
+          try {
+            const data = JSON.parse(buffer);
+            const content = extractContent(data);
+            if (content) {
+              fullContent += content;
+            }
+            // 保存最后一个数据用于获取 usage
+            if (apiType === 'responses' && data.type === 'response.completed') {
+              lastData = data.response;
+            }
+          } catch (e) {
+            console.log("[background.js] 解析最后数据块失败:", e);
+          }
+        }
+        break;
+      }
+
+      // 将新的数据块添加到缓冲区
+      const chunk = new TextDecoder().decode(value);
+      buffer += chunk;
+
+      // 处理数据流
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // 保留最后一个不完整的行
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const dataStr = line.slice(6).trim();
+          if (dataStr === '[DONE]') {
+            continue;
+          }
+
+          try {
+            const data = JSON.parse(dataStr);
+            const content = extractContent(data);
+            if (content) {
+              fullContent += content;
+            }
+            // 对于 Responses API，保存 response.completed 中的完整响应
+            if (apiType === 'responses' && data.type === 'response.completed') {
+              lastData = data.response;
+            }
+          } catch (e) {
+            // 忽略解析错误
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error("[background.js] 收集流式响应失败:", error);
+    throw error;
+  }
+
+  // 构建统一格式的响应
+  if (apiType === 'responses') {
+    // 使用 lastData 中的信息构建响应
+    const responseData = lastData || {};
+    return {
+      id: responseData.id,
+      object: 'chat.completion',
+      created: responseData.created_at,
+      model: responseData.model,
+      choices: [{
+        index: 0,
+        message: {
+          role: 'assistant',
+          content: fullContent
+        },
+        finish_reason: responseData.status === 'completed' ? 'stop' : null
+      }],
+      usage: {
+        prompt_tokens: responseData.usage?.input_tokens || 0,
+        completion_tokens: responseData.usage?.output_tokens || 0,
+        total_tokens: responseData.usage?.total_tokens || 0
+      }
+    };
+  } else {
+    // Chat Completions API 格式
+    return {
+      id: lastData?.id || `chatcmpl-${Date.now()}`,
+      object: 'chat.completion',
+      created: lastData?.created || Math.floor(Date.now() / 1000),
+      model: lastData?.model || '',
+      choices: [{
+        index: 0,
+        message: {
+          role: 'assistant',
+          content: fullContent
+        },
+        finish_reason: 'stop'
+      }],
+      usage: lastData?.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+    };
+  }
+}
+
+/**
  * 解析自定义请求体参数字符串
  * 支持格式:
  * - key="value" (字符串值)
@@ -2370,37 +2514,44 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
 
           processStream();
         } else {
-          const data = await response.json();
-          
-          // 根据 API 类型转换响应格式
-          if (apiType === 'responses') {
-            // 将 Responses API 格式转换为 Chat Completions 格式，保持兼容性
-            const content = extractResponsesContent(data);
-            const convertedData = {
-              id: data.id,
-              object: 'chat.completion',
-              created: data.created_at,
-              model: data.model,
-              choices: [{
-                index: 0,
-                message: {
-                  role: 'assistant',
-                  content: content
-                },
-                finish_reason: data.status === 'completed' ? 'stop' : null
-              }],
-              usage: {
-                prompt_tokens: data.usage?.input_tokens || 0,
-                completion_tokens: data.usage?.output_tokens || 0,
-                total_tokens: data.usage?.total_tokens || 0
-              }
-            };
-            console.log("[background.js] Responses API 响应已转换为 Chat Completions 格式");
-            resolve(convertedData);
+          // 检测响应是否为流式格式（处理强制流式响应的情况）
+          let data;
+          if (isStreamResponse(response)) {
+            // API 强制返回流式响应，使用流式收集模式处理
+            console.log("[background.js] 检测到强制流式响应，使用流式收集模式处理");
+            data = await collectStreamResponse(response, apiType);
           } else {
-            // Chat Completions API 格式，直接返回
-            resolve(data);
+            // 正常的非流式响应
+            data = await response.json();
+            
+            // 根据 API 类型转换响应格式
+            if (apiType === 'responses') {
+              // 将 Responses API 格式转换为 Chat Completions 格式，保持兼容性
+              const content = extractResponsesContent(data);
+              data = {
+                id: data.id,
+                object: 'chat.completion',
+                created: data.created_at,
+                model: data.model,
+                choices: [{
+                  index: 0,
+                  message: {
+                    role: 'assistant',
+                    content: content
+                  },
+                  finish_reason: data.status === 'completed' ? 'stop' : null
+                }],
+                usage: {
+                  prompt_tokens: data.usage?.input_tokens || 0,
+                  completion_tokens: data.usage?.output_tokens || 0,
+                  total_tokens: data.usage?.total_tokens || 0
+                }
+              };
+              console.log("[background.js] Responses API 响应已转换为 Chat Completions 格式");
+            }
           }
+          
+          resolve(data);
         }
       } catch (error) {
         console.error("[background.js] AI 请求错误:", error);
