@@ -22,7 +22,7 @@ const protect = async (req, res, next) => {
 
       next();
     } catch (error) {
-      // console.error('Token 验证失败:', error);
+      console.error('Token 验证失败:', error);
       return res.status(401).json({ message: 'Token 无效或已过期' });
     }
   }
@@ -60,7 +60,7 @@ const checkSubscription = async (req, res, next) => {
     // 订阅有效，继续
     next();
   } catch (error) {
-    // console.error('订阅验证失败:', error);
+    console.error('订阅验证失败:', error);
     return res.status(500).json({ message: '服务器错误' });
   }
 };

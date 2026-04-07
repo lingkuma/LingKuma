@@ -20,11 +20,11 @@ async function syncUserToServer(serverUrl, userData) {
       // console.log(`[ServerSync] User synced to ${serverUrl}:`, result.data);
       return { success: true, data: result.data };
     } else {
-      // console.error(`[ServerSync] Failed to sync user to ${serverUrl}:`, result.message);
+      console.error(`[ServerSync] Failed to sync user to ${serverUrl}:`, result.message);
       return { success: false, message: result.message };
     }
   } catch (error) {
-    // console.error(`[ServerSync] Error syncing user to ${serverUrl}:`, error);
+    console.error(`[ServerSync] Error syncing user to ${serverUrl}:`, error);
     return { success: false, message: error.message };
   }
 }
@@ -49,11 +49,11 @@ async function syncUserStatsToServer(serverUrl, username, stats) {
       // console.log(`[ServerSync] User stats synced to ${serverUrl}:`, result.data);
       return { success: true, data: result.data };
     } else {
-      // console.error(`[ServerSync] Failed to sync user stats to ${serverUrl}:`, result.message);
+      console.error(`[ServerSync] Failed to sync user stats to ${serverUrl}:`, result.message);
       return { success: false, message: result.message };
     }
   } catch (error) {
-    // console.error(`[ServerSync] Error syncing user stats to ${serverUrl}:`, error);
+    console.error(`[ServerSync] Error syncing user stats to ${serverUrl}:`, error);
     return { success: false, message: error.message };
   }
 }
@@ -76,7 +76,7 @@ async function getUserFromServer(serverUrl, username) {
       return { success: false, message: result.message };
     }
   } catch (error) {
-    // console.error(`[ServerSync] Error getting user from ${serverUrl}:`, error);
+    console.error(`[ServerSync] Error getting user from ${serverUrl}:`, error);
     return { success: false, message: error.message };
   }
 }
@@ -101,11 +101,11 @@ async function syncUserConfigToServer(serverUrl, username, userConfig) {
       // console.log(`[ServerSync] User config synced to ${serverUrl}:`, result.data);
       return { success: true, data: result.data };
     } else {
-      // console.error(`[ServerSync] Failed to sync user config to ${serverUrl}:`, result.message);
+      console.error(`[ServerSync] Failed to sync user config to ${serverUrl}:`, result.message);
       return { success: false, message: result.message };
     }
   } catch (error) {
-    // console.error(`[ServerSync] Error syncing user config to ${serverUrl}:`, error);
+    console.error(`[ServerSync] Error syncing user config to ${serverUrl}:`, error);
     return { success: false, message: error.message };
   }
 }

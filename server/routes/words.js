@@ -92,7 +92,7 @@ router.get('/', async (req, res) => {
       });
     }
   } catch (error) {
-    // console.error('Get words error:', error);
+    console.error('Get words error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -256,7 +256,7 @@ router.get('/trend', async (req, res) => {
       data: trendData
     });
   } catch (error) {
-    // console.error('Get word trend error:', error);
+    console.error('Get word trend error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -339,7 +339,7 @@ router.get('/by-status', async (req, res) => {
       data: results
     });
   } catch (error) {
-    // console.error('Get words by status error:', error);
+    console.error('Get words by status error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -370,7 +370,7 @@ router.get('/:word', async (req, res) => {
       data: word
     });
   } catch (error) {
-    // console.error('Get word error:', error);
+    console.error('Get word error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -444,7 +444,7 @@ router.post('/', async (req, res) => {
           wordCount: req.user.wordCount
         });
         if (!syncResult.success) {
-          // console.error('[POST /api/words] Failed to sync user stats:', syncResult.message);
+          console.error('[POST /api/words] Failed to sync user stats:', syncResult.message);
         }
       }
     }
@@ -454,7 +454,7 @@ router.post('/', async (req, res) => {
       data: word
     });
   } catch (error) {
-    // console.error('Create/Update word error:', error);
+    console.error('Create/Update word error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -495,7 +495,7 @@ router.put('/:word', async (req, res) => {
       data: word
     });
   } catch (error) {
-    // console.error('Update word error:', error);
+    console.error('Update word error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -529,7 +529,7 @@ router.delete('/:word', async (req, res) => {
         wordCount: req.user.wordCount
       });
       if (!syncResult.success) {
-        // console.error('[DELETE /api/words] Failed to sync user stats:', syncResult.message);
+        console.error('[DELETE /api/words] Failed to sync user stats:', syncResult.message);
       }
     }
 
@@ -538,7 +538,7 @@ router.delete('/:word', async (req, res) => {
       message: 'Word deleted successfully'
     });
   } catch (error) {
-    // console.error('Delete word error:', error);
+    console.error('Delete word error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -576,7 +576,7 @@ router.post('/batch-get', async (req, res) => {
       data: foundWords
     });
   } catch (error) {
-    // console.error('Batch get words error:', error);
+    console.error('Batch get words error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -597,7 +597,7 @@ router.post('/batch-sync', async (req, res) => {
     const { words, mode = 'merge', clearFirst = false } = req.body;
 
     if (!Array.isArray(words)) {
-      // console.error('[Batch Sync] Words is not an array:', typeof words);
+      console.error('[Batch Sync] Words is not an array:', typeof words);
       return res.status(400).json({
         success: false,
         message: 'Words must be an array'
@@ -773,7 +773,7 @@ router.post('/batch-sync', async (req, res) => {
       }
     });
   } catch (error) {
-    // console.error('Batch sync error:', error);
+    console.error('Batch sync error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during batch sync',

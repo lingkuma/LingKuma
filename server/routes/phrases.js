@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
       data: phrases
     });
   } catch (error) {
-    // console.error('Get phrases error:', error);
+    console.error('Get phrases error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -58,7 +58,7 @@ router.get('/:word', async (req, res) => {
       data: phrase
     });
   } catch (error) {
-    // console.error('Get phrase error:', error);
+    console.error('Get phrase error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -103,7 +103,7 @@ router.post('/', async (req, res) => {
       data: phrase
     });
   } catch (error) {
-    // console.error('Create/Update phrase error:', error);
+    console.error('Create/Update phrase error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -224,7 +224,7 @@ router.post('/batch-sync', async (req, res) => {
       }
     });
   } catch (error) {
-    // console.error('Batch sync phrases error:', error);
+    console.error('Batch sync phrases error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during batch sync',

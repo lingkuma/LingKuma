@@ -75,7 +75,7 @@ router.post('/sync-user', async (req, res) => {
       });
     }
   } catch (error) {
-    // console.error('Sync user error:', error);
+    console.error('Sync user error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during user sync',
@@ -129,7 +129,7 @@ router.post('/sync-user-stats', async (req, res) => {
       }
     });
   } catch (error) {
-    // console.error('Sync user stats error:', error);
+    console.error('Sync user stats error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during stats sync',
@@ -209,7 +209,7 @@ router.post('/sync-user-config', async (req, res) => {
       }
     });
   } catch (error) {
-    // console.error('Sync user config error:', error);
+    console.error('Sync user config error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during config sync',
@@ -236,7 +236,7 @@ router.get('/user/:username', async (req, res) => {
       data: user
     });
   } catch (error) {
-    // console.error('Get user error:', error);
+    console.error('Get user error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',

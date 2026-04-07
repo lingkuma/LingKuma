@@ -108,7 +108,7 @@ app.use((req, res) => {
 
 // 错误处理
 app.use((err, req, res, next) => {
-  // console.error('Server error:', err);
+  console.error('Server error:', err);
   res.status(500).json({
     success: false,
     message: 'Internal server error',
@@ -119,9 +119,8 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, '0.0.0.0', () => {
-  // console.log(`\n🚀 Lingkuma Cloud Server is running on port ${PORT}`);
-  // console.log(`📍 Health check: http://localhost:${PORT}/health`);
-  // console.log(`📍 API base URL: http://localhost:${PORT}/api`);
-  // console.log(`📍 LAN access: http://192.168.0.171:${PORT}`);
+  console.log(`\n🚀 Lingkuma Cloud Server is running on port ${PORT}`);
+  console.log(`📍 Health check: http://localhost:${PORT}/health`);
+  console.log(`📍 API base URL: http://localhost:${PORT}/api`);
 });
 

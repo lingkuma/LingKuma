@@ -36,11 +36,11 @@ const verifyServerRequest = (req, res, next) => {
     .digest('hex');
 
   if (signature !== expectedSignature) {
-    // console.error('Server signature mismatch:', {
-    //   expected: expectedSignature,
-    //   received: signature,
-    //   serverId
-    // });
+    console.error('Server signature mismatch:', {
+      expected: expectedSignature,
+      received: signature,
+      serverId
+    });
     return res.status(401).json({
       success: false,
       message: 'Invalid server signature'

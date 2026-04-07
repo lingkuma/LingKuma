@@ -19,14 +19,10 @@ const connectDB = async () => {
 
     const conn = await mongoose.connect(mongoURI, options);
 
-    // console.log(`MongoDB Connected: ${conn.connection.host}`);
-    // console.log(`Database: ${conn.connection.name}`);
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    console.log(`Database: ${conn.connection.name}`);
   } catch (error) {
-    // console.error(`MongoDB Connection Error: ${error.message}`);
-    // if (error.name === 'MongoServerError') {
-    //   console.error(`Error Code: ${error.code}`);
-    //   console.error(`Error Details: ${JSON.stringify(error.errInfo || {})}`);
-    // }
+    console.error(`MongoDB Connection Error: ${error.message}`);
     process.exit(1);
   }
 };

@@ -39,7 +39,7 @@ router.get('/register-mode', async (req, res) => {
       registerMode
     });
   } catch (error) {
-    // console.error('Get register mode error:', error);
+    console.error('Get register mode error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -142,7 +142,7 @@ router.post('/register', async (req, res) => {
         const response = await fetch(afdianApiUrl);
         afdianResponse = await response.json();
       } catch (fetchError) {
-        // console.error('Afdian API fetch error:', fetchError);
+        console.error('Afdian API fetch error:', fetchError);
         return res.status(500).json({
           success: false,
           message: 'Failed to connect to Afdian API',
@@ -210,7 +210,7 @@ router.post('/register', async (req, res) => {
 
       const syncResult = await syncUserToServer(user.dataServer, userData);
       if (!syncResult.success) {
-        // console.error('[Register] Failed to sync user to data server:', syncResult.message);
+        console.error('[Register] Failed to sync user to data server:', syncResult.message);
       }
     }
 
@@ -230,7 +230,7 @@ router.post('/register', async (req, res) => {
       }
     });
   } catch (error) {
-    // console.error('Register error:', error);
+    console.error('Register error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during registration',
@@ -298,7 +298,7 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (error) {
-    // console.error('Login error:', error);
+    console.error('Login error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during login',
@@ -347,7 +347,7 @@ router.get('/me', protect, async (req, res) => {
 
       const syncResult = await syncUserConfigToServer(mainServerUrl, req.user.username, userConfig);
       if (!syncResult.success) {
-        // console.error('[GET /api/auth/me] Failed to sync user config to main server:', syncResult.message);
+        console.error('[GET /api/auth/me] Failed to sync user config to main server:', syncResult.message);
       }
     }
 
@@ -369,7 +369,7 @@ router.get('/me', protect, async (req, res) => {
       }
     });
   } catch (error) {
-    // console.error('Get user info error:', error);
+    console.error('Get user info error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -402,7 +402,7 @@ router.post('/verify-subscription', protect, async (req, res) => {
       }
     });
   } catch (error) {
-    // console.error('Verify subscription error:', error);
+    console.error('Verify subscription error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during subscription verification',
@@ -474,7 +474,7 @@ router.post('/register-from-auth', async (req, res) => {
       }
     });
   } catch (error) {
-    // console.error('Register from auth server error:', error);
+    console.error('Register from auth server error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during registration',
@@ -501,7 +501,7 @@ router.post('/extend-trial', protect, async (req, res) => {
       }
     });
   } catch (error) {
-    // console.error('Extend trial error:', error);
+    console.error('Extend trial error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -545,7 +545,7 @@ router.post('/bind-afdian', protect, async (req, res) => {
       }
     });
   } catch (error) {
-    // console.error('Bind Afdian error:', error);
+    console.error('Bind Afdian error:', error);
     res.status(400).json({
       success: false,
       message: error.message || 'Failed to bind Afdian account',
@@ -599,7 +599,7 @@ router.post('/verify-afdian', protect, async (req, res) => {
       const response = await fetch(afdianApiUrl);
       afdianResponse = await response.json();
     } catch (fetchError) {
-      // console.error('Afdian API fetch error:', fetchError);
+      console.error('Afdian API fetch error:', fetchError);
       return res.status(500).json({
         success: false,
         message: 'Failed to connect to Afdian API',
@@ -629,7 +629,7 @@ router.post('/verify-afdian', protect, async (req, res) => {
       }
     });
   } catch (error) {
-    // console.error('Verify Afdian error:', error);
+    console.error('Verify Afdian error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error during Afdian verification',
@@ -658,7 +658,7 @@ router.get('/afdian/authorize', (req, res) => {
       }
     });
   } catch (error) {
-    // console.error('Generate Afdian auth URL error:', error);
+    console.error('Generate Afdian auth URL error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to generate authorization URL',
@@ -700,7 +700,7 @@ router.get('/afdian/callback', async (req, res) => {
     const tokenData = await tokenResponse.json();
 
     if (tokenData.ec !== 200 || !tokenData.data) {
-      // console.error('Afdian OAuth error:', tokenData);
+      console.error('Afdian OAuth error:', tokenData);
       return res.status(400).json({
         success: false,
         message: 'Failed to get user info',
@@ -809,7 +809,7 @@ router.get('/afdian/callback', async (req, res) => {
           subscriptionExpireAt = new Date(Date.now() + 32 * 24 * 60 * 60 * 1000);
           subscriptionStatus = 'active';
         } catch (error) {
-          // console.error('Afdian subscription check error:', error);
+          console.error('Afdian subscription check error:', error);
           return res.status(500).json({
             success: false,
             message: 'Failed to verify Afdian subscription',
@@ -833,7 +833,7 @@ router.get('/afdian/callback', async (req, res) => {
               selectedServer = null;
             }
           } catch (error) {
-            // console.error('Error finding server:', error);
+            console.error('Error finding server:', error);
           }
         }
         
@@ -877,7 +877,7 @@ router.get('/afdian/callback', async (req, res) => {
   
           const syncResult = await syncUserToServer(finalUser.dataServer, userData);
           if (!syncResult.success) {
-            // console.error('[Afdian OAuth] Failed to sync user to data server:', syncResult.message);
+            console.error('[Afdian OAuth] Failed to sync user to data server:', syncResult.message);
           }
         }
       }
@@ -903,7 +903,7 @@ router.get('/afdian/callback', async (req, res) => {
       return res.redirect(`/dashboard?token=${token}&username=${encodeURIComponent(finalUser.username)}&isNewUser=${isNewUser}&dataServer=${encodeURIComponent(finalUser.dataServer || '')}&afdianUserId=${afdianUserId}&afdianPlanName=${encodeURIComponent(finalUser.afdianPlanName || '')}&wordLimit=${finalUser.wordLimit || 20000}&wordCount=${finalUser.wordCount || 0}&subscriptionStatus=${encodeURIComponent(finalUser.subscriptionStatus || '')}&subscriptionExpireAt=${finalUser.subscriptionExpireAt ? finalUser.subscriptionExpireAt.getTime() : ''}`);
     }
   } catch (error) {
-    // console.error('Afdian OAuth callback error:', error);
+    console.error('Afdian OAuth callback error:', error);
 
     let extensionCallbackUrl = null;
     if (state) {

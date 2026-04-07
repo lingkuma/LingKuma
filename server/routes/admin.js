@@ -439,7 +439,7 @@ router.put('/users/:id', verifyAdminSession, async (req, res) => {
       
       const syncResult = await syncUserToServer(user.dataServer, userData);
       if (!syncResult.success) {
-        // console.error('[Admin Update User] Failed to sync user to data server:', syncResult.message);
+        console.error('[Admin Update User] Failed to sync user to data server:', syncResult.message);
       }
     }
     
