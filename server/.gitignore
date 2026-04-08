@@ -6,3 +6,4 @@ build-multiarch.sh
 build-multiarch.ps1
 deploy-*.sh
 test
+*.ps1
