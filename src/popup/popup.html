@@ -5,16 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Settings</title>
   <style>
-    :root {
-      /* 优化的默认中性主题颜色 */
-      --ios-bg: #0000007a;
-      --ios-card: #0503035b;
-      --ios-border: #0101026b;
-      --ios-text: #212529;
-      --ios-secondary: #6c757d;
-      --ios-blue: #007aff;
+    @font-face {
+      font-family: "GoudyBookletter1911";
+      src: url("../fonts/goudy_bookletter_1911-webfont.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
 
-      /* 添加过渡动画 - 关键改进 */
+    :root {
+      --font-display: Georgia, "Times New Roman", serif;
+      --font-ui: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --ios-bg: #f5f4ed;
+      --ios-bg-elevated: #faf9f5;
+      --ios-bg-muted: #f0eee6;
+      --ios-card: rgba(250, 249, 245, 0.92);
+      --ios-card-strong: #ffffff;
+      --ios-border: #e8e6dc;
+      --ios-border-strong: #d1cfc5;
+      --ios-text: #141413;
+      --ios-secondary: #5e5d59;
+      --ios-tertiary: #87867f;
+      --ios-blue: #3898ec;
+      --ios-accent: #c96442;
+      --ios-accent-soft: #d97757;
+      --ios-success: #6f8b6d;
+      --ios-ring: 0 0 0 1px rgba(209, 207, 197, 0.92);
+      --ios-shadow: 0 4px 24px rgba(20, 20, 19, 0.06);
+      color-scheme: light;
+
       transition:
         --ios-bg 0.3s cubic-bezier(0.4, 0, 0.2, 1),
         --ios-card 0.3s cubic-bezier(0.4, 0, 0.2, 1),
@@ -24,14 +43,24 @@
         --ios-blue 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* 添加暗色主题变量 */
     [data-theme="dark"] {
-      --ios-bg: #000000;
-      --ios-card: #1c1c1ea8;
-      --ios-border: #38383a;
-      --ios-text: #ffffff;
-      --ios-secondary: #98989d;
-      --ios-blue: #0a84ff;
+      --ios-bg: #141413;
+      --ios-bg-elevated: #1b1b19;
+      --ios-bg-muted: #22221f;
+      --ios-card: rgba(48, 48, 46, 0.9);
+      --ios-card-strong: #30302e;
+      --ios-border: #30302e;
+      --ios-border-strong: #4d4c48;
+      --ios-text: #faf9f5;
+      --ios-secondary: #b0aea5;
+      --ios-tertiary: #87867f;
+      --ios-blue: #78b7f2;
+      --ios-accent: #d97757;
+      --ios-accent-soft: #e39b82;
+      --ios-success: #93ad88;
+      --ios-ring: 0 0 0 1px rgba(77, 76, 72, 0.95);
+      --ios-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+      color-scheme: dark;
     }
 
     textarea {
@@ -620,9 +649,11 @@
     }
 
     .mobile-device .language-selector {
-      padding: 4px 8px;
+      width: 32px;
+      min-width: 32px;
+      height: 32px;
+      padding: 0;
       font-size: 11px;
-      padding-right: 20px;
     }
 
     .mobile-device .tooltip-text {
@@ -884,26 +915,304 @@
         color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
         transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
+
+    .popup-hero {
+      padding: 18px 18px 16px;
+      margin-bottom: 14px;
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at top right, rgba(201, 100, 66, 0.16), transparent 32%),
+        linear-gradient(180deg, rgba(250, 249, 245, 0.96), rgba(240, 238, 230, 0.9));
+      border: 1px solid var(--ios-border);
+      box-shadow: var(--ios-ring), var(--ios-shadow);
+    }
+
+    .popup-kicker,
+    .popup-toolbar-label,
+    .theme-button-label {
+      font-size: 11px;
+      line-height: 1.4;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ios-tertiary);
+    }
+
+    .popup-hero-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .popup-hero-copy {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .popup-hero .update-notification {
+      margin: 14px 0 0;
+    }
+
+    .popup-title {
+      margin: 8px 0 0;
+      font-family: "GoudyBookletter1911", var(--font-display);
+      font-size: 30px;
+      line-height: 1.15;
+      font-weight: 400;
+      letter-spacing: 0;
+      color: var(--ios-text);
+    }
+
+    .popup-subtitle,
+    .popup-toolbar-hint,
+    .theme-button-help {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--ios-secondary);
+    }
+
+    .popup-hero-badge {
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(201, 100, 66, 0.12);
+      border: 1px solid rgba(201, 100, 66, 0.22);
+      color: var(--ios-accent);
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .popup-toolbar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      border-radius: 18px;
+      background: var(--ios-bg-elevated);
+      border: 1px solid var(--ios-border);
+      box-shadow: var(--ios-ring);
+      text-align: center;
+    }
+
+
+    body {
+      font-family: var(--font-ui);
+      padding: 14px;
+      background:
+        radial-gradient(circle at top left, rgba(201, 100, 66, 0.08), transparent 22%),
+        linear-gradient(180deg, var(--ios-bg), var(--ios-bg-muted));
+      color: var(--ios-text);
+    }
+
+    body::before {
+      background:
+        radial-gradient(rgba(94, 93, 89, 0.05) 0.7px, transparent 0.7px),
+        linear-gradient(180deg, rgba(250, 249, 245, 0.2), rgba(20, 20, 19, 0.02));
+      background-size: 12px 12px, 100% 100%;
+      opacity: 0.75;
+    }
+
+    .settings-group {
+      border-radius: 20px;
+      margin-bottom: 16px;
+      padding: 4px 0;
+      background: var(--ios-card);
+      border: 1px solid var(--ios-border);
+      box-shadow: var(--ios-ring), var(--ios-shadow);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .group-title {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      color: var(--ios-tertiary);
+    }
+
+    .toggle,
+    .slider-setting,
+    .color-setting,
+    .button-setting,
+    .input-group,
+    .mode-selector {
+      border-bottom: 1px solid var(--ios-border);
+    }
+
+    .toggle:hover,
+    .slider-setting:hover,
+    .color-setting:hover,
+    .button-setting:hover,
+    .input-group:hover,
+    .mode-selector:hover {
+      background: rgba(201, 100, 66, 0.04);
+    }
+
+    .settings-section {
+      background: rgba(201, 100, 66, 0.05);
+      margin: 8px 12px 10px;
+      border: 1px solid rgba(201, 100, 66, 0.12);
+      border-left: none;
+      border-radius: 16px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+    }
+
+    .theme-buttons {
+      gap: 10px;
+      margin-right: 0;
+      align-items: center;
+    }
+
+    .theme-button,
+    .settings-toggle-button,
+    .language-selector,
+    .ios-button,
+    .key-input,
+    .input-number-wrapper input[type="number"],
+    textarea {
+      border-radius: 14px;
+      border: 1px solid var(--ios-border);
+      box-shadow: var(--ios-ring);
+    }
+
+    .theme-button,
+    .settings-toggle-button {
+      width: 36px;
+      height: 36px;
+      color: var(--ios-secondary);
+      background: var(--ios-bg-elevated);
+    }
+
+    .theme-button:hover,
+    .settings-toggle-button:hover {
+      background: rgba(201, 100, 66, 0.1);
+      border-color: rgba(201, 100, 66, 0.24);
+      color: var(--ios-accent);
+    }
+
+    .theme-button.active {
+      background: var(--ios-accent);
+      border-color: var(--ios-accent);
+      box-shadow: 0 0 0 1px rgba(201, 100, 66, 0.2), 0 10px 20px rgba(201, 100, 66, 0.18);
+    }
+
+    .language-selector,
+    .key-input,
+    .input-number-wrapper input[type="number"],
+    textarea {
+      background-color: var(--ios-bg-elevated);
+    }
+
+    .language-selector {
+      width: 36px;
+      min-width: 36px;
+      height: 36px;
+      padding: 0;
+      border: 1px solid var(--ios-border);
+      border-radius: 12px;
+      background-color: var(--ios-bg-elevated);
+      color: var(--ios-text);
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      text-align-last: center;
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: none;
+      cursor: pointer;
+    }
+
+    .dropdown-menu {
+      background: var(--ios-card-strong);
+      border-radius: 18px;
+      box-shadow: var(--ios-ring), 0 18px 36px rgba(20, 20, 19, 0.14);
+      overflow: hidden;
+    }
+
+    .dropdown-item:hover {
+      background: rgba(201, 100, 66, 0.08);
+      color: var(--ios-accent);
+    }
+
+    .update-notification {
+      padding: 14px 16px 14px 16px;
+      margin-bottom: 14px;
+      background: rgba(201, 100, 66, 0.08);
+      border: 1px solid rgba(201, 100, 66, 0.18);
+      border-radius: 18px;
+      box-shadow: var(--ios-ring);
+    }
+
+    .update-link {
+      color: var(--ios-accent);
+    }
+
+    [data-theme="dark"] .popup-hero {
+      background:
+        radial-gradient(circle at top right, rgba(217, 119, 87, 0.16), transparent 34%),
+        linear-gradient(180deg, rgba(48, 48, 46, 0.96), rgba(27, 27, 25, 0.96));
+    }
+
+    [data-theme="dark"] .popup-toolbar,
+    [data-theme="dark"] .theme-button,
+    [data-theme="dark"] .settings-toggle-button,
+    [data-theme="dark"] .language-selector,
+    [data-theme="dark"] .key-input,
+    [data-theme="dark"] .input-number-wrapper input[type="number"],
+    [data-theme="dark"] textarea,
+    [data-theme="dark"] .dropdown-menu {
+      background-color: var(--ios-card-strong);
+    }
+
+    [data-theme="dark"] .settings-section,
+    [data-theme="dark"] .update-notification {
+      background: rgba(217, 119, 87, 0.09);
+      border-color: rgba(217, 119, 87, 0.18);
+    }
+
+    .mobile-device .popup-hero,
+    .mobile-device .popup-toolbar {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+
+    .mobile-device .popup-title {
+      font-size: 24px;
+    }
+
   </style>
 </head>
 <body>
-  <!-- 版本更新提示栏 -->
-  <div id="update-notification" class="update-notification" style="display: none;">
-    <div class="update-notification-content">
-      <span class="update-icon">🎉</span>
-      <span class="update-text" id="update-text">版本已更新</span>
-      <a href="#" id="update-link" class="update-link">what's new?</a>
+  <section class="popup-hero">
+    <div class="popup-hero-row">
+      <div class="popup-hero-copy">
+        <div class="popup-kicker">LingKuma Popup</div>
+        <h1 class="popup-title">LingKuma helps you reading easy and fast.</h1>
+      </div>
     </div>
-    <span class="update-message" id="update-message">
-      1.verb-hightlight
-      <br>2.left/right key switch sentence hightlight
-      <br>3.more colum in explode bomb window
-     </span>
-    <button id="update-close-btn" class="update-close-btn" title="关闭">×</button>
-  </div>
-  <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 16px;">
+
+    <!-- 版本更新提示栏 -->
+    <div id="update-notification" class="update-notification" style="display: none;">
+      <div class="update-notification-content">
+        <span class="update-icon">🎉</span>
+        <span class="update-text" id="update-text">版本已更新</span>
+        <a href="#" id="update-link" class="update-link">what's new?</a>
+      </div>
+      <span class="update-message" id="update-message">
+        1.verb-hightlight
+        <br>2.left/right key switch sentence hightlight
+        <br>3.more colum in explode bomb window
+       </span>
+      <button id="update-close-btn" class="update-close-btn" title="关闭">×</button>
+    </div>
+  </section>
+
+  <div class="popup-toolbar">
     <div class="theme-buttons">
-      <select id="ui-language" class="language-selector">
+      <select id="ui-language" class="language-selector" aria-label="界面语言">
         <option value="zh">中</option>
         <option value="zh_TW">繁</option>
         <option value="en">En</option>
@@ -913,7 +1222,7 @@
         <option value="ja">日</option>
         <option value="ko">ko</option>
         <option value="ru">ru</option>
-        <option value="it">Italiano</option>
+        <option value="it">it</option>
       </select>
       <div class="dropdown-container">
         <button class="theme-button dropdown-trigger" id="dropdownTrigger" title="快速入口">
@@ -925,31 +1234,21 @@
           </svg>
         </button>
         <div class="dropdown-menu" id="dropdownMenu">
-          <a href="#" class="dropdown-item" data-action="openEpubTtsu">
-            Epub Ttsu 
-          </a>
-
-     
-          <a href="#" class="dropdown-item" data-action="openPDFViewer">
-            PDF Mozilla 
-          </a>
-
+          <a href="#" class="dropdown-item" data-action="openEpubTtsu">Epub Ttsu</a>
+          <a href="#" class="dropdown-item" data-action="openPDFViewer">PDF Mozilla</a>
           <a href="#" class="dropdown-item" data-action="openReadest">
             <img src="./img/favicon.ico" alt="Readest" width="16" height="16" style="margin-right: 8px; vertical-align: middle;">
             Readest
           </a>
-
           <a href="#" class="dropdown-item" data-action="openSyncLingua">SyncLingua</a>
-
           <a href="#" class="dropdown-item" data-action="openCaptions">LiveCaptions - Luna</a>
           <a href="#" class="dropdown-item" data-action="openTing">TingCaptions - Daily</a>
           <a href="#" class="dropdown-item" data-action="openLingkuma">Help</a>
           <a href="#" class="dropdown-item" data-action="openLingkumaBlog">blog</a>
           <a href="#" class="dropdown-item" data-action="openOptions">Options</a>
-
         </div>
       </div>
-      <button class="theme-button" id="lightTheme" title="日间模式">
+      <button class="theme-button" id="lightTheme" title="日间模式" aria-label="界面日间模式">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="5"/>
           <line x1="12" y1="1" x2="12" y2="3"/>
@@ -962,7 +1261,7 @@
           <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
         </svg>
       </button>
-      <button class="theme-button" id="darkTheme" title="夜间模式">
+      <button class="theme-button" id="darkTheme" title="黑暗模式" aria-label="界面黑暗模式">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
         </svg>
@@ -1314,7 +1613,7 @@
         </div>
       </div>
 
-    
+
     </div>
 
     <!-- 高亮动词功能 -->
@@ -1977,7 +2276,7 @@
           <span id="devicePixelRatioValue" class="value-display">1.0</span>
           <span class="tooltip-text">Scale = Custom DPR / html DPR</span>
         </div>
-      
+
       <input type="range" id="devicePixelRatio" min="0.5" max="4.0" step="0.1" value="1.0">
     </div>
   </div>

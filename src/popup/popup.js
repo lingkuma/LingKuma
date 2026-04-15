@@ -1746,92 +1746,105 @@ devicePixelRatio.addEventListener('input', function(e) {
 const lightThemeBtn = document.getElementById('lightTheme');
 const darkThemeBtn = document.getElementById('darkTheme');
 
-// 添加主题切换相关的代码
+// Popup 界面主题切换（黑暗模式）
 document.addEventListener('DOMContentLoaded', function() {
-  // 获取根元素以便修改CSS变量
   const root = document.documentElement;
 
-  // 定义亮色和暗色主题的颜色
   const themes = {
     light: {
-      '--ios-bg': '#f2f2f7',
-      '--ios-card': '#ffffffbf',
-      '--ios-border': '#e5e5ea',
-      '--ios-text': '#000000',
-      '--ios-secondary': '#8e8e93',
-      '--ios-blue': '#007aff'
+      '--ios-bg': '#f5f4ed',
+      '--ios-bg-elevated': '#faf9f5',
+      '--ios-bg-muted': '#f0eee6',
+      '--ios-card': 'rgba(250, 249, 245, 0.92)',
+      '--ios-card-strong': '#ffffff',
+      '--ios-border': '#e8e6dc',
+      '--ios-border-strong': '#d1cfc5',
+      '--ios-text': '#141413',
+      '--ios-secondary': '#5e5d59',
+      '--ios-tertiary': '#87867f',
+      '--ios-blue': '#3898ec',
+      '--ios-accent': '#c96442',
+      '--ios-accent-soft': '#d97757',
+      '--ios-success': '#6f8b6d',
+      '--ios-ring': '0 0 0 1px rgba(209, 207, 197, 0.92)',
+      '--ios-shadow': '0 4px 24px rgba(20, 20, 19, 0.06)'
     },
     dark: {
-      '--ios-bg': 'rgb(43,43,43)',
-      '--ios-card': '#1c1c1ea8',
-      '--ios-border': '#38383a',
-      '--ios-text': '#ffffff',
-      '--ios-secondary': '#98989d',
-      '--ios-blue': '#0a84ff'
+      '--ios-bg': '#141413',
+      '--ios-bg-elevated': '#1b1b19',
+      '--ios-bg-muted': '#22221f',
+      '--ios-card': 'rgba(48, 48, 46, 0.9)',
+      '--ios-card-strong': '#30302e',
+      '--ios-border': '#30302e',
+      '--ios-border-strong': '#4d4c48',
+      '--ios-text': '#faf9f5',
+      '--ios-secondary': '#b0aea5',
+      '--ios-tertiary': '#87867f',
+      '--ios-blue': '#78b7f2',
+      '--ios-accent': '#d97757',
+      '--ios-accent-soft': '#e39b82',
+      '--ios-success': '#93ad88',
+      '--ios-ring': '0 0 0 1px rgba(77, 76, 72, 0.95)',
+      '--ios-shadow': '0 8px 28px rgba(0, 0, 0, 0.28)'
     }
   };
 
-  // 应用主题函数 - 改进的渐变版本
   function applyTheme(isDark, withAnimation = true) {
-    const theme = isDark ? themes.dark : themes.light;
+    const themeName = isDark ? 'dark' : 'light';
+    const theme = themes[themeName];
 
-    if (withAnimation) {
-      // 添加过渡类以确保动画生效
-      document.body.classList.add('theme-transitioning');
-
-      // 短暂延迟以确保过渡类生效
-      requestAnimationFrame(() => {
-        // 应用新的主题颜色
-        Object.entries(theme).forEach(([key, value]) => {
-          root.style.setProperty(key, value);
-        });
-      });
-
-      // 300ms后移除过渡类（与CSS过渡时间一致）
-      setTimeout(() => {
-        document.body.classList.remove('theme-transitioning');
-      }, 300);
-    } else {
-      // 直接应用主题，不使用动画（用于初始加载）
+    const paintTheme = () => {
+      root.setAttribute('data-theme', themeName);
       Object.entries(theme).forEach(([key, value]) => {
         root.style.setProperty(key, value);
       });
+    };
+
+    if (withAnimation) {
+      document.body.classList.add('theme-transitioning');
+      requestAnimationFrame(() => {
+        paintTheme();
+      });
+      setTimeout(() => {
+        document.body.classList.remove('theme-transitioning');
+      }, 300);
+      return;
     }
+
+    paintTheme();
   }
 
-  // 从存储中获取当前主题状态并应用
+  function setUiTheme(isDark, withAnimation = true) {
+    applyTheme(isDark, withAnimation);
+    updateThemeButtons(isDark);
+  }
+
   chrome.storage.local.get('isDarkTheme', function(result) {
     const isDark = result.isDarkTheme || false;
-    applyTheme(isDark, false); // 初始加载时不使用动画
-    updateThemeButtons(isDark);
+    setUiTheme(isDark, false);
   });
 
-  // 主题按钮点击事件
   lightThemeBtn.addEventListener('click', function() {
     chrome.storage.local.set({ isDarkTheme: false }, function() {
-      applyTheme(false, true); // 用户点击时使用动画
-      updateThemeButtons(false);
+      setUiTheme(false, true);
     });
   });
 
   darkThemeBtn.addEventListener('click', function() {
     chrome.storage.local.set({ isDarkTheme: true }, function() {
-      applyTheme(true, true); // 用户点击时使用动画
-      updateThemeButtons(true);
+      setUiTheme(true, true);
     });
   });
 });
 
 // 更新按钮状态
 function updateThemeButtons(isDark) {
-    if (isDark) {
-        darkThemeBtn.classList.add('active');
-        lightThemeBtn.classList.remove('active');
-    } else {
-        lightThemeBtn.classList.add('active');
-        darkThemeBtn.classList.remove('active');
-    }
+    darkThemeBtn.classList.toggle('active', isDark);
+    lightThemeBtn.classList.toggle('active', !isDark);
+    darkThemeBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+    lightThemeBtn.setAttribute('aria-pressed', isDark ? 'false' : 'true');
 }
+
 document.addEventListener('DOMContentLoaded', function() {
     // 获取 Bionic 设置相关的元素
     const bionicSettingsToggle = document.getElementById('bionicSettingsToggle');
