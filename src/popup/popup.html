@@ -17,9 +17,9 @@
       --font-display: Georgia, "Times New Roman", serif;
       --font-ui: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       --ios-bg: #f5f4ed;
-      --ios-bg-elevated: #faf9f5;
+      --ios-bg-elevated: #faf9f5a1;
       --ios-bg-muted: #f0eee6;
-      --ios-card: rgba(250, 249, 245, 0.92);
+      --ios-card: rgba(250, 249, 245, 0.66);
       --ios-card-strong: #ffffff;
       --ios-border: #e8e6dc;
       --ios-border-strong: #d1cfc5;
@@ -842,7 +842,7 @@
       opacity: 0.75;
       width: 100%;
       margin-top: 6px;
-      padding-left: 24px;
+      padding-left: 4px;
       line-height: 1.5;
     }
 
@@ -985,6 +985,7 @@
 
     .popup-toolbar {
       display: flex;
+      backdrop-filter: blur(10px);
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -1023,7 +1024,7 @@
       background: var(--ios-card);
       border: 1px solid var(--ios-border);
       box-shadow: var(--ios-ring), var(--ios-shadow);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(12px);
     }
 

@@ -67,7 +67,7 @@ function showUpdateNotification(version, updateUrl) {
   if (!notificationEl) return;
 
   // 设置版本号文本
-  updateTextEl.textContent = `update: ${version}`;
+  updateTextEl.textContent = `Update: ${version}`;
 
   // 设置更新链接点击事件
   updateLinkEl.onclick = function(e) {
@@ -1753,9 +1753,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const themes = {
     light: {
       '--ios-bg': '#f5f4ed',
-      '--ios-bg-elevated': '#faf9f5',
+      '--ios-bg-elevated': '#faf9f5ab',
       '--ios-bg-muted': '#f0eee6',
-      '--ios-card': 'rgba(250, 249, 245, 0.92)',
+      '--ios-card': 'rgba(250, 249, 245, 0.66)',
       '--ios-card-strong': '#ffffff',
       '--ios-border': '#e8e6dc',
       '--ios-border-strong': '#d1cfc5',
