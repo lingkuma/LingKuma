@@ -984,6 +984,8 @@
     }
 
     .popup-toolbar {
+      position: relative;
+      z-index: 20;
       display: flex;
       backdrop-filter: blur(10px);
       flex-direction: column;
@@ -999,44 +1001,9 @@
       text-align: center;
     }
 
-
-    body {
-      font-family: var(--font-ui);
-      padding: 14px;
-      background-color: var(--ios-bg);
-      color: var(--ios-text);
-    }
-
-    body::before {
-      background: linear-gradient(180deg, rgba(245, 244, 237, 0.22) 0%, rgba(245, 244, 237, 0.08) 100%);
-      opacity: 1;
-    }
-
-    body::after {
-      content: '';
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background:
-        radial-gradient(circle at 12% 10%, rgba(201, 100, 66, 0.14) 0%, rgba(201, 100, 66, 0.07) 18%, transparent 42%),
-        radial-gradient(circle at 78% 0%, rgba(94, 93, 89, 0.03) 0%, transparent 30%);
-      z-index: -1;
-      pointer-events: none;
-    }
-
-    [data-theme="dark"] body::before {
-      background: linear-gradient(180deg, rgba(39, 35, 31, 0.16) 0%, rgba(39, 35, 31, 0.06) 100%);
-    }
-
-    [data-theme="dark"] body::after {
-      background:
-        radial-gradient(circle at 12% 10%, rgba(217, 119, 87, 0.12) 0%, rgba(217, 119, 87, 0.06) 18%, transparent 42%),
-        radial-gradient(circle at 78% 0%, rgba(220, 208, 190, 0.025) 0%, transparent 28%);
-    }
-
     .settings-group {
+      position: relative;
+      z-index: 1;
       border-radius: 20px;
       margin-bottom: 16px;
       padding: 4px 0;
@@ -1222,9 +1189,12 @@
         <a href="#" id="update-link" class="update-link">what's new?</a>
       </div>
       <span class="update-message" id="update-message">
-        1. verb-hightlight(词性高亮)
-        <br>2.left/right key switch sentence hightlight (方向键快捷爆炸下一句)
-        <br>3.more colum in explode bomb window(爆炸窗口多列视图)
+        1.verb-hightlight
+        <br>(词性高亮)
+        <br>2.left/right key switch sentence hightlight 
+        <br>(方向键快捷爆炸下一句)
+        <br>3.more colum in explode bomb window
+        <br>(爆炸窗口多列视图)
        </span>
       <button id="update-close-btn" class="update-close-btn" title="关闭">×</button>
     </div>
