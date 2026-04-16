@@ -1745,10 +1745,23 @@ devicePixelRatio.addEventListener('input', function(e) {
 // 主题切换按钮
 const lightThemeBtn = document.getElementById('lightTheme');
 const darkThemeBtn = document.getElementById('darkTheme');
+const popupThemeStorageKey = 'theme';
+const popupThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+const popupThemeValues = new Set(['auto', 'light', 'dark']);
 
 // Popup 界面主题切换（黑暗模式）
 document.addEventListener('DOMContentLoaded', function() {
   const root = document.documentElement;
+
+  function getPopupThemePreference() {
+    const savedTheme = localStorage.getItem(popupThemeStorageKey);
+    return popupThemeValues.has(savedTheme) ? savedTheme : 'auto';
+  }
+
+  function resolvePopupTheme(preference = getPopupThemePreference()) {
+    return preference === 'dark' ||
+      (preference === 'auto' && popupThemeMediaQuery.matches);
+  }
 
   const themes = {
     light: {
@@ -1789,7 +1802,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   };
 
-  function applyTheme(isDark, withAnimation = true) {
+  function applyTheme(preference, withAnimation = true) {
+    const isDark = resolvePopupTheme(preference);
     const themeName = isDark ? 'dark' : 'light';
     const theme = themes[themeName];
 
@@ -1814,27 +1828,35 @@ document.addEventListener('DOMContentLoaded', function() {
     paintTheme();
   }
 
-  function setUiTheme(isDark, withAnimation = true) {
-    applyTheme(isDark, withAnimation);
+  function setUiTheme(preference = getPopupThemePreference(), withAnimation = true) {
+    const isDark = resolvePopupTheme(preference);
+    applyTheme(preference, withAnimation);
     updateThemeButtons(isDark);
   }
 
-  chrome.storage.local.get('isDarkTheme', function(result) {
-    const isDark = result.isDarkTheme || false;
-    setUiTheme(isDark, false);
-  });
+  setUiTheme(getPopupThemePreference(), false);
 
   lightThemeBtn.addEventListener('click', function() {
-    chrome.storage.local.set({ isDarkTheme: false }, function() {
-      setUiTheme(false, true);
-    });
+    localStorage.setItem(popupThemeStorageKey, 'light');
+    setUiTheme('light', true);
   });
 
   darkThemeBtn.addEventListener('click', function() {
-    chrome.storage.local.set({ isDarkTheme: true }, function() {
-      setUiTheme(true, true);
-    });
+    localStorage.setItem(popupThemeStorageKey, 'dark');
+    setUiTheme('dark', true);
   });
+
+  const handlePopupSystemThemeChange = () => {
+    if (getPopupThemePreference() === 'auto') {
+      setUiTheme('auto', false);
+    }
+  };
+
+  if (typeof popupThemeMediaQuery.addEventListener === 'function') {
+    popupThemeMediaQuery.addEventListener('change', handlePopupSystemThemeChange);
+  } else if (typeof popupThemeMediaQuery.addListener === 'function') {
+    popupThemeMediaQuery.addListener(handlePopupSystemThemeChange);
+  }
 });
 
 // 更新按钮状态
