@@ -2241,15 +2241,20 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
               const selectedProfile = pollingProfiles[apiPollingIndex % pollingProfiles.length];
               apiPollingIndex = (apiPollingIndex + 1) % pollingProfiles.length;
               
-              config.apiBaseURL = selectedProfile.apiBaseURL || "";
-              config.apiModel = selectedProfile.apiModel || "";
-              config.apiKey = selectedProfile.apiKey || "";
-              config.temperature = selectedProfile.apiTemperature !== undefined ? selectedProfile.apiTemperature : temperature;
-              // 获取自定义请求体参数
-              config.customRequestBody = selectedProfile.customRequestBody || '';
-              // 获取 excludeTemperature 开关状态
-              config.excludeTemperature = selectedProfile.excludeTemperature === true;
-              console.log(`[background.js] 轮询使用配置 [${apiPollingIndex}/${pollingProfiles.length}]: ${selectedProfile.name}`);
+              if (selectedProfile?.apiBaseURL?.trim()) {
+                config.apiBaseURL = selectedProfile.apiBaseURL;
+                config.apiModel = selectedProfile.apiModel || "";
+                config.apiKey = selectedProfile.apiKey || "";
+                config.temperature = selectedProfile.apiTemperature !== undefined ? selectedProfile.apiTemperature : temperature;
+                // 获取自定义请求体参数
+                config.customRequestBody = selectedProfile.customRequestBody || '';
+                // 获取 excludeTemperature 开关状态
+                config.excludeTemperature = selectedProfile.excludeTemperature === true;
+                console.log(`[background.js] 轮询使用配置 [${apiPollingIndex}/${pollingProfiles.length}]: ${selectedProfile.name}`);
+              } else {
+                console.log(`[background.js] 轮询配置 ${selectedProfile?.name || 'Unknown'} 未设置 Base URL，回退到内置默认 API`);
+                await applyDefaultConfig(config, responseConfig, temperature, reject);
+              }
             } else {
               // 没有启用轮询的profile，使用默认配置
               await applyDefaultConfig(config, responseConfig, temperature, reject);
@@ -2260,8 +2265,8 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
             const activeProfileId = result.customApiProfiles?.activeProfileId;
             const activeProfile = profiles.find(p => p.id === activeProfileId);
             
-            if (activeProfile) {
-              config.apiBaseURL = activeProfile.apiBaseURL || "";
+            if (activeProfile?.apiBaseURL?.trim()) {
+              config.apiBaseURL = activeProfile.apiBaseURL;
               config.apiModel = activeProfile.apiModel || "";
               config.apiKey = activeProfile.apiKey || "";
               config.temperature = activeProfile.apiTemperature !== undefined ? activeProfile.apiTemperature : temperature;
@@ -2272,6 +2277,9 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
               console.log(`[background.js] 使用激活配置: ${activeProfile.name}`);
             } else {
               // 没有激活配置，使用默认的 API 配置项
+              if (activeProfile) {
+                console.log(`[background.js] 激活配置 ${activeProfile.name} 未设置 Base URL，回退到内置默认 API`);
+              }
               await applyDefaultConfig(config, responseConfig, temperature, reject);
             }
           }
