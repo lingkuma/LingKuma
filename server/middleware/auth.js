@@ -68,7 +68,7 @@ const checkSubscription = async (req, res, next) => {
 // 生成 JWT Token
 const generateToken = (username) => {
   return jwt.sign({ username }, process.env.JWT_SECRET, {
-    expiresIn: '30d'
+    expiresIn: '5y'
   });
 };
 
