@@ -32,6 +32,10 @@
 
 # 📚 [Wiki](https://docs.lingkuma.org)
 
+## 大模型邀请奖励，帮助项目持续开发
+本项目使用 [0-0 AI-API 中转平台](https://0-0.pro/register?ref=75RRBBR3) 完成，Gemini/Claude/GPT 最高0.1折优惠。
+点击链接注册，或使用邀请码：75RRBBR3，首充双方获得25%返利，感谢助力开发。
+
 # 📹 ScreenShots
 
 
