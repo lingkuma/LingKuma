@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Manrope");
 
 :root {
   font-size: clamp(1.5rem, 2vw + 1rem, 2.5rem);
@@ -10,7 +9,7 @@ body {
   display: grid;
   place-items: center;
 
-  font-family: "Manrope", sans-serif;
+  font-family: sans-serif;
   color: white;
 
   grid-template-areas: "stack";
