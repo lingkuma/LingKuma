@@ -4641,7 +4641,7 @@ document.addEventListener("keydown", currentTooltipKeydownHandler, false); // <-
   `;
 
   // 生成所有胶囊容器（包括默认容器和自定义容器）
-  await generateAllCapsules(capsulesWrapper, word, shadowRoot);
+  await generateAllCapsules(capsulesWrapper, word, shadowRoot, sentence);
 
   // 异步操作后检查当前弹窗引用是否仍然有效（触摸屏模式下快速点击保护）
   if (tooltipEl !== currentTooltipElRef || tooltipBeingDestroyed) {
@@ -10560,7 +10560,7 @@ function restoreExamplesSectionDefaultState() {
 // ========== 自定义胶囊功能 ==========
 
 // 生成所有胶囊容器（包括默认容器和自定义容器）
-async function generateAllCapsules(wrapper, currentWord, shadowRoot) {
+async function generateAllCapsules(wrapper, currentWord, shadowRoot, currentSentence = '') {
   // 获取自定义胶囊配置
   const result = await new Promise(resolve => {
     chrome.storage.local.get(['customCapsules', 'tooltipThemeMode'], resolve);
@@ -10592,7 +10592,7 @@ async function generateAllCapsules(wrapper, currentWord, shadowRoot) {
 
   // 2. 创建自定义胶囊容器
   customCapsules.forEach((capsuleContainer, containerIndex) => {
-    const customCapsule = createCustomCapsule(capsuleContainer, containerIndex, currentWord, isDark);
+    const customCapsule = createCustomCapsule(capsuleContainer, containerIndex, currentWord, isDark, currentSentence);
     wrapper.appendChild(customCapsule);
   });
 
@@ -10663,7 +10663,7 @@ function createDefaultCapsule(isDark) {
 }
 
 // 创建自定义胶囊容器
-function createCustomCapsule(capsuleContainer, containerIndex, currentWord, isDark) {
+function createCustomCapsule(capsuleContainer, containerIndex, currentWord, isDark, currentSentence = '') {
   const capsule = document.createElement('div');
   capsule.className = 'header-buttons-capsule custom-capsule';
   if (isDark) {
@@ -10675,8 +10675,8 @@ function createCustomCapsule(capsuleContainer, containerIndex, currentWord, isDa
   // 从URL中提取域名并获取对应网站的favicon
   const getFaviconFromUrl = (url) => {
     try {
-      // 替换{word}占位符为空字符串以便解析URL
-      const cleanUrl = url.replace('{word}', '');
+      // 替换占位符为空字符串以便解析URL
+      const cleanUrl = url.replace(/{word}|{sentence}/g, '');
       const urlObj = new URL(cleanUrl);
       const origin = urlObj.origin;
       // 使用Google的favicon服务获取网站图标
@@ -10726,7 +10726,7 @@ function createCustomCapsule(capsuleContainer, containerIndex, currentWord, isDa
       const button = buttons[btnIndex];
 
       if (button) {
-        handleCustomButtonClick(button, currentWord);
+        handleCustomButtonClick(button, currentWord, currentSentence);
       }
     });
   });
@@ -10883,9 +10883,11 @@ function updateHighlightThemeButtonIcon(button, isDark) {
 }
 
 // 处理自定义按钮点击
-function handleCustomButtonClick(button, currentWord) {
-  // 替换URL中的{word}占位符
-  const url = button.url.replace(/{word}/g, encodeURIComponent(currentWord));
+function handleCustomButtonClick(button, currentWord, currentSentence = '') {
+  // 替换URL中的占位符
+  const url = button.url
+    .replace(/{word}/g, encodeURIComponent(currentWord))
+    .replace(/{sentence}/g, encodeURIComponent(currentSentence || ''));
 
   switch (button.openMethod) {
     case 'newTab':

@@ -3683,7 +3683,7 @@
         <div style="margin-bottom: 20px; padding: 15px; background: var(--highlight-color); border-radius: 8px;">
           <p style="margin: 0; font-size: 14px; line-height: 1.6;" data-i18n="customCapsulesHelp">
             <strong>胶囊容器</strong>：每个胶囊容器是一行，可以包含多个按钮。多个胶囊容器会向上叠加显示。<br>
-            <strong>按钮</strong>：每个按钮是一个搜索触发器，点击后打开指定URL。URL中的 <code>{word}</code> 会被替换为当前单词。
+            <strong>按钮</strong>：每个按钮是一个搜索触发器，点击后打开指定URL。URL中的 <code>{word}</code> 会被替换为当前单词，<code>{sentence}</code> 会被替换为当前句子。
           </p>
         </div>
 
@@ -3706,7 +3706,7 @@
           <span>
             <br>• <strong>胶囊容器</strong>：一个横向的按钮容器，多个容器会向上叠加
             <br>• <strong>按钮名称</strong>：按钮上显示的文字
-            <br>• <strong>URL</strong>：要打开的网址，使用 {word} 作为当前单词的占位符
+            <br>• <strong>URL</strong>：要打开的网址，使用 {word} 作为当前单词的占位符，使用 {sentence} 作为当前句子的占位符
             <br>• <strong>打开方式</strong>：
             <br>&nbsp;&nbsp;- 新标签页：在浏览器新标签页中打开
             <br>&nbsp;&nbsp;- iframe弹窗：在当前页面的弹窗中以iframe形式打开
@@ -3715,7 +3715,7 @@
             <br>• <strong>示例</strong>：
             <br>&nbsp;&nbsp;容器1：[Google图片] [维基百科] [词典]
             <br>&nbsp;&nbsp;容器2：[YouTube] [翻译]
-            <br>• <strong>示例URL</strong>：https://www.google.com/search?q={word}&tbm=isch
+            <br>• <strong>示例URL</strong>：https://www.google.com/search?q={word}&sentence={sentence}
           </span>
         </div>
         <div class="note-content">
@@ -3723,7 +3723,7 @@
           <span>
             <br>• <strong>Capsule Container</strong>: A horizontal button container, multiple containers stack upward
             <br>• <strong>Button Name</strong>: Text displayed on the button
-            <br>• <strong>URL</strong>: The URL to open, use {word} as placeholder for current word
+            <br>• <strong>URL</strong>: The URL to open, use {word} as placeholder for current word and {sentence} as placeholder for current sentence
             <br>• <strong>Open Method</strong>:
             <br>&nbsp;&nbsp;- New Tab: Open in a new browser tab
             <br>&nbsp;&nbsp;- iframe Popup: Open in an iframe popup on current page
@@ -3732,7 +3732,7 @@
             <br>• <strong>Example</strong>:
             <br>&nbsp;&nbsp;Container 1: [Google Images] [Wikipedia] [Dictionary]
             <br>&nbsp;&nbsp;Container 2: [YouTube] [Translate]
-            <br>• <strong>Example URL</strong>: https://www.google.com/search?q={word}&tbm=isch
+            <br>• <strong>Example URL</strong>: https://www.google.com/search?q={word}&sentence={sentence}
           </span>
         </div>
       </div>
