@@ -3390,13 +3390,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 }
             }
         } else if (message.audioType === "playLocal") {
-            // 先进行语言检测
-            const { text, lang, isSentence, contextSentence } = message;
+            // 需要时进行语言检测
+            const { text, lang, isSentence, contextSentence, skipLanguageDetection } = message;
             let actualLang = lang;
             let textForDetection = contextSentence || text;
 
             // 修改条件：如果 lang 是 'auto' 或者 lang 不是标准的两个小写字母代码，则尝试检测
-            if (lang.toLowerCase() === 'auto' || !/^[a-z]{2}$/.test(lang.toLowerCase())) {
+            if (!skipLanguageDetection && (lang.toLowerCase() === 'auto' || !/^[a-z]{2}$/.test(lang.toLowerCase()))) {
                 console.log(`[background.js] 需要语言检测 (原因: lang 为 '${lang}')，使用文本: "${textForDetection.substring(0, 50)}..."`);
                 try {
                     // 首先尝试从数据库获取语言信息

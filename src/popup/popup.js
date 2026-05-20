@@ -495,6 +495,7 @@ function initializeSettings() {
 
       enableWordTTS: true,
       enableSentenceTTS: true,
+      sentenceTTSAutoDetectLanguage: true,
       enableAutoWordTTS: false, // 添加：自动播放鼠标下单词的默认值
       useOrionTTS: false, // 添加：Orion TTS默认关闭
 
@@ -3406,14 +3407,18 @@ document.addEventListener('DOMContentLoaded', function() {
 // TTS设置
 const enableWordTTS = document.getElementById('enableWordTTS');
 const enableSentenceTTS = document.getElementById('enableSentenceTTS');
+const sentenceTTSSettingsToggle = document.getElementById('sentenceTTSSettingsToggle');
+const sentenceTTSSettings = document.getElementById('sentenceTTSSettings');
+const sentenceTTSAutoDetectLanguage = document.getElementById('sentenceTTSAutoDetectLanguage');
 const enableAutoWordTTS = document.getElementById('enableAutoWordTTS'); // 添加：获取新开关元素
 const useOrionTTS = document.getElementById('useOrionTTS'); // 添加：获取Orion TTS开关元素
 
 // 加载状态
-chrome.storage.local.get(['enableWordTTS', 'enableSentenceTTS', 'enableAutoWordTTS', 'useOrionTTS'], function(result) { // 添加：加载新开关状态
+chrome.storage.local.get(['enableWordTTS', 'enableSentenceTTS', 'sentenceTTSAutoDetectLanguage', 'enableAutoWordTTS', 'useOrionTTS'], function(result) { // 添加：加载新开关状态
     // 默认都启用
     enableWordTTS.checked = result.enableWordTTS === undefined ? true : result.enableWordTTS;
     enableSentenceTTS.checked = result.enableSentenceTTS === undefined ? true : result.enableSentenceTTS;
+    sentenceTTSAutoDetectLanguage.checked = result.sentenceTTSAutoDetectLanguage === undefined ? true : result.sentenceTTSAutoDetectLanguage;
     enableAutoWordTTS.checked = result.enableAutoWordTTS || false;
     useOrionTTS.checked = result.useOrionTTS === true; // Orion TTS默认关闭
 });
@@ -3425,6 +3430,16 @@ enableWordTTS.addEventListener('change', function(e) {
 
 enableSentenceTTS.addEventListener('change', function(e) {
     chrome.storage.local.set({ enableSentenceTTS: e.target.checked });
+});
+
+if (sentenceTTSSettingsToggle && sentenceTTSSettings) {
+    sentenceTTSSettingsToggle.addEventListener('click', function() {
+        sentenceTTSSettings.classList.toggle('visible');
+    });
+}
+
+sentenceTTSAutoDetectLanguage.addEventListener('change', function(e) {
+    chrome.storage.local.set({ sentenceTTSAutoDetectLanguage: e.target.checked });
 });
 
 enableAutoWordTTS.addEventListener('change', function(e) { // 添加：监听新开关变化

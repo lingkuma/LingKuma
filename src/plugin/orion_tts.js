@@ -87,6 +87,22 @@ function orion_isSentenceText(text, lang) {
     return text.includes(' ');
 }
 
+function orion_isLikelySentenceText(text, sentence) {
+    if (!text) return false;
+    const normalizedText = text.trim();
+    const normalizedSentence = (sentence || '').trim();
+
+    if (normalizedSentence && normalizedText === normalizedSentence) {
+        return true;
+    }
+
+    if (/[\u3040-\u30ff\u3400-\u9fff]/.test(normalizedText) && normalizedText.length > 4) {
+        return true;
+    }
+
+    return /[\s。！？.!?]/.test(normalizedText);
+}
+
 
 
 // 主要的播放文本函数
@@ -94,8 +110,15 @@ async function orion_playText(params) {
     const { text, count = 1, sentence } = params;
     if (!text) return;
     // 语言检测已切换为tts主流程的AI检测
-    const lang = await fetchLanguageDetection(text, sentence) || 'auto';
-    const isSentence = orion_isSentenceText(text, lang);
+    const likelySentence = orion_isLikelySentenceText(text, sentence);
+    const sentenceTTSAutoDetectLanguageValue = await orion_getStorageData('sentenceTTSAutoDetectLanguage');
+    const sentenceTTSAutoDetectLanguage = sentenceTTSAutoDetectLanguageValue === undefined || sentenceTTSAutoDetectLanguageValue === null
+        ? true
+        : sentenceTTSAutoDetectLanguageValue;
+    const lang = likelySentence && !sentenceTTSAutoDetectLanguage
+        ? 'auto'
+        : (await fetchLanguageDetection(text, sentence) || 'auto');
+    const isSentence = likelySentence || orion_isSentenceText(text, lang);
     let canPlayTTS = true;
     if (!orion_ttsConfig) {
         await orion_init();
@@ -120,9 +143,9 @@ async function orion_playText(params) {
         } else if (provider === 'minimaxi') {
             await orion_playMinimaxi(text, lang);
         } else if (provider === 'custom') {
-            await orion_playCustom(text, count, 1, sentence);
+            await orion_playCustom(text, count, 1, sentence, lang);
         } else if (provider === 'custom2') {
-            await orion_playCustom(text, count, 2, sentence);
+            await orion_playCustom(text, count, 2, sentence, lang);
         } else {
             await orion_playLocalSpeech(text, lang, true);
         }
@@ -180,10 +203,10 @@ async function orion_getWordAudioUrl(word, lang, urlType = 1) {
 }
 
 // 播放自定义URL音频
-async function orion_playCustom(word, count, urlType = 1, sentence = "") {
+async function orion_playCustom(word, count, urlType = 1, sentence = "", langOverride = null) {
     try {
         // 语言检测已切换为tts主流程的AI检测
-        const lang = await fetchLanguageDetection(word, sentence) || 'auto';
+        const lang = langOverride || await fetchLanguageDetection(word, sentence) || 'auto';
         const url = await orion_getWordAudioUrl(word, lang, urlType);
         // 只停止单词音频
         orion_stopWordAudio();

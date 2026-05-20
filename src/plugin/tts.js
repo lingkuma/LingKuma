@@ -18,6 +18,22 @@ function isSentenceText(text, lang) {
     // 其他语言继续使用空格判断
     return text.includes(' ');
 }
+
+function isLikelySentenceText(text, sentence) {
+    if (!text) return false;
+    const normalizedText = text.trim();
+    const normalizedSentence = (sentence || '').trim();
+
+    if (normalizedSentence && normalizedText === normalizedSentence) {
+        return true;
+    }
+
+    if (/[\u3040-\u30ff\u3400-\u9fff]/.test(normalizedText) && normalizedText.length > 4) {
+        return true;
+    }
+
+    return /[\s。！？.!?]/.test(normalizedText);
+}
 /**
  * 播放文本（支持单词或句子）
  * @param {Object} params
@@ -62,6 +78,46 @@ async function playText(params) {
 async function playTextInternal(params) {
     const { text, count = 1, sentence } = params;
 
+    if (isLikelySentenceText(text, sentence)) {
+        const settings = await new Promise(resolve => {
+            chrome.storage.local.get(['enableSentenceTTS', 'sentenceTTSAutoDetectLanguage', 'ttsConfig'], resolve);
+        });
+
+        const sentenceTTSAutoDetectLanguage = settings.sentenceTTSAutoDetectLanguage === undefined
+            ? true
+            : settings.sentenceTTSAutoDetectLanguage;
+
+        if (!sentenceTTSAutoDetectLanguage) {
+            if (settings.enableSentenceTTS === false) {
+                return;
+            }
+
+            const ttsConfig = settings.ttsConfig || { wordTTSProvider: 'edge', sentenceTTSProvider: 'edge' };
+            const lang = 'auto';
+            const isSentence = true;
+
+            stopSpecificAudioType('sentence');
+            await new Promise(resolve => setTimeout(resolve, 20));
+
+            try {
+                const provider = ttsConfig.sentenceTTSProvider || 'local';
+                if (provider === 'minimaxi') {
+                    await playMinimaxi(text, lang);
+                } else if (provider === 'edge') {
+                    await playEdgeTTS(text, lang, isSentence, sentence);
+                } else if (provider === 'custom') {
+                    await playCustom(text, count, sentence, 1, lang);
+                } else if (provider === 'custom2') {
+                    await playCustom(text, count, sentence, 2, lang);
+                } else if (provider === 'local') {
+                    await playLocal(text, lang, isSentence, sentence, true);
+                }
+            } catch (error) {
+                console.error('TTS播放失败:', error);
+            }
+            return;
+        }
+    }
     // 以下是原始TTS逻辑
     // 获取语言
     const lang = await fetchLanguageDetection(text, sentence) || 'auto';
@@ -153,9 +209,9 @@ async function playTextInternal(params) {
  * @param {string} sentence - 上下文句子
  * @param {number} urlType - URL类型：1表示自定义URL1，2表示自定义URL2
  */
-async function playCustom(word, count, sentence, urlType = 1) {
+async function playCustom(word, count, sentence, urlType = 1, langOverride = null) {
     try {
-        const lang = await fetchLanguageDetection(word, sentence) || 'auto';
+        const lang = langOverride || await fetchLanguageDetection(word, sentence) || 'auto';
         const url = await getWordAudioUrl(word, lang, urlType);
 
         // 发送消息给background脚本处理音频播放
@@ -284,14 +340,14 @@ function getWordAudioUrl(word, lang, urlType = 1) {
  * 源playSentence
  * @private
  */
-async function playMinimaxi(sentence) {
+async function playMinimaxi(sentence, langOverride = null) {
     const voice_id_list = ["English_Whispering_girl", "violet_de"];
     const emotion_list = ["happy", "sad", "angry", "fearful", "disgusted", "surprised", "neutral"];
 
     const randomVoice = voice_id_list[Math.floor(Math.random() * voice_id_list.length)];
     const randomEmotion = emotion_list[Math.floor(Math.random() * emotion_list.length)];
     //lang是ISO 639-1 语言代码
-    const lang = await fetchLanguageDetection(sentence, sentence) || 'auto';
+    const lang = langOverride || await fetchLanguageDetection(sentence, sentence) || 'auto';
 
     console.log('lang', lang);
 // language_boost
@@ -449,7 +505,7 @@ function stopPlay() {
  * @param {string} [contextSentence] - 可选的上下文句子，用于语言检测
  * @private
  */
-async function playLocal(text, lang, isSentence, contextSentence) {
+async function playLocal(text, lang, isSentence, contextSentence, skipLanguageDetection = false) {
     console.log('Sending playLocal message to background:', { text, lang, isSentence, contextSentence });
     chrome.runtime.sendMessage({
         action: "playAudio",
@@ -457,7 +513,8 @@ async function playLocal(text, lang, isSentence, contextSentence) {
         text: text, // 要实际播放的文本
         lang: lang, // 用户指定的语言或 'auto'
         isSentence: isSentence,
-        contextSentence: contextSentence || text // 如果没有提供上下文句子，则使用text本身进行检测
+        contextSentence: contextSentence || text, // 如果没有提供上下文句子，则使用text本身进行检测
+        skipLanguageDetection: skipLanguageDetection
     }, (response) => {
         if (chrome.runtime.lastError) {
             console.error('发送本地TTS消息失败:', chrome.runtime.lastError);
