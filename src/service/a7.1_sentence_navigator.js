@@ -13,6 +13,8 @@ let lastSentenceListUpdateTime = 0; // 上次更新句子列表的时间
 let sentenceListNeedsUpdate = false; // 句子列表是否需要更新 
 
 // 配置项
+let currentSentenceAnchor = null; // 当前句子的懒导航锚点，不再激活时全页建表
+
 let sentenceNavigatorConfig = {
   scrollThreshold: 0.7, // 滚动阈值：70%位置
   scrollBehavior: 'smooth', // 滚动行为：smooth 或 instant
@@ -98,7 +100,10 @@ function activateNavigator(sentenceInfo) {
   console.log('[SentenceNavigator] 激活导航器');
 
   // 只有列表为空或被标记为脏时才重建句子列表
-  if (sentenceList.length === 0 || sentenceListNeedsUpdate) {
+  currentSentenceAnchor = normalizeNavigatorSentenceInfo(sentenceInfo);
+  console.log('[SentenceNavigator] 懒导航已激活，不预构建全页句子列表', { hasAnchor: !!currentSentenceAnchor });
+
+  if (sentenceList.length > 0 && sentenceListNeedsUpdate) {
     updateSentenceList();
     sentenceListNeedsUpdate = false;
   }
@@ -119,6 +124,7 @@ function deactivateNavigator() {
   console.log('[SentenceNavigator] 停用导航器');
   isNavigatorActive = false;
   currentSentenceIndex = -1;
+  currentSentenceAnchor = null;
 }
 
 // 更新句子列表
@@ -264,11 +270,156 @@ function findSentenceIndex(sentence, sentenceInfo) {
 }
 
 // 导航到下一个句子（右键）
+function normalizeNavigatorSentenceText(sentence) {
+  return (sentence || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function normalizeNavigatorSentenceInfo(sentenceInfo) {
+  if (!sentenceInfo || !sentenceInfo.sentence) return null;
+
+  const range = sentenceInfo.range || sentenceInfo.sentenceRange || null;
+  const textNode = sentenceInfo.textNode ||
+    (range && range.startContainer && range.startContainer.nodeType === Node.TEXT_NODE
+      ? range.startContainer
+      : null);
+
+  return {
+    sentence: sentenceInfo.sentence,
+    normalizedSentence: normalizeNavigatorSentenceText(sentenceInfo.sentence),
+    textNode,
+    range,
+    sentenceRange: sentenceInfo.sentenceRange || null,
+    wordStart: range ? range.startOffset : (sentenceInfo.wordStart || 0)
+  };
+}
+
+function getNavigatorTextEntries() {
+  if (!highlightManager || !highlightManager.parent2Text2RawsAllUnknow) {
+    return [];
+  }
+
+  const entries = [];
+  for (const [parent, textMap] of highlightManager.parent2Text2RawsAllUnknow.entries()) {
+    if (!document.contains(parent)) continue;
+
+    for (const [textNode, rawRanges] of textMap.entries()) {
+      if (!document.contains(textNode) || !rawRanges || rawRanges.length === 0) continue;
+      entries.push({
+        parent,
+        textNode,
+        rawRanges: rawRanges
+          .filter(raw => raw && raw.start !== undefined && raw.end !== undefined)
+          .sort((a, b) => a.start - b.start)
+      });
+    }
+  }
+
+  return entries.filter(entry => entry.rawRanges.length > 0);
+}
+
+function locateNavigatorAnchor(entries, anchor) {
+  if (!anchor || !anchor.textNode) return null;
+
+  const entryIndex = entries.findIndex(entry => entry.textNode === anchor.textNode);
+  if (entryIndex === -1) return null;
+
+  const rawRanges = entries[entryIndex].rawRanges;
+  let rawIndex = rawRanges.findIndex(raw =>
+    raw.start <= anchor.wordStart &&
+    raw.end >= anchor.wordStart
+  );
+
+  if (rawIndex === -1) {
+    rawIndex = rawRanges.findIndex(raw => raw.start >= anchor.wordStart);
+    if (rawIndex === -1) {
+      rawIndex = rawRanges.length - 1;
+    }
+  }
+
+  return { entryIndex, rawIndex };
+}
+
+function buildSentenceInfoFromRaw(entry, rawRange) {
+  try {
+    const wordRange = document.createRange();
+    wordRange.setStart(entry.textNode, rawRange.start);
+    wordRange.setEnd(entry.textNode, rawRange.end);
+
+    const { sentence, range: sentenceRange } = getSentenceForWord({
+      range: wordRange,
+      word: rawRange.wordLower || rawRange.word || ''
+    });
+
+    if (!sentence || sentence.trim().length < sentenceNavigatorConfig.minSentenceLength) {
+      return null;
+    }
+
+    return {
+      sentence,
+      textNode: entry.textNode,
+      parent: entry.parent,
+      range: wordRange,
+      sentenceRange,
+      rect: null,
+      wordStart: rawRange.start
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+function findAdjacentSentence(direction) {
+  const anchor = currentSentenceAnchor;
+  if (!anchor) return null;
+
+  const entries = getNavigatorTextEntries();
+  const anchorPos = locateNavigatorAnchor(entries, anchor);
+  if (!anchorPos) return null;
+
+  const step = direction === 'next' ? 1 : -1;
+  let entryIndex = anchorPos.entryIndex;
+  let rawIndex = anchorPos.rawIndex + step;
+  let checkedWords = 0;
+  const maxCheckedWords = 800;
+
+  while (entryIndex >= 0 && entryIndex < entries.length && checkedWords < maxCheckedWords) {
+    const entry = entries[entryIndex];
+
+    while (rawIndex >= 0 && rawIndex < entry.rawRanges.length && checkedWords < maxCheckedWords) {
+      checkedWords++;
+      const sentenceInfo = buildSentenceInfoFromRaw(entry, entry.rawRanges[rawIndex]);
+      if (sentenceInfo) {
+        const normalized = normalizeNavigatorSentenceText(sentenceInfo.sentence);
+        if (normalized && normalized !== anchor.normalizedSentence) {
+          console.log('[SentenceNavigator] 懒导航找到相邻句子:', { direction, checkedWords });
+          return sentenceInfo;
+        }
+      }
+
+      rawIndex += step;
+    }
+
+    entryIndex += step;
+    if (entryIndex >= 0 && entryIndex < entries.length) {
+      rawIndex = direction === 'next' ? 0 : entries[entryIndex].rawRanges.length - 1;
+    }
+  }
+
+  console.log('[SentenceNavigator] 懒导航未找到相邻句子:', { direction, checkedWords });
+  return null;
+}
+
 function navigateToNextSentence() {
   console.log('[SentenceNavigator] 导航到下一个句子');
   
   // 如果列表为空或需要更新，先同步更新
-  if (sentenceList.length === 0 || sentenceListNeedsUpdate) {
+  const lazyNextSentence = findAdjacentSentence('next');
+  if (lazyNextSentence) {
+    navigateToLazySentence(lazyNextSentence, 'next');
+    return;
+  }
+
+  if (sentenceList.length > 0 && sentenceListNeedsUpdate) {
     updateSentenceList();
     sentenceListNeedsUpdate = false;
   }
@@ -293,10 +444,16 @@ function navigateToNextSentence() {
 
 // 导航到上一个句子（左键）
 function navigateToPreviousSentence() {
+  const lazyPreviousSentence = findAdjacentSentence('prev');
+  if (lazyPreviousSentence) {
+    navigateToLazySentence(lazyPreviousSentence, 'prev');
+    return;
+  }
+
   console.log('[SentenceNavigator] 导航到上一个句子');
   
   // 如果列表为空或需要更新，先同步更新
-  if (sentenceList.length === 0 || sentenceListNeedsUpdate) {
+  if (sentenceList.length > 0 && sentenceListNeedsUpdate) {
     updateSentenceList();
     sentenceListNeedsUpdate = false;
   }
@@ -320,6 +477,27 @@ function navigateToPreviousSentence() {
 }
 
 // 导航到指定句子
+function navigateToLazySentence(sentenceInfo, direction) {
+  if (!sentenceInfo) return;
+
+  currentSentenceAnchor = normalizeNavigatorSentenceInfo(sentenceInfo);
+  currentSentenceIndex = -1;
+
+  if (typeof getSentenceRect === 'function' && sentenceInfo.textNode && sentenceInfo.range) {
+    try {
+      sentenceInfo.rect = getSentenceRect(sentenceInfo.sentence, {
+        textNode: sentenceInfo.textNode,
+        range: sentenceInfo.range
+      });
+    } catch (e) {
+      console.warn('[SentenceNavigator] 懒导航获取句子位置失败:', e);
+    }
+  }
+
+  checkAndScroll(sentenceInfo, direction);
+  triggerSentenceExplosion(sentenceInfo);
+}
+
 function navigateToSentence(index, direction) {
   const sentenceInfo = sentenceList[index];
   if (!sentenceInfo) {
