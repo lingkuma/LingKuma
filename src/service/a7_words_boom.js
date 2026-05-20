@@ -680,12 +680,155 @@ function hideWordExplosion() {
 }
 
 // 应用爆炸句子高亮
+function getExplosionSentenceFastRect() {
+  const rect = window.__wordExplosionSentenceRect;
+  if (!rect || rect.width <= 0 || rect.height <= 0) {
+    return null;
+  }
+  return rect;
+}
+
+function mergeExplosionLineRects(rects) {
+  const sortedRects = rects
+    .filter(rect => rect && rect.width > 0 && rect.height > 0)
+    .sort((a, b) => (a.top - b.top) || (a.left - b.left));
+
+  const lines = [];
+  for (const rect of sortedRects) {
+    const line = lines.find(item =>
+      rect.top <= item.bottom + 2 &&
+      rect.bottom >= item.top - 2
+    );
+
+    if (line) {
+      line.left = Math.min(line.left, rect.left);
+      line.top = Math.min(line.top, rect.top);
+      line.right = Math.max(line.right, rect.right);
+      line.bottom = Math.max(line.bottom, rect.bottom);
+      line.width = line.right - line.left;
+      line.height = line.bottom - line.top;
+    } else {
+      lines.push({
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height
+      });
+    }
+  }
+
+  return lines;
+}
+
+function getExplosionSentenceFastRects() {
+  const range = currentExplosionSentenceInfo && currentExplosionSentenceInfo.sentenceRange;
+  if (!range || !range.startContainer || !range.endContainer) {
+    return [];
+  }
+
+  if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
+    return [];
+  }
+
+  try {
+    const rects = Array.from(range.getClientRects());
+    return mergeExplosionLineRects(rects);
+  } catch (error) {
+    console.warn('[WordExplosion] 获取句子多行矩形失败:', error);
+    return [];
+  }
+}
+
+function removeExplosionSentenceRectHighlight() {
+  const el = document.getElementById('explosion-sentence-rect-highlight');
+  if (el) {
+    el.remove();
+  }
+}
+
+function applyExplosionSentenceRectHighlight(rects) {
+  removeExplosionSentenceRectHighlight();
+
+  const rectList = Array.isArray(rects) ? rects : [rects];
+  if (rectList.length === 0) return;
+
+  const container = document.createElement('div');
+  container.id = 'explosion-sentence-rect-highlight';
+  container.setAttribute('data-extension-element', 'true');
+  container.style.position = 'absolute';
+  container.style.left = '0';
+  container.style.top = '0';
+  container.style.pointerEvents = 'none';
+  container.style.zIndex = '2147483643';
+
+  for (const rect of rectList) {
+    if (!rect || rect.width <= 0 || rect.height <= 0) continue;
+
+    const el = document.createElement('div');
+    el.style.position = 'absolute';
+    el.style.left = `${rect.left + window.scrollX}px`;
+    el.style.top = `${rect.top + window.scrollY}px`;
+    el.style.width = `${rect.width}px`;
+    el.style.height = `${rect.height}px`;
+    el.style.backgroundColor = wordExplosionConfig.highlightColor || '#955FBD40';
+    el.style.borderRadius = '3px';
+    el.style.boxSizing = 'border-box';
+
+    if (wordExplosionConfig.underlineEnabled) {
+      const thickness = wordExplosionConfig.underlineThickness || 3;
+      const color = wordExplosionConfig.underlineColor || '#955FBD80';
+      const style = wordExplosionConfig.underlineStyle || 'solid';
+      const position = wordExplosionConfig.underlinePosition || 'bottom';
+      if (position === 'bottom' || position === 'both') {
+        el.style.borderBottom = `${thickness}px ${style} ${color}`;
+      }
+      if (position === 'top' || position === 'both') {
+        el.style.borderTop = `${thickness}px ${style} ${color}`;
+      }
+    }
+
+    container.appendChild(el);
+  }
+
+  if (container.childElementCount > 0) {
+    document.documentElement.appendChild(container);
+  }
+}
+
 function applyExplosionSentenceHighlight() {
-  if (!wordExplosionConfig.highlightSentence || !currentExplosionSentenceRange) {
+  const fastRects = getExplosionSentenceFastRects();
+  const fastRect = getExplosionSentenceFastRect();
+  if (!wordExplosionConfig.highlightSentence || (!currentExplosionSentenceRange && fastRects.length === 0 && !fastRect)) {
     return;
   }
 
   try {
+    removeExplosionSentenceRectHighlight();
+    if (fastRects.length === 0 && !fastRect && currentExplosionSentenceRange) {
+      if (CSS.highlights.has('explosion-sentence-highlight')) {
+        CSS.highlights.delete('explosion-sentence-highlight');
+      }
+
+      const highlight = new Highlight(currentExplosionSentenceRange);
+      CSS.highlights.set('explosion-sentence-highlight', highlight);
+      updateExplosionHighlightColor();
+
+      console.log('[WordExplosion] 句子高亮已应用（CSS.highlights，复用已有Range）');
+      return;
+    }
+
+    if (fastRects.length > 0 || fastRect) {
+      if (CSS.highlights.has('explosion-sentence-highlight')) {
+        CSS.highlights.delete('explosion-sentence-highlight');
+      }
+      applyExplosionSentenceRectHighlight(fastRects.length > 0 ? fastRects : fastRect);
+      console.log('[WordExplosion] 句子快速矩形高亮已应用');
+      return;
+    }
+
+    removeExplosionSentenceRectHighlight();
     // 移除旧的高亮
     if (CSS.highlights.has('explosion-sentence-highlight')) {
       CSS.highlights.delete('explosion-sentence-highlight');
@@ -756,6 +899,8 @@ function updateExplosionHighlightColor() {
 // 移除爆炸句子高亮
 function removeExplosionSentenceHighlight() {
   try {
+    removeExplosionSentenceRectHighlight();
+    window.__wordExplosionSentenceRect = null;
     if (CSS.highlights.has('explosion-sentence-highlight')) {
       CSS.highlights.delete('explosion-sentence-highlight');
       console.log('[WordExplosion] 句子高亮已移除');
@@ -1258,13 +1403,8 @@ function showWordExplosion(sentence, sentenceRect = null, sentenceInfo = null) {
   }
 
   currentExplosionSentence = sentence;
+  window.__wordExplosionSentenceRect = sentenceRect;
   currentExplosionSentenceInfo = sentenceInfo; // 保存句子详细信息用于逐词高亮
-
-  // === 激活句子导航器 ===
-  if (typeof window.sentenceNavigator !== 'undefined' && window.sentenceNavigator.activate) {
-    window.sentenceNavigator.activate(sentenceInfo);
-  }
-  // === 导航器激活结束 ===
 
   // 重置翻译计数器
   lastSentenceTranslationCount = (explosionSentenceTranslationsCache[sentence] || []).length;
@@ -1272,12 +1412,19 @@ function showWordExplosion(sentence, sentenceRect = null, sentenceInfo = null) {
   // 创建句子的Range对象用于高亮
   if (wordExplosionConfig.highlightSentence && sentenceInfo) {
     try {
-      currentExplosionSentenceRange = createSentenceRange(sentence, sentenceInfo);
+      currentExplosionSentenceRange = sentenceInfo.sentenceRange || (sentenceRect ? null : createSentenceRange(sentence, sentenceInfo));
       // 应用高亮
       applyExplosionSentenceHighlight();
     } catch (error) {
       console.error('[WordExplosion] 创建句子Range失败:', error);
     }
+  }
+
+  // 延后激活句子导航器，避免阻塞句子高亮的首帧渲染
+  if (typeof window.sentenceNavigator !== 'undefined' && window.sentenceNavigator.activate) {
+    setTimeout(() => {
+      window.sentenceNavigator.activate(sentenceInfo);
+    }, 0);
   }
 
   // 触发逐词高亮（与爆炸窗口同时触发）
