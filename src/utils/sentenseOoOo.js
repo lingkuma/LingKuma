@@ -122,7 +122,14 @@ function highlightSpecificWords(wordsToHighlight, msPerChar = 100, msPerCharZh =
     let isCancelled = false; // Flag to track cancellation
     const styleId = `highlight-selection-styles-${Date.now()}`; // Unique ID for the style tag
     const highlightName = `word-by-word-highlight-${Date.now()}`; // Unique name for CSS Highlight
+    const sliderLayerId = `lingkuma-word-highlight-slider-${Date.now()}`;
     let currentHighlight = null; // Store current CSS Highlight object
+    let sliderHighlightLayer = null;
+    let sliderRepositionFrameId = null;
+    let activeSliderRange = null;
+    let audioStartListener = null;
+    const sliderPaddingX = 3;
+    const sliderPaddingY = 2;
 
     // 获取文本颜色亮度的函数
     function getTextColorBrightness(element) {
@@ -168,22 +175,26 @@ function highlightSpecificWords(wordsToHighlight, msPerChar = 100, msPerCharZh =
         console.log(`无法获取文本亮度，回退到全局设置，是深色文本: ${isDarkText}`);
     }
 
+    const highlightBackgroundColor = isDarkText ? '#CCE3AD' : '#4F455C';
+    const highlightTextColor = isDarkText ? '#000000' : '#ffffff';
+    const sliderBlendMode = isDarkText ? 'multiply' : 'screen';
+
     // Define the CSS for CSS Highlight API
     let highlightCSS;
     if (isDarkText) {
         // 深色文本(黑色文本)使用浅色高亮背景
         highlightCSS = `
         ::highlight(${highlightName}) {
-           background-color: #CCE3AD !important;
-           color: #000000 !important;
+           background-color: ${highlightBackgroundColor} !important;
+           color: ${highlightTextColor} !important;
         }
         `;
     } else {
         // 浅色文本(白色文本)使用深色高亮背景
         highlightCSS = `
         ::highlight(${highlightName}) {
-            background-color: #4F455C !important;
-            color: #ffffff !important;
+            background-color: ${highlightBackgroundColor} !important;
+            color: ${highlightTextColor} !important;
         }
         `;
     }
@@ -195,14 +206,132 @@ function highlightSpecificWords(wordsToHighlight, msPerChar = 100, msPerCharZh =
         // 在bionic模式下，我们需要确保高亮样式能够覆盖bionic的样式
         highlightCSS = `
         ::highlight(${highlightName}) {
-            background-color: ${isDarkText ? '#CCE3AD' : '#4F455C'} !important;
-            color: ${isDarkText ? '#000000' : '#ffffff'} !important;
+            background-color: ${highlightBackgroundColor} !important;
+            color: ${highlightTextColor} !important;
             opacity: 1 !important;
         }
         `;
     }
 
 
+
+    highlightCSS += `
+        #${sliderLayerId} {
+            position: fixed !important;
+            left: 0;
+            top: 0;
+            width: 0;
+            height: 0;
+            border-radius: 4px;
+            background-color: ${highlightBackgroundColor};
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.03);
+            opacity: 0;
+            pointer-events: none !important;
+            z-index: 2147483646 !important;
+            mix-blend-mode: ${sliderBlendMode};
+            transition-property: left, top, width, height, opacity;
+            transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: left, top, width, height;
+            contain: layout style paint;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            #${sliderLayerId} {
+                transition-duration: 0ms !important;
+            }
+        }
+    `;
+
+    const getRangeRect = (range) => {
+        const rects = Array.from(range.getClientRects()).filter(rect => rect.width > 0 && rect.height > 0);
+        if (rects.length === 0) {
+            const rect = range.getBoundingClientRect();
+            return rect && rect.width > 0 && rect.height > 0 ? rect : null;
+        }
+
+        return rects.reduce((merged, rect) => ({
+            left: Math.min(merged.left, rect.left),
+            top: Math.min(merged.top, rect.top),
+            right: Math.max(merged.right, rect.right),
+            bottom: Math.max(merged.bottom, rect.bottom),
+            get width() {
+                return this.right - this.left;
+            },
+            get height() {
+                return this.bottom - this.top;
+            }
+        }));
+    };
+
+    const ensureSliderHighlightLayer = () => {
+        if (sliderHighlightLayer && sliderHighlightLayer.isConnected) {
+            return sliderHighlightLayer;
+        }
+
+        sliderHighlightLayer = document.createElement('div');
+        sliderHighlightLayer.id = sliderLayerId;
+        sliderHighlightLayer.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(sliderHighlightLayer);
+        return sliderHighlightLayer;
+    };
+
+    const positionSliderHighlight = (range, duration = 360, animate = true) => {
+        if (!range || !document.body) {
+            return false;
+        }
+
+        const rect = getRangeRect(range);
+        if (!rect) {
+            return false;
+        }
+
+        const layer = ensureSliderHighlightLayer();
+        const x = Math.max(0, rect.left - sliderPaddingX);
+        const y = Math.max(0, rect.top - sliderPaddingY);
+        const width = rect.width + sliderPaddingX * 2;
+        const height = rect.height + sliderPaddingY * 2;
+        const transitionDuration = animate ? Math.max(45, Math.min(220, Math.round(duration * 0.45))) : 0;
+
+        layer.style.transitionDuration = `${transitionDuration}ms`;
+        layer.style.left = `${x}px`;
+        layer.style.top = `${y}px`;
+        layer.style.width = `${width}px`;
+        layer.style.height = `${height}px`;
+        layer.style.opacity = '1';
+        activeSliderRange = range.cloneRange();
+        return true;
+    };
+
+    const scheduleSliderReposition = () => {
+        if (!activeSliderRange || sliderRepositionFrameId !== null) {
+            return;
+        }
+
+        sliderRepositionFrameId = requestAnimationFrame(() => {
+            sliderRepositionFrameId = null;
+            if (activeSliderRange && sliderHighlightLayer && sliderHighlightLayer.isConnected) {
+                positionSliderHighlight(activeSliderRange, 0, false);
+            }
+        });
+    };
+
+    const cleanupSliderHighlight = () => {
+        activeSliderRange = null;
+
+        if (sliderRepositionFrameId !== null) {
+            cancelAnimationFrame(sliderRepositionFrameId);
+            sliderRepositionFrameId = null;
+        }
+
+        window.removeEventListener('scroll', scheduleSliderReposition, true);
+        window.removeEventListener('resize', scheduleSliderReposition, true);
+
+        if (sliderHighlightLayer && sliderHighlightLayer.parentNode) {
+            sliderHighlightLayer.parentNode.removeChild(sliderHighlightLayer);
+        }
+
+        sliderHighlightLayer = null;
+    };
 
     // Helper function to detect script type (simple version)
     const getWordScriptType = (word) => {
@@ -226,6 +355,9 @@ function highlightSpecificWords(wordsToHighlight, msPerChar = 100, msPerCharZh =
         // If there are no words to highlight, stop here.
         if (!wordsToHighlight || wordsToHighlight.length === 0) {
           console.log("No words provided to highlight.");
+          cleanupSliderHighlight();
+          removeSelectionStyles(styleId);
+          window.isWordByWordHighlighting = false;
           return; // No need to proceed
         }
 
@@ -234,6 +366,8 @@ function highlightSpecificWords(wordsToHighlight, msPerChar = 100, msPerCharZh =
         // 这是因为 getSentenceWordDetails 函数已经确保了这一点
         let index = 0;
         const range = new Range();
+        window.addEventListener('scroll', scheduleSliderReposition, true);
+        window.addEventListener('resize', scheduleSliderReposition, true);
 
         console.log(`开始高亮，共有 ${wordsToHighlight.length} 个单词需要高亮，从用户点击的单词开始`);
 
@@ -242,9 +376,10 @@ function highlightSpecificWords(wordsToHighlight, msPerChar = 100, msPerCharZh =
           // If cancelled during the sequence, stop
           if (isCancelled) {
              // 清除CSS Highlight
-             if (currentHighlight && CSS.highlights) {
+             if (currentHighlight && window.CSS && CSS.highlights) {
                  CSS.highlights.delete(highlightName);
              }
+             cleanupSliderHighlight();
              // 恢复a5划词功能
              window.isWordByWordHighlighting = false;
              console.log("Highlighting cancelled during sequence.");
@@ -254,9 +389,10 @@ function highlightSpecificWords(wordsToHighlight, msPerChar = 100, msPerCharZh =
           // Check if we've processed all words
           if (index >= wordsToHighlight.length) {
             // 清除CSS Highlight
-            if (currentHighlight && CSS.highlights) {
+            if (currentHighlight && window.CSS && CSS.highlights) {
                 CSS.highlights.delete(highlightName);
             }
+            cleanupSliderHighlight();
             removeSelectionStyles(styleId); // Remove the dynamic styles
             console.log("Finished highlighting sequence.");
             highlightTimeoutId = null; // Clear the stored ID
@@ -280,13 +416,18 @@ function highlightSpecificWords(wordsToHighlight, msPerChar = 100, msPerCharZh =
                  const endOffset = Math.min(offset + word.length, parentNode.textContent.length);
                  range.setEnd(parentNode, endOffset);
 
-                 // 检查浏览器是否支持CSS Highlight API
-                 if (CSS.highlights) {
+                 // 优先使用可动画的滑动背景层，CSS Highlight 仅作为 fallback。
+                 if (positionSliderHighlight(range, 360, index > 0)) {
                      // 清除之前的高亮
+                     if (currentHighlight && window.CSS && CSS.highlights) {
+                         CSS.highlights.delete(highlightName);
+                         currentHighlight = null;
+                     }
+                     document.getSelection().removeAllRanges();
+                 } else if (window.CSS && CSS.highlights) {
                      if (currentHighlight) {
                          CSS.highlights.delete(highlightName);
                      }
-                     // 创建新的高亮
                      currentHighlight = new Highlight(range.cloneRange());
                      CSS.highlights.set(highlightName, currentHighlight);
                  } else {
@@ -350,7 +491,7 @@ function highlightSpecificWords(wordsToHighlight, msPerChar = 100, msPerCharZh =
         initialTimeoutId = setTimeout(startHighlightingSequence, 5900);
 
         // 添加音频播放开始事件监听器
-        const audioStartListener = function(event) {
+        audioStartListener = function(event) {
             if (event.detail && event.detail.audioType) {
                 console.log("收到音频开始播放事件:", event.detail.audioType);
                 // 清除默认延迟
@@ -362,6 +503,7 @@ function highlightSpecificWords(wordsToHighlight, msPerChar = 100, msPerCharZh =
                 startHighlightingSequence();
                 // 移除事件监听器，避免重复触发
                 document.removeEventListener('audioPlaybackStarted', audioStartListener);
+                audioStartListener = null;
             }
         };
 
@@ -388,11 +530,15 @@ function highlightSpecificWords(wordsToHighlight, msPerChar = 100, msPerCharZh =
           highlightTimeoutId = null;
         }
         // 移除音频播放开始事件监听器
-        document.removeEventListener('audioPlaybackStarted', audioStartListener);
+        if (audioStartListener) {
+          document.removeEventListener('audioPlaybackStarted', audioStartListener);
+          audioStartListener = null;
+        }
         // 清除CSS Highlight
-        if (currentHighlight && CSS.highlights) {
+        if (currentHighlight && window.CSS && CSS.highlights) {
             CSS.highlights.delete(highlightName);
         }
+        cleanupSliderHighlight();
         // Always clear selection on cancel (for fallback)
         document.getSelection().removeAllRanges();
         removeSelectionStyles(styleId); // Remove the dynamic styles on cancel
