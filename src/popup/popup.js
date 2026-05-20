@@ -2681,8 +2681,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 触发逐词高亮（TTS）开关
     const explosionHighlightWithTTS = document.getElementById('explosionHighlightWithTTS');
+    const explosionHighlightNoTTS = document.getElementById('explosionHighlightNoTTS');
+    const explosionTTSOnly = document.getElementById('explosionTTSOnly');
+
+    // 触发逐词高亮（TTS）开关
     if (explosionHighlightWithTTS) {
         // 加载设置
         chrome.storage.local.get('explosionHighlightWithTTS', function(result) {
@@ -2695,10 +2698,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 如果启用TTS高亮，关闭无TTS高亮
                 chrome.storage.local.set({
                     explosionHighlightWithTTS: true,
-                    explosionHighlightNoTTS: false
+                    explosionHighlightNoTTS: false,
+                    explosionTTSOnly: false
                 });
                 if (explosionHighlightNoTTS) {
                     explosionHighlightNoTTS.checked = false;
+                }
+                if (explosionTTSOnly) {
+                    explosionTTSOnly.checked = false;
                 }
             } else {
                 chrome.storage.local.set({ explosionHighlightWithTTS: false });
@@ -2707,7 +2714,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 触发逐词高亮（无TTS）开关
-    const explosionHighlightNoTTS = document.getElementById('explosionHighlightNoTTS');
     if (explosionHighlightNoTTS) {
         // 加载设置
         chrome.storage.local.get('explosionHighlightNoTTS', function(result) {
@@ -2720,13 +2726,44 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 如果启用无TTS高亮，关闭TTS高亮
                 chrome.storage.local.set({
                     explosionHighlightNoTTS: true,
-                    explosionHighlightWithTTS: false
+                    explosionHighlightWithTTS: false,
+                    explosionTTSOnly: false
                 });
                 if (explosionHighlightWithTTS) {
                     explosionHighlightWithTTS.checked = false;
                 }
+                if (explosionTTSOnly) {
+                    explosionTTSOnly.checked = false;
+                }
             } else {
                 chrome.storage.local.set({ explosionHighlightNoTTS: false });
+            }
+        });
+    }
+
+    // 仅 TTS（无逐词高亮）开关
+    if (explosionTTSOnly) {
+        // 加载设置
+        chrome.storage.local.get('explosionTTSOnly', function(result) {
+            explosionTTSOnly.checked = result.explosionTTSOnly !== undefined ? result.explosionTTSOnly : false;
+        });
+
+        // 监听变化（与逐词高亮开关互斥）
+        explosionTTSOnly.addEventListener('change', function(e) {
+            if (e.target.checked) {
+                chrome.storage.local.set({
+                    explosionTTSOnly: true,
+                    explosionHighlightWithTTS: false,
+                    explosionHighlightNoTTS: false
+                });
+                if (explosionHighlightWithTTS) {
+                    explosionHighlightWithTTS.checked = false;
+                }
+                if (explosionHighlightNoTTS) {
+                    explosionHighlightNoTTS.checked = false;
+                }
+            } else {
+                chrome.storage.local.set({ explosionTTSOnly: false });
             }
         });
     }
@@ -3759,6 +3796,7 @@ const i18n = {
     "word_explosion_count_all": "全部",
     "explosion_highlight_with_tts": "触发逐词高亮（TTS）",
     "explosion_highlight_no_tts": "触发逐词高亮（无TTS）",
+    "explosion_tts_only": "仅 TTS（无逐词高亮）",
     "explosion_highlight_speed": "爆炸窗口逐词高亮速度 (ms/字符)",
     "show_explosion_sentence": "显示爆炸原句",
     "show_known_sentence_animation": "已知句子展示动效图",
@@ -3960,6 +3998,7 @@ const i18n = {
     "explosion_sentence_translation_request_hint": "Request AI translation independently, not dependent on word example sentences",
     "explosion_highlight_with_tts": "Trigger Word-by-Word Highlight (TTS)",
     "explosion_highlight_no_tts": "Trigger Word-by-Word Highlight (No TTS)",
+    "explosion_tts_only": "TTS Only (No Word-by-Word Highlight)",
     "explosion_highlight_speed": "Explosion Highlight Speed (ms/char)",
     "word_explosion_sentence_translation_count": "Sentence Translation Count",
     "word_explosion_count_all": "All",
@@ -4131,6 +4170,7 @@ const i18n = {
     "word_explosion_count_all": "全部",
     "explosion_highlight_with_tts": "觸發逐詞高亮（TTS）",
     "explosion_highlight_no_tts": "觸發逐詞高亮（無TTS）",
+    "explosion_tts_only": "僅 TTS（無逐詞高亮）",
     "explosion_highlight_speed": "爆炸視窗逐詞高亮速度 (ms/字元)",
     "show_explosion_sentence": "顯示爆炸原句",
     "show_known_sentence_animation": "已知句子展示動效圖",
@@ -4299,6 +4339,7 @@ const i18n = {
         "explosion_sentence_translation_request_count": "Satz-Übersetzungsanfrage-Anzahl",
         "explosion_sentence_translation_request_hint": "AI-Übersetzung unabhängig anfordern, nicht abhängig von Wortbeispielsätzen",
         "explosion_highlight_with_tts": "Wort-für-Wort-Hervorhebung auslösen (TTS)",
+        "explosion_tts_only": "Nur TTS (keine Wort-für-Wort-Hervorhebung)",
         "word_explosion_highlight_sentence": "Aktuellen Explosionssatz hervorheben",
         "word_explosion_highlight_color": "Hervorhebungshintergrundfarbe",
         "word_explosion_highlight_color_hint": "Klicken Sie auf die Farbpalette, um eine Farbe auszuwählen, ziehen Sie den Schieberegler, um die Transparenz anzupassen",
@@ -4463,6 +4504,7 @@ const i18n = {
         "explosion_sentence_translation_request_hint": "Demander la traduction AI indépendamment, sans dépendre des exemples de mots",
         "explosion_highlight_with_tts": "Déclencher la mise en évidence mot par mot (TTS)",
         "explosion_highlight_no_tts": "Déclencher la mise en évidence mot par mot (sans TTS)",
+        "explosion_tts_only": "TTS uniquement (sans mise en évidence mot par mot)",
         "explosion_highlight_speed": "Vitesse de mise en évidence de l'explosion (ms/caractère)",
         "show_explosion_sentence": "Afficher la phrase d'explosion originale",
         "show_known_sentence_animation": "Afficher l'animation de phrase connue",
@@ -4631,6 +4673,7 @@ const i18n = {
         "explosion_sentence_translation_request_hint": "Solicitar traducción AI independientemente, sin depender de ejemplos de palabras",
         "explosion_highlight_with_tts": "Activar resaltado palabra por palabra (TTS)",
         "explosion_highlight_no_tts": "Activar resaltado palabra por palabra (sin TTS)",
+        "explosion_tts_only": "Solo TTS (sin resaltado palabra por palabra)",
         "explosion_highlight_speed": "Velocidad de resaltado de explosión (ms/caracter)",
         "show_explosion_sentence": "Mostrar frase de explosión original",
         "show_known_sentence_animation": "Mostrar animación de frase conocida",
@@ -4799,6 +4842,7 @@ const i18n = {
           "explosion_sentence_translation_request_hint": "AI翻訳を独立してリクエストし、単語例文に依存しない",
           "explosion_highlight_with_tts": "単語ごとのハイライトをトリガー（TTS）",
           "explosion_highlight_no_tts": "単語ごとのハイライトをトリガー（TTSなし）",
+          "explosion_tts_only": "TTSのみ（単語ごとのハイライトなし）",
           "explosion_highlight_speed": "爆発ハイライト速度 (ms/文字)",
           "show_explosion_sentence": "爆発元の文を表示",
           "show_known_sentence_animation": "既知の文のアニメーションを表示",
@@ -4965,6 +5009,7 @@ const i18n = {
           "explosion_sentence_translation_request_hint": "단어 예문에 의존하지 않고 AI 번역을 독립적으로 요청합니다",
           "explosion_highlight_with_tts": "단어별 강조 트리거 (TTS)",
           "explosion_highlight_no_tts": "단어별 강조 트리거 (TTS 없음)",
+          "explosion_tts_only": "TTS만 (단어별 강조 없음)",
           "explosion_highlight_speed": "폭발 강조 속도 (ms/문자)",
           "show_explosion_sentence": "폭발 원문 표시",
           "show_known_sentence_animation": "알려진 문장 애니메이션 표시",
@@ -5122,6 +5167,7 @@ const i18n = {
           "explosion_sentence_translation_request_hint": "Запрашивать перевод AI независимо, не завися от примеров слов",
           "explosion_highlight_with_tts": "Триггер подсветки слово за словом (TTS)",
           "explosion_highlight_no_tts": "Триггер подсветки слово за словом (без TTS)",
+          "explosion_tts_only": "Только TTS (без подсветки слово за словом)",
           "explosion_highlight_speed": "Скорость подсветки взрыва (ms/символ)",
           "show_explosion_sentence": "Показать исходное предложение взрыва",
           "show_known_sentence_animation": "Показать анимацию известного предложения",
@@ -5276,6 +5322,7 @@ const i18n = {
           "explosion_sentence_translation_request_hint": "Richiedi traduzione AI indipendentemente, senza dipendere da esempi di parole",
           "explosion_highlight_with_tts": "Attiva evidenziazione parola per parola (TTS)",
           "explosion_highlight_no_tts": "Attiva evidenziazione parola per parola (senza TTS)",
+          "explosion_tts_only": "Solo TTS (senza evidenziazione parola per parola)",
           "explosion_highlight_speed": "Velocità evidenziazione esplosione (ms/carattere)",
           "show_explosion_sentence": "Mostra frase di esplosione originale",
           "show_known_sentence_animation": "Mostra animazione frase conosciuta",

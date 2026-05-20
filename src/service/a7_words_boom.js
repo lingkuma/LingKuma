@@ -1281,15 +1281,24 @@ function showWordExplosion(sentence, sentenceRect = null, sentenceInfo = null) {
   }
 
   // 触发逐词高亮（与爆炸窗口同时触发）
-  chrome.storage.local.get(['explosionHighlightWithTTS', 'explosionHighlightNoTTS'], function(result) {
+  chrome.storage.local.get(['explosionHighlightWithTTS', 'explosionHighlightNoTTS', 'explosionTTSOnly'], function(result) {
     const highlightWithTTS = result.explosionHighlightWithTTS || false;
     const highlightNoTTS = result.explosionHighlightNoTTS !== undefined ? result.explosionHighlightNoTTS : false;
+    const ttsOnly = result.explosionTTSOnly !== undefined ? result.explosionTTSOnly : false;
 
     console.log('[WordExplosion] 爆炸窗口触发，检查逐词高亮设置:', {
       highlightWithTTS,
       highlightNoTTS,
+      ttsOnly,
       hasSentenceInfo: !!sentenceInfo
     });
+
+    if (ttsOnly) {
+      if (typeof playText === 'function') {
+        playText({ text: sentence });
+      }
+      return;
+    }
 
     // 如果启用了任一逐词高亮功能
     if ((highlightWithTTS || highlightNoTTS) && sentenceInfo) {
