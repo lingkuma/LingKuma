@@ -4994,8 +4994,8 @@ max_tokens=4096" style="width: 100%; padding: 8px; min-height: 80px; resize: ver
           <label for="wordAudioUrlTemplate" style="display: block; margin-bottom: 5px;">自定义URL1:</label>
           <textarea
               id="wordAudioUrlTemplate"
-              style="width: 100%; padding: 8px;"
-              rows="4"
+              style="width: 100%; padding: 8px; min-height: 64px; height: 64px; overflow-y: auto;"
+              rows="2"
           ></textarea>
           <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
         </div>
@@ -5004,8 +5004,19 @@ max_tokens=4096" style="width: 100%; padding: 8px; min-height: 80px; resize: ver
           <label for="wordAudioUrlTemplate2" style="display: block; margin-bottom: 5px;">自定义URL2:</label>
           <textarea
               id="wordAudioUrlTemplate2"
-              style="width: 100%; padding: 8px;"
-              rows="4"
+              style="width: 100%; padding: 8px; min-height: 64px; height: 64px; overflow-y: auto;"
+              rows="2"
+          ></textarea>
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="audioUrlNotebook" style="display: block; margin-bottom: 5px;">noteboook:</label>
+          <textarea
+              id="audioUrlNotebook"
+              placeholder="Record extra TTS URLs or notes here."
+              style="width: 100%; padding: 8px; min-height: 140px; height: 140px; overflow-y: auto;"
+              rows="6"
           ></textarea>
           <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
         </div>

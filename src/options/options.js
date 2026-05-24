@@ -6032,6 +6032,14 @@ window.onload = function() {
 // ... (现有的 window.onload, switchTab, backup/restore 等函数) ...
 
 // 更新 switchTab 函数以确保在切换时清除状态消息 (可选但推荐)
+document.getElementById('audioUrlNotebook').addEventListener('input', debounce(function(e) {
+  chrome.storage.local.get(['ttsConfig'], function(result) {
+      const ttsConfig = result.ttsConfig || {};
+      ttsConfig.audioUrlNotebook = e.target.value;
+      chrome.storage.local.set({ ttsConfig: ttsConfig });
+  });
+}, 500));
+
 function switchTab(panelId) {
   // 隐藏所有面板
   panels.forEach(panel => panel.classList.add('hidden'));
@@ -6797,7 +6805,8 @@ chrome.storage.local.get('ttsConfig', function(result) {
       wordTTSProvider: 'edge',
       sentenceTTSProvider: 'edge',
       wordAudioUrlTemplate: '',
-      wordAudioUrlTemplate2: ''
+      wordAudioUrlTemplate2: '',
+      audioUrlNotebook: ''
     };
   }
   // 设置默认值
@@ -6810,6 +6819,7 @@ chrome.storage.local.get('ttsConfig', function(result) {
 
   document.getElementById('wordAudioUrlTemplate').value = ttsConfig.wordAudioUrlTemplate || '';
   document.getElementById('wordAudioUrlTemplate2').value = ttsConfig.wordAudioUrlTemplate2 || '';
+  document.getElementById('audioUrlNotebook').value = ttsConfig.audioUrlNotebook || '';
 });
 
 // 监听变化
