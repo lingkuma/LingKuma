@@ -3412,6 +3412,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             } else {
                 console.error("Unable to initialize offscreen page for GPT TTS");
             }
+        } else if (message.audioType === "playSupertoneTTS") {
+            if (!isOffscreenOpened) {
+                console.log("offscreen page is not initialized, initializing for Supertone TTS");
+                await ensureOffscreenDocument();
+            }
+
+            if (isOffscreenOpened) {
+                chrome.runtime.sendMessage({
+                    action: "playSupertoneTTS",
+                    requestId: message.requestId,
+                    apiEndpoint: message.apiEndpoint,
+                    apiKey: message.apiKey,
+                    text: message.text,
+                    voiceId: message.voiceId,
+                    model: message.model,
+                    language: message.language,
+                    style: message.style,
+                    outputFormat: message.outputFormat,
+                    speed: message.speed,
+                    mode: message.mode,
+                    isSentence: message.isSentence,
+                    count: message.count
+                });
+            } else {
+                console.error("Unable to initialize offscreen page for Supertone TTS");
+            }
         } else if (message.audioType === "playLocal") {
             // 需要时进行语言检测
             const { text, lang, isSentence, contextSentence, skipLanguageDetection } = message;

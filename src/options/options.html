@@ -2315,6 +2315,7 @@
         <button id="tab-tts-edge" data-i18n="ttsEdge">Edge TTS</button>
         <button id="tab-tts-minimaxi" data-i18n="ttsMinimaxi">Minimaxi TTS</button>
         <button id="tab-tts-gpt">GPT TTS</button>
+        <button id="tab-tts-supertone">Supertone TTS</button>
         <button id="tab-tts-custom" data-i18n="ttsCustom">自定义URL</button>
       </div>
 
@@ -4624,6 +4625,7 @@ max_tokens=4096" style="width: 100%; padding: 8px; min-height: 80px; resize: ver
             <option value="custom2">自定义URL2</option>
             <option value="minimaxi">Minimaxi TTS</option>
             <option value="gpt">GPT TTS</option>
+            <option value="supertone">Supertone TTS</option>
           </select>
           <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
         </div>
@@ -4635,6 +4637,7 @@ max_tokens=4096" style="width: 100%; padding: 8px; min-height: 80px; resize: ver
             <option value="edge" data-i18n="edgeTts">Edge TTS</option>
             <option value="minimaxi">Minimaxi TTS</option>
             <option value="gpt">GPT TTS</option>
+            <option value="supertone">Supertone TTS</option>
             <option value="custom" data-i18n="customUrl">自定义URL1</option>
             <option value="custom2">自定义URL2</option>
           </select>
@@ -4983,6 +4986,76 @@ max_tokens=4096" style="width: 100%; padding: 8px; min-height: 80px; resize: ver
         </div>
         <div class="setting-item" style="margin-bottom: 15px;">
           <button id="testGptTTS" style="padding: 8px 16px;">Test GPT TTS</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-tts-supertone" class="hidden">
+      <h2>Supertone TTS Configuration</h2>
+      <div class="settings-section" style="padding: 10px; border-radius: 5px;">
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="supertoneBaseURL" style="display: block; margin-bottom: 5px;">Base URL:</label>
+          <input type="text" id="supertoneBaseURL" data-auto-save="true" data-storage-key="supertoneBaseURL" data-storage-area="aiConfig" placeholder="https://supertoneapi.com/v1/text-to-speech" style="width: 100%; padding: 8px;">
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="supertoneAPIKey" style="display: block; margin-bottom: 5px;">API Key:</label>
+          <input type="password" id="supertoneAPIKey" data-auto-save="true" data-storage-key="supertoneAPIKey" data-storage-area="aiConfig" placeholder="Supertone API Key" style="width: 100%; padding: 8px;">
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="supertoneVoiceId" style="display: block; margin-bottom: 5px;">Voice ID:</label>
+          <input type="text" id="supertoneVoiceId" data-auto-save="true" data-storage-key="supertoneVoiceId" data-storage-area="aiConfig" placeholder="voice_id" style="width: 100%; padding: 8px;">
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="supertoneModel" style="display: block; margin-bottom: 5px;">Model:</label>
+          <input type="text" id="supertoneModel" data-auto-save="true" data-storage-key="supertoneModel" data-storage-area="aiConfig" placeholder="sona_speech_1" style="width: 100%; padding: 8px;">
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="supertoneLanguage" style="display: block; margin-bottom: 5px;">Language:</label>
+          <input type="text" id="supertoneLanguage" data-auto-save="true" data-storage-key="supertoneLanguage" data-storage-area="aiConfig" placeholder="auto / en / ko / ja / zh" style="width: 100%; padding: 8px;">
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="supertoneStyle" style="display: block; margin-bottom: 5px;">Style:</label>
+          <input type="text" id="supertoneStyle" data-auto-save="true" data-storage-key="supertoneStyle" data-storage-area="aiConfig" placeholder="neutral" style="width: 100%; padding: 8px;">
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="supertoneOutputFormat" style="display: block; margin-bottom: 5px;">Audio format:</label>
+          <select id="supertoneOutputFormat" data-auto-save="true" data-storage-key="supertoneOutputFormat" data-storage-area="aiConfig" style="width: 100%; padding: 8px;">
+            <option value="mp3">mp3</option>
+            <option value="wav">wav</option>
+          </select>
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="supertoneSpeed" style="display: block; margin-bottom: 5px;">Speed:</label>
+          <input type="number" id="supertoneSpeed" data-auto-save="true" data-storage-key="supertoneSpeed" data-storage-area="aiConfig" min="0.5" max="2.0" step="0.1" placeholder="1.0" style="width: 100%; padding: 8px;">
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="supertoneMode" style="display: block; margin-bottom: 5px;">Mode:</label>
+          <select id="supertoneMode" data-auto-save="true" data-storage-key="supertoneMode" data-storage-area="aiConfig" style="width: 100%; padding: 8px;">
+            <option value="stream">stream</option>
+            <option value="standard">standard</option>
+          </select>
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 15px;">
+          <button id="testSupertoneTTS" style="padding: 8px 16px;">Test Supertone TTS</button>
+        </div>
+        <div class="multilingual-note">
+          <div class="note-title">Note</div>
+          <div class="note-content">
+            <span class="lang-tag lang-en">EN</span>
+            <span>
+              <br>Stream mode uses the Supertone stream endpoint. For immediate browser playback, mp3 is recommended.
+              <br>If your selected model only supports en/ko/ja, unsupported detected languages fall back to en.
+            </span>
+          </div>
         </div>
       </div>
     </div>

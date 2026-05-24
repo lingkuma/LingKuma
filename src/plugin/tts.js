@@ -125,7 +125,9 @@ async function playTextInternal(params) {
 
             try {
                 const provider = ttsConfig.sentenceTTSProvider || 'local';
-                if (provider === 'minimaxi') {
+                if (provider === 'supertone') {
+                    await playSupertoneTTS(text, isSentence, count, lang);
+                } else if (provider === 'minimaxi') {
                     await playMinimaxi(text, lang);
                 } else if (provider === 'gpt') {
                     await playGptTTS(text, true, count);
@@ -193,7 +195,9 @@ async function playTextInternal(params) {
         if (isSentence) {
             // 句子播放
             const provider = ttsConfig.sentenceTTSProvider || 'local';
-            if (provider === 'minimaxi') {
+            if (provider === 'supertone') {
+                await playSupertoneTTS(text, isSentence, count, lang);
+            } else if (provider === 'minimaxi') {
                 await playMinimaxi(text);
             } else if (provider === 'gpt') {
                 await playGptTTS(text, true, count);
@@ -209,7 +213,9 @@ async function playTextInternal(params) {
         } else {
             // 单词播放
             const provider = ttsConfig.wordTTSProvider || 'local';
-            if (provider === 'minimaxi') {
+            if (provider === 'supertone') {
+                await playSupertoneTTS(text, isSentence, count, lang);
+            } else if (provider === 'minimaxi') {
                 await playMinimaxi(text);
             } else if (provider === 'gpt') {
                 await playGptTTS(text, false, count);
@@ -508,6 +514,45 @@ async function playGptTTS(text, isSentence, count = 1) {
     }, () => {
         if (chrome.runtime.lastError) {
             console.error('Failed to send GPT TTS message:', chrome.runtime.lastError);
+        }
+    });
+}
+
+async function playSupertoneTTS(text, isSentence, count = 1, langOverride = null) {
+    const result = await new Promise(resolve => {
+        chrome.storage.local.get('aiConfig', resolve);
+    });
+    const aiConfig = result.aiConfig || {};
+    const apiKey = aiConfig.supertoneAPIKey || '';
+    const voiceId = aiConfig.supertoneVoiceId || '';
+
+    if (!apiKey || !voiceId) {
+        console.error('Supertone TTS API Key or Voice ID is empty.');
+        return;
+    }
+
+    const configuredLanguage = aiConfig.supertoneLanguage || 'auto';
+    const language = configuredLanguage === 'auto' ? (langOverride || 'auto') : configuredLanguage;
+
+    chrome.runtime.sendMessage({
+        action: "playAudio",
+        audioType: "playSupertoneTTS",
+        requestId: `supertone-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        apiEndpoint: aiConfig.supertoneBaseURL || 'https://supertoneapi.com/v1/text-to-speech',
+        apiKey: apiKey,
+        text: text,
+        voiceId: voiceId,
+        model: aiConfig.supertoneModel || 'sona_speech_1',
+        language: language,
+        style: aiConfig.supertoneStyle || '',
+        outputFormat: aiConfig.supertoneOutputFormat || 'mp3',
+        speed: parseFloat(aiConfig.supertoneSpeed) || 1.0,
+        mode: aiConfig.supertoneMode || 'stream',
+        isSentence: isSentence,
+        count: count
+    }, () => {
+        if (chrome.runtime.lastError) {
+            console.error('Failed to send Supertone TTS message:', chrome.runtime.lastError);
         }
     });
 }

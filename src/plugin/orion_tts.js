@@ -164,6 +164,8 @@ async function orion_playText(params) {
         const provider = orion_ttsConfig.sentenceTTSProvider || 'local';
         if (provider === 'edge') {
             await orion_playEdgeTTS(text, lang, isSentence);
+        } else if (provider === 'supertone') {
+            await orion_playSupertoneTTS(text, true, count, lang);
         } else if (provider === 'minimaxi') {
             await orion_playMinimaxi(text, lang);
         } else if (provider === 'gpt') {
@@ -179,6 +181,8 @@ async function orion_playText(params) {
         const provider = orion_ttsConfig.wordTTSProvider || 'local';
         if (provider === 'edge') {
             await orion_playEdgeTTS(text, lang, isSentence);
+        } else if (provider === 'supertone') {
+            await orion_playSupertoneTTS(text, false, count, lang);
         } else if (provider === 'minimaxi') {
             await orion_playMinimaxi(text, lang);
         } else if (provider === 'gpt') {
@@ -566,6 +570,253 @@ async function orion_playGptTTS(text, isSentence, count = 1) {
         await player.play();
     } catch (error) {
         console.error('Orion GPT TTS error:', error);
+    }
+}
+
+function orion_getSupertoneTTSMimeType(format) {
+    return (format || 'mp3').toLowerCase() === 'wav' ? 'audio/wav' : 'audio/mpeg';
+}
+
+function orion_normalizeSupertoneLanguage(language, model, isStream = false) {
+    const value = String(language || 'auto').trim().toLowerCase();
+    const baseLang = value === 'auto' ? 'en' : value.split('-')[0].split('_')[0];
+    const sonaSpeech1Languages = new Set(['en', 'ko', 'ja']);
+    const sonaSpeech2Languages = new Set([
+        'en', 'ko', 'ja', 'bg', 'cs', 'da', 'el', 'es', 'et', 'fi', 'hu',
+        'it', 'nl', 'pl', 'pt', 'ro', 'ar', 'de', 'fr', 'hi', 'id', 'ru', 'vi'
+    ]);
+
+    if (isStream || String(model || '').startsWith('sona_speech_1') || String(model || '').startsWith('supertonic')) {
+        return sonaSpeech1Languages.has(baseLang) ? baseLang : 'en';
+    }
+
+    return sonaSpeech2Languages.has(baseLang) ? baseLang : 'en';
+}
+
+function orion_splitSupertoneText(text, maxLength = 300) {
+    const normalizedText = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!normalizedText) return [];
+    if (normalizedText.length <= maxLength) return [normalizedText];
+
+    const chunks = [];
+    let remaining = normalizedText;
+    while (remaining.length > maxLength) {
+        let splitAt = Math.max(
+            remaining.lastIndexOf('.', maxLength),
+            remaining.lastIndexOf('?', maxLength),
+            remaining.lastIndexOf('!', maxLength),
+            remaining.lastIndexOf(',', maxLength),
+            remaining.lastIndexOf(' ', maxLength)
+        );
+        if (splitAt < Math.floor(maxLength * 0.5)) {
+            splitAt = maxLength;
+        } else {
+            splitAt += 1;
+        }
+        chunks.push(remaining.slice(0, splitAt).trim());
+        remaining = remaining.slice(splitAt).trim();
+    }
+    if (remaining) chunks.push(remaining);
+    return chunks;
+}
+
+function orion_buildSupertoneEndpoint(baseURL, voiceId, isStream) {
+    const base = String(baseURL || 'https://supertoneapi.com/v1/text-to-speech').replace(/\/+$/, '');
+    return `${base}/${encodeURIComponent(voiceId)}${isStream ? '/stream' : ''}`;
+}
+
+function orion_buildSupertoneBody(config, text, isStream) {
+    const model = config.supertoneModel || 'sona_speech_1';
+    const configuredLanguage = config.supertoneLanguage || 'auto';
+    const language = configuredLanguage === 'auto' ? (config.langOverride || 'auto') : configuredLanguage;
+    const body = {
+        text: text,
+        language: orion_normalizeSupertoneLanguage(language, model, isStream),
+        model: model,
+        output_format: (config.supertoneOutputFormat || 'mp3').toLowerCase(),
+        include_phonemes: false,
+        voice_settings: {
+            pitch_shift: 0,
+            pitch_variance: 1,
+            speed: Number.isFinite(Number(config.supertoneSpeed)) ? Number(config.supertoneSpeed) : 1
+        }
+    };
+
+    if (config.supertoneStyle && String(config.supertoneStyle).trim()) {
+        body.style = String(config.supertoneStyle).trim();
+    }
+
+    return body;
+}
+
+async function orion_fetchSupertoneAudio(config, text, isStream) {
+    const response = await fetch(orion_buildSupertoneEndpoint(config.supertoneBaseURL, config.supertoneVoiceId, isStream), {
+        method: 'POST',
+        headers: {
+            'x-sup-api-key': config.supertoneAPIKey,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(orion_buildSupertoneBody(config, text, isStream))
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        throw new Error(`Supertone TTS HTTP error: ${response.status} ${errorText}`);
+    }
+
+    return response;
+}
+
+async function orion_playSupertoneBlob(blob, isSentence, count) {
+    const audioUrl = URL.createObjectURL(blob);
+    orion_setAudioUrl(audioUrl);
+    const player = orion_globalAudioElement || new Audio(audioUrl);
+
+    if (isSentence) {
+        orion_sentenceAudioPlayer = player;
+    } else {
+        orion_wordAudioPlayer = player;
+    }
+
+    let playCount = 0;
+    player.onended = () => {
+        playCount++;
+        if (!isSentence && playCount < (parseInt(count, 10) || 1)) {
+            player.currentTime = 0;
+            player.play();
+            return;
+        }
+        URL.revokeObjectURL(audioUrl);
+    };
+
+    player.onerror = () => {
+        URL.revokeObjectURL(audioUrl);
+        console.error('Orion Supertone TTS audio playback failed.');
+    };
+
+    await player.play();
+}
+
+async function orion_playSupertoneStream(config, chunks, mimeType, isSentence, count) {
+    if (mimeType !== 'audio/mpeg' || !window.MediaSource || !MediaSource.isTypeSupported('audio/mpeg')) {
+        const buffers = [];
+        for (const chunkText of chunks) {
+            const response = await orion_fetchSupertoneAudio(config, chunkText, true);
+            const reader = response.body.getReader();
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffers.push(value);
+            }
+        }
+        await orion_playSupertoneBlob(new Blob(buffers, { type: mimeType }), isSentence, count);
+        return;
+    }
+
+    const recordedChunks = [];
+    const player = orion_globalAudioElement || new Audio();
+    orion_mediaSource = new MediaSource();
+    const mediaSourceUrl = URL.createObjectURL(orion_mediaSource);
+    orion_setAudioUrl(mediaSourceUrl);
+    player.src = mediaSourceUrl;
+    orion_pendingAudioData = [];
+
+    if (isSentence) {
+        orion_sentenceAudioPlayer = player;
+    } else {
+        orion_wordAudioPlayer = player;
+    }
+
+    await new Promise(resolve => {
+        orion_mediaSource.addEventListener('sourceopen', () => {
+            orion_sourceBuffer = orion_mediaSource.addSourceBuffer('audio/mpeg');
+            orion_sourceBuffer.addEventListener('updateend', () => {
+                if (orion_pendingAudioData.length > 0 && !orion_sourceBuffer.updating) {
+                    orion_sourceBuffer.appendBuffer(orion_pendingAudioData.shift());
+                }
+            });
+            resolve();
+        }, { once: true });
+    });
+
+    let hasStarted = false;
+    for (const chunkText of chunks) {
+        const response = await orion_fetchSupertoneAudio(config, chunkText, true);
+        const reader = response.body.getReader();
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            recordedChunks.push(value);
+            const buffer = value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength);
+            if (orion_sourceBuffer.updating || orion_pendingAudioData.length > 0) {
+                orion_pendingAudioData.push(buffer);
+            } else {
+                orion_sourceBuffer.appendBuffer(buffer);
+            }
+            if (!hasStarted) {
+                hasStarted = true;
+                player.play().catch(error => console.error('Orion Supertone stream playback failed:', error));
+            }
+        }
+    }
+
+    while (orion_pendingAudioData.length > 0) {
+        if (!orion_sourceBuffer.updating) {
+            orion_sourceBuffer.appendBuffer(orion_pendingAudioData.shift());
+        }
+        await orion_waitForUpdateEnd();
+    }
+
+    if (!orion_sourceBuffer.updating) {
+        orion_mediaSource.endOfStream();
+    } else {
+        orion_sourceBuffer.addEventListener('updateend', () => orion_mediaSource.endOfStream(), { once: true });
+    }
+
+    player.onended = async () => {
+        URL.revokeObjectURL(mediaSourceUrl);
+        const requestedCount = parseInt(count, 10) || 1;
+        if (!isSentence && requestedCount > 1 && recordedChunks.length > 0) {
+            await orion_playSupertoneBlob(new Blob(recordedChunks, { type: mimeType }), isSentence, requestedCount - 1);
+        }
+    };
+}
+
+async function orion_playSupertoneTTS(text, isSentence, count = 1, langOverride = null) {
+    try {
+        if (!orion_aiConfig) {
+            await orion_init();
+        }
+
+        if (isSentence) {
+            orion_stopSentenceAudio();
+        } else {
+            orion_stopWordAudio();
+        }
+
+        const config = Object.assign({}, orion_aiConfig || {}, { langOverride });
+        if (!config.supertoneAPIKey || !config.supertoneVoiceId) {
+            console.error('Orion Supertone TTS API Key or Voice ID is empty.');
+            return;
+        }
+
+        const chunks = orion_splitSupertoneText(text);
+        if (chunks.length === 0) return;
+
+        const mimeType = orion_getSupertoneTTSMimeType(config.supertoneOutputFormat);
+        if ((config.supertoneMode || 'stream') === 'stream') {
+            await orion_playSupertoneStream(config, chunks, mimeType, isSentence, count);
+            return;
+        }
+
+        const blobs = [];
+        for (const chunkText of chunks) {
+            const response = await orion_fetchSupertoneAudio(config, chunkText, false);
+            blobs.push(await response.blob());
+        }
+        await orion_playSupertoneBlob(new Blob(blobs, { type: mimeType }), isSentence, count);
+    } catch (error) {
+        console.error('Orion Supertone TTS error:', error);
     }
 }
 

@@ -4,6 +4,7 @@ let sentenceAudioPlayer = null;
 let pendingAudioData = [];
 let mediaSource = null;
 let sourceBuffer = null;
+const handledAudioRequestIds = new Set();
 
 // 不再使用全局 Edge TTS 实例
 
@@ -113,6 +114,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     console.log("离屏文档收到消息:", request.action);
 
+    if (request.action === "playAudio" && request.audioType === "playSupertoneTTS") {
+        playSupertoneTTS(request)
+            .then(() => sendResponse({success: true}))
+            .catch(error => sendResponse({success: false, error: error.message}));
+        return true;
+    }
+
     if (request.action === "playCustom") {
         try {
             playCustom(request.url, request.count, request.volume);
@@ -140,6 +148,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     if (request.action === "playGptTTS") {
         playGptTTS(request)
+            .then(() => sendResponse({success: true}))
+            .catch(error => sendResponse({success: false, error: error.message}));
+        return true;
+    }
+
+    if (request.action === "playSupertoneTTS") {
+        playSupertoneTTS(request)
             .then(() => sendResponse({success: true}))
             .catch(error => sendResponse({success: false, error: error.message}));
         return true;
@@ -1308,6 +1323,321 @@ async function playGptTTS(options) {
         await player.play();
     } catch (error) {
         console.error('GPT TTS error:', error);
+        chrome.runtime.sendMessage({
+            action: "audioPlaybackError",
+            error: error.message,
+            audioType: audioType
+        });
+        throw error;
+    }
+}
+
+function getSupertoneTTSMimeType(format) {
+    switch ((format || 'mp3').toLowerCase()) {
+        case 'wav':
+            return 'audio/wav';
+        case 'mp3':
+        default:
+            return 'audio/mpeg';
+    }
+}
+
+function normalizeSupertoneLanguage(language, model, isStream = false) {
+    const value = String(language || 'auto').trim().toLowerCase();
+    const baseLang = value === 'auto' ? 'en' : value.split('-')[0].split('_')[0];
+    const sonaSpeech1Languages = new Set(['en', 'ko', 'ja']);
+    const sonaSpeech2Languages = new Set([
+        'en', 'ko', 'ja', 'bg', 'cs', 'da', 'el', 'es', 'et', 'fi', 'hu',
+        'it', 'nl', 'pl', 'pt', 'ro', 'ar', 'de', 'fr', 'hi', 'id', 'ru', 'vi'
+    ]);
+
+    if (isStream || String(model || '').startsWith('sona_speech_1') || String(model || '').startsWith('supertonic')) {
+        return sonaSpeech1Languages.has(baseLang) ? baseLang : 'en';
+    }
+
+    return sonaSpeech2Languages.has(baseLang) ? baseLang : 'en';
+}
+
+function splitSupertoneText(text, maxLength = 300) {
+    const normalizedText = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!normalizedText) return [];
+    if (normalizedText.length <= maxLength) return [normalizedText];
+
+    const chunks = [];
+    let remaining = normalizedText;
+    while (remaining.length > maxLength) {
+        let splitAt = Math.max(
+            remaining.lastIndexOf('.', maxLength),
+            remaining.lastIndexOf('?', maxLength),
+            remaining.lastIndexOf('!', maxLength),
+            remaining.lastIndexOf(',', maxLength),
+            remaining.lastIndexOf(' ', maxLength)
+        );
+        if (splitAt < Math.floor(maxLength * 0.5)) {
+            splitAt = maxLength;
+        } else {
+            splitAt += 1;
+        }
+        chunks.push(remaining.slice(0, splitAt).trim());
+        remaining = remaining.slice(splitAt).trim();
+    }
+    if (remaining) chunks.push(remaining);
+    return chunks;
+}
+
+function buildSupertoneEndpoint(baseURL, voiceId, isStream) {
+    const base = String(baseURL || 'https://supertoneapi.com/v1/text-to-speech').replace(/\/+$/, '');
+    const encodedVoiceId = encodeURIComponent(voiceId);
+    return `${base}/${encodedVoiceId}${isStream ? '/stream' : ''}`;
+}
+
+function buildSupertoneBody(options, text, isStream) {
+    const model = options.model || 'sona_speech_1';
+    const body = {
+        text: text,
+        language: normalizeSupertoneLanguage(options.language, model, isStream),
+        model: model,
+        output_format: (options.outputFormat || 'mp3').toLowerCase(),
+        include_phonemes: false,
+        voice_settings: {
+            pitch_shift: 0,
+            pitch_variance: 1,
+            speed: Number.isFinite(Number(options.speed)) ? Number(options.speed) : 1
+        }
+    };
+
+    if (options.style && String(options.style).trim()) {
+        body.style = String(options.style).trim();
+    }
+
+    return body;
+}
+
+async function fetchSupertoneAudio(options, text, isStream) {
+    const response = await fetch(buildSupertoneEndpoint(options.apiEndpoint, options.voiceId, isStream), {
+        method: 'POST',
+        headers: {
+            'x-sup-api-key': options.apiKey,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(buildSupertoneBody(options, text, isStream))
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        throw new Error(`Supertone TTS HTTP error: ${response.status} ${errorText}`);
+    }
+
+    return response;
+}
+
+async function playSupertoneBlob(blob, audioType, isSentence, count) {
+    const audioUrl = URL.createObjectURL(blob);
+    const player = new Audio(audioUrl);
+
+    if (isSentence) {
+        sentenceAudioPlayer = player;
+    } else {
+        wordAudioPlayer = player;
+    }
+
+    let playCount = 0;
+    player.addEventListener('playing', () => {
+        chrome.runtime.sendMessage({
+            action: "audioPlaybackStarted",
+            audioType: audioType
+        });
+    });
+
+    player.addEventListener('ended', () => {
+        playCount++;
+        if (!isSentence && playCount < (parseInt(count, 10) || 1)) {
+            player.currentTime = 0;
+            player.play().catch(error => {
+                chrome.runtime.sendMessage({
+                    action: "audioPlaybackError",
+                    error: error.message,
+                    audioType: audioType
+                });
+            });
+            return;
+        }
+
+        URL.revokeObjectURL(audioUrl);
+        chrome.runtime.sendMessage({
+            action: "audioPlaybackCompleted",
+            audioType: audioType
+        });
+    });
+
+    player.addEventListener('error', () => {
+        URL.revokeObjectURL(audioUrl);
+        chrome.runtime.sendMessage({
+            action: "audioPlaybackError",
+            error: 'Supertone TTS audio playback failed.',
+            audioType: audioType
+        });
+    });
+
+    await player.play();
+}
+
+async function playSupertoneStream(options, chunks, mimeType, audioType, isSentence, count) {
+    if (mimeType !== 'audio/mpeg' || !window.MediaSource || !MediaSource.isTypeSupported('audio/mpeg')) {
+        const buffers = [];
+        for (const chunkText of chunks) {
+            const response = await fetchSupertoneAudio(options, chunkText, true);
+            const reader = response.body.getReader();
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffers.push(value);
+            }
+        }
+        await playSupertoneBlob(new Blob(buffers, { type: mimeType }), audioType, isSentence, count);
+        return;
+    }
+
+    const recordedChunks = [];
+    const player = new Audio();
+    mediaSource = new MediaSource();
+    const mediaSourceUrl = URL.createObjectURL(mediaSource);
+    player.src = mediaSourceUrl;
+    pendingAudioData = [];
+
+    if (isSentence) {
+        sentenceAudioPlayer = player;
+    } else {
+        wordAudioPlayer = player;
+    }
+
+    player.addEventListener('playing', () => {
+        chrome.runtime.sendMessage({
+            action: "audioPlaybackStarted",
+            audioType: audioType
+        });
+    });
+
+    player.addEventListener('ended', async () => {
+        URL.revokeObjectURL(mediaSourceUrl);
+        const requestedCount = parseInt(count, 10) || 1;
+        if (!isSentence && requestedCount > 1 && recordedChunks.length > 0) {
+            await playSupertoneBlob(new Blob(recordedChunks, { type: mimeType }), audioType, isSentence, requestedCount - 1);
+            return;
+        }
+        chrome.runtime.sendMessage({
+            action: "audioPlaybackCompleted",
+            audioType: audioType
+        });
+    });
+
+    player.addEventListener('error', () => {
+        URL.revokeObjectURL(mediaSourceUrl);
+        chrome.runtime.sendMessage({
+            action: "audioPlaybackError",
+            error: 'Supertone TTS stream playback failed.',
+            audioType: audioType
+        });
+    });
+
+    await new Promise(resolve => {
+        mediaSource.addEventListener('sourceopen', () => {
+            sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
+            sourceBuffer.addEventListener('updateend', () => {
+                if (pendingAudioData.length > 0 && !sourceBuffer.updating) {
+                    sourceBuffer.appendBuffer(pendingAudioData.shift());
+                }
+            });
+            resolve();
+        }, { once: true });
+    });
+
+    let hasStarted = false;
+    for (const chunkText of chunks) {
+        const response = await fetchSupertoneAudio(options, chunkText, true);
+        const reader = response.body.getReader();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            recordedChunks.push(value);
+            const buffer = value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength);
+            if (sourceBuffer.updating || pendingAudioData.length > 0) {
+                pendingAudioData.push(buffer);
+            } else {
+                sourceBuffer.appendBuffer(buffer);
+            }
+
+            if (!hasStarted) {
+                hasStarted = true;
+                player.play().catch(error => {
+                    chrome.runtime.sendMessage({
+                        action: "audioPlaybackError",
+                        error: error.message,
+                        audioType: audioType
+                    });
+                });
+            }
+        }
+    }
+
+    while (pendingAudioData.length > 0) {
+        if (!sourceBuffer.updating) {
+            sourceBuffer.appendBuffer(pendingAudioData.shift());
+        }
+        await waitForUpdateEnd();
+    }
+
+    if (!sourceBuffer.updating) {
+        mediaSource.endOfStream();
+    } else {
+        sourceBuffer.addEventListener('updateend', () => mediaSource.endOfStream(), { once: true });
+    }
+}
+
+async function playSupertoneTTS(options) {
+    const audioType = options.isSentence ? "sentence" : "word";
+
+    try {
+        if (options.requestId) {
+            if (handledAudioRequestIds.has(options.requestId)) {
+                console.log('Skip duplicate Supertone TTS request:', options.requestId);
+                return;
+            }
+            handledAudioRequestIds.add(options.requestId);
+            setTimeout(() => handledAudioRequestIds.delete(options.requestId), 30000);
+        }
+
+        if (options.isSentence) {
+            stopSentenceAudio();
+        } else {
+            stopWordAudio();
+        }
+
+        if (!options.apiKey || !options.voiceId) {
+            throw new Error('Supertone TTS API Key or Voice ID is empty.');
+        }
+
+        const outputFormat = (options.outputFormat || 'mp3').toLowerCase();
+        const mimeType = getSupertoneTTSMimeType(outputFormat);
+        const chunks = splitSupertoneText(options.text);
+        if (chunks.length === 0) return;
+
+        if ((options.mode || 'stream') === 'stream') {
+            await playSupertoneStream(options, chunks, mimeType, audioType, options.isSentence, options.count);
+            return;
+        }
+
+        const blobs = [];
+        for (const chunkText of chunks) {
+            const response = await fetchSupertoneAudio(options, chunkText, false);
+            const audioBlob = await response.blob();
+            blobs.push(audioBlob);
+        }
+
+        await playSupertoneBlob(new Blob(blobs, { type: mimeType }), audioType, options.isSentence, options.count);
+    } catch (error) {
+        console.error('Supertone TTS error:', error);
         chrome.runtime.sendMessage({
             action: "audioPlaybackError",
             error: error.message,

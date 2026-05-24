@@ -4328,6 +4328,91 @@ function saveGptTTSSettings() {
   });
 }
 
+function initSupertoneTTSSettings() {
+  chrome.storage.local.get(['aiConfig'], function(result) {
+    const aiConfig = result.aiConfig || {};
+    document.getElementById('supertoneBaseURL').value = aiConfig.supertoneBaseURL || 'https://supertoneapi.com/v1/text-to-speech';
+    document.getElementById('supertoneAPIKey').value = aiConfig.supertoneAPIKey || '';
+    document.getElementById('supertoneVoiceId').value = aiConfig.supertoneVoiceId || '';
+    document.getElementById('supertoneModel').value = aiConfig.supertoneModel || 'sona_speech_1';
+    document.getElementById('supertoneLanguage').value = aiConfig.supertoneLanguage || 'auto';
+    document.getElementById('supertoneStyle').value = aiConfig.supertoneStyle || '';
+    document.getElementById('supertoneOutputFormat').value = aiConfig.supertoneOutputFormat || 'mp3';
+    document.getElementById('supertoneSpeed').value = aiConfig.supertoneSpeed || 1.0;
+    document.getElementById('supertoneMode').value = aiConfig.supertoneMode || 'stream';
+  });
+
+  [
+    'supertoneBaseURL',
+    'supertoneAPIKey',
+    'supertoneVoiceId',
+    'supertoneModel',
+    'supertoneLanguage',
+    'supertoneStyle',
+    'supertoneOutputFormat',
+    'supertoneSpeed',
+    'supertoneMode'
+  ].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.addEventListener(element.tagName === 'SELECT' ? 'change' : 'input', debounce(saveSupertoneTTSSettings, 500));
+    }
+  });
+
+  document.getElementById('testSupertoneTTS').addEventListener('click', function() {
+    saveSupertoneTTSSettings();
+    const aiConfig = {
+      supertoneBaseURL: document.getElementById('supertoneBaseURL').value.trim() || 'https://supertoneapi.com/v1/text-to-speech',
+      supertoneAPIKey: document.getElementById('supertoneAPIKey').value.trim(),
+      supertoneVoiceId: document.getElementById('supertoneVoiceId').value.trim(),
+      supertoneModel: document.getElementById('supertoneModel').value.trim() || 'sona_speech_1',
+      supertoneLanguage: document.getElementById('supertoneLanguage').value.trim() || 'auto',
+      supertoneStyle: document.getElementById('supertoneStyle').value.trim(),
+      supertoneOutputFormat: document.getElementById('supertoneOutputFormat').value || 'mp3',
+      supertoneSpeed: parseFloat(document.getElementById('supertoneSpeed').value) || 1.0,
+      supertoneMode: document.getElementById('supertoneMode').value || 'stream'
+    };
+    if (!aiConfig.supertoneAPIKey || !aiConfig.supertoneVoiceId) {
+      alert('Please enter Supertone API Key and Voice ID first.');
+      return;
+    }
+
+    chrome.runtime.sendMessage({
+      action: "playAudio",
+      audioType: "playSupertoneTTS",
+      requestId: `supertone-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      apiEndpoint: aiConfig.supertoneBaseURL,
+      apiKey: aiConfig.supertoneAPIKey,
+      text: "This is a Supertone TTS test.",
+      voiceId: aiConfig.supertoneVoiceId,
+      model: aiConfig.supertoneModel,
+      language: aiConfig.supertoneLanguage,
+      style: aiConfig.supertoneStyle,
+      outputFormat: aiConfig.supertoneOutputFormat,
+      speed: aiConfig.supertoneSpeed,
+      mode: aiConfig.supertoneMode,
+      isSentence: true,
+      count: 1
+    });
+  });
+}
+
+function saveSupertoneTTSSettings() {
+  chrome.storage.local.get(['aiConfig'], function(result) {
+    const aiConfig = result.aiConfig || {};
+    aiConfig.supertoneBaseURL = document.getElementById('supertoneBaseURL').value.trim() || 'https://supertoneapi.com/v1/text-to-speech';
+    aiConfig.supertoneAPIKey = document.getElementById('supertoneAPIKey').value.trim();
+    aiConfig.supertoneVoiceId = document.getElementById('supertoneVoiceId').value.trim();
+    aiConfig.supertoneModel = document.getElementById('supertoneModel').value.trim() || 'sona_speech_1';
+    aiConfig.supertoneLanguage = document.getElementById('supertoneLanguage').value.trim() || 'auto';
+    aiConfig.supertoneStyle = document.getElementById('supertoneStyle').value.trim();
+    aiConfig.supertoneOutputFormat = document.getElementById('supertoneOutputFormat').value || 'mp3';
+    aiConfig.supertoneSpeed = parseFloat(document.getElementById('supertoneSpeed').value) || 1.0;
+    aiConfig.supertoneMode = document.getElementById('supertoneMode').value || 'stream';
+    chrome.storage.local.set({ aiConfig: aiConfig });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   // 设置语言选择器的初始值并添加事件监听
   const uiLanguageSelect = document.getElementById('ui-language');
@@ -5415,6 +5500,7 @@ chrome.storage.local.get('subscriptionConfig', function(result) {
   // 初始化Edge TTS设置
   initEdgeTTSSettings();
   initGptTTSSettings();
+  initSupertoneTTSSettings();
 
   // 监听语音选择变化
   document.getElementById('localTTSVoice').addEventListener('change', saveLocalTTSSettings);
@@ -5587,6 +5673,7 @@ chrome.storage.local.get('subscriptionConfig', function(result) {
   document.getElementById('tab-tts-edge').addEventListener('click', () => switchTab('panel-tts-edge'));
   document.getElementById('tab-tts-minimaxi').addEventListener('click', () => switchTab('panel-tts-minimaxi'));
   document.getElementById('tab-tts-gpt').addEventListener('click', () => switchTab('panel-tts-gpt'));
+  document.getElementById('tab-tts-supertone').addEventListener('click', () => switchTab('panel-tts-supertone'));
   document.getElementById('tab-tts-custom').addEventListener('click', () => switchTab('panel-tts-custom'));
 
   // 测试按钮事件
