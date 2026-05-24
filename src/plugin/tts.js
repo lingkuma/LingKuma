@@ -7,6 +7,11 @@
  * @returns {boolean}
  */
 function isSentenceText(text, lang) {
+    const singleWordText = getTerminalPunctuatedSingleWord(text);
+    if (singleWordText) {
+        return false;
+    }
+
     // 对于日语和中文等语言的特殊处理
     if (lang === 'ja' || lang === 'zh') {
         // 检查是否包含句号、感叹号、问号等标点符号
@@ -19,8 +24,26 @@ function isSentenceText(text, lang) {
     return text.includes(' ');
 }
 
+function getTerminalPunctuatedSingleWord(text) {
+    if (typeof text !== 'string') return null;
+
+    const trimmedText = text.trim();
+    const match = trimmedText.match(/^(.+)([.?。？])$/u);
+    if (!match) return null;
+
+    const word = match[1].trim();
+    if (!word || /\s/u.test(word)) return null;
+
+    // 仅处理末尾一个句号或问号的单词，避免把缩写、省略号等误判为单词。
+    if (/[。！？.!?]/u.test(word)) return null;
+
+    return word;
+}
+
 function isLikelySentenceText(text, sentence) {
     if (!text) return false;
+    if (getTerminalPunctuatedSingleWord(text)) return false;
+
     const normalizedText = text.trim();
     const normalizedSentence = (sentence || '').trim();
 
@@ -76,7 +99,8 @@ async function playText(params) {
 }
 
 async function playTextInternal(params) {
-    const { text, count = 1, sentence } = params;
+    const { text: rawText, count = 1, sentence } = params;
+    const text = getTerminalPunctuatedSingleWord(rawText) || rawText;
 
     if (isLikelySentenceText(text, sentence)) {
         const settings = await new Promise(resolve => {

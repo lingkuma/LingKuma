@@ -75,6 +75,11 @@ function orion_getStorageData(key) {
 
 // 判断文本是否为句子
 function orion_isSentenceText(text, lang) {
+    const singleWordText = orion_getTerminalPunctuatedSingleWord(text);
+    if (singleWordText) {
+        return false;
+    }
+
     // 对于日语和中文等语言的特殊处理
     if (lang === 'ja' || lang === 'zh') {
         // 检查是否包含句号、感叹号、问号等标点符号
@@ -87,8 +92,26 @@ function orion_isSentenceText(text, lang) {
     return text.includes(' ');
 }
 
+function orion_getTerminalPunctuatedSingleWord(text) {
+    if (typeof text !== 'string') return null;
+
+    const trimmedText = text.trim();
+    const match = trimmedText.match(/^(.+)([.?。？])$/u);
+    if (!match) return null;
+
+    const word = match[1].trim();
+    if (!word || /\s/u.test(word)) return null;
+
+    // 仅处理末尾一个句号或问号的单词，避免把缩写、省略号等误判为单词。
+    if (/[。！？.!?]/u.test(word)) return null;
+
+    return word;
+}
+
 function orion_isLikelySentenceText(text, sentence) {
     if (!text) return false;
+    if (orion_getTerminalPunctuatedSingleWord(text)) return false;
+
     const normalizedText = text.trim();
     const normalizedSentence = (sentence || '').trim();
 
@@ -107,7 +130,8 @@ function orion_isLikelySentenceText(text, sentence) {
 
 // 主要的播放文本函数
 async function orion_playText(params) {
-    const { text, count = 1, sentence } = params;
+    const { text: rawText, count = 1, sentence } = params;
+    const text = orion_getTerminalPunctuatedSingleWord(rawText) || rawText;
     if (!text) return;
     // 语言检测已切换为tts主流程的AI检测
     const likelySentence = orion_isLikelySentenceText(text, sentence);
