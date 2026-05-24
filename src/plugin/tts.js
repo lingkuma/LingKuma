@@ -127,6 +127,8 @@ async function playTextInternal(params) {
                 const provider = ttsConfig.sentenceTTSProvider || 'local';
                 if (provider === 'minimaxi') {
                     await playMinimaxi(text, lang);
+                } else if (provider === 'gpt') {
+                    await playGptTTS(text, true, count);
                 } else if (provider === 'edge') {
                     await playEdgeTTS(text, lang, isSentence, sentence);
                 } else if (provider === 'custom') {
@@ -193,6 +195,8 @@ async function playTextInternal(params) {
             const provider = ttsConfig.sentenceTTSProvider || 'local';
             if (provider === 'minimaxi') {
                 await playMinimaxi(text);
+            } else if (provider === 'gpt') {
+                await playGptTTS(text, true, count);
             } else if (provider === 'edge') {
                 await playEdgeTTS(text, lang, isSentence, sentence);
             } else if (provider === 'custom') {
@@ -207,6 +211,8 @@ async function playTextInternal(params) {
             const provider = ttsConfig.wordTTSProvider || 'local';
             if (provider === 'minimaxi') {
                 await playMinimaxi(text);
+            } else if (provider === 'gpt') {
+                await playGptTTS(text, false, count);
             } else if (provider === 'edge') {
                 await playEdgeTTS(text, lang, isSentence, sentence);
             } else if (provider === 'custom') {
@@ -474,6 +480,38 @@ async function playMinimaxi(sentence, langOverride = null) {
  * 停止特定类型的音频播放
  * @param {string} audioType - 'word' 或 'sentence'
  */
+async function playGptTTS(text, isSentence, count = 1) {
+    const result = await new Promise(resolve => {
+        chrome.storage.local.get('aiConfig', resolve);
+    });
+    const aiConfig = result.aiConfig || {};
+    const apiKey = aiConfig.gptTTSApiKey || '';
+
+    if (!apiKey) {
+        console.error('GPT TTS API Key is empty.');
+        return;
+    }
+
+    chrome.runtime.sendMessage({
+        action: "playAudio",
+        audioType: "playGptTTS",
+        apiEndpoint: aiConfig.gptTTSBaseURL || 'https://api.openai.com/v1/audio/speech',
+        apiKey: apiKey,
+        text: text,
+        model: aiConfig.gptTTSModel || 'gpt-4o-mini-tts',
+        voice: aiConfig.gptTTSVoice || 'alloy',
+        instructions: aiConfig.gptTTSInstructions || '',
+        responseFormat: aiConfig.gptTTSResponseFormat || 'mp3',
+        speed: parseFloat(aiConfig.gptTTSSpeed) || 1.0,
+        isSentence: isSentence,
+        count: count
+    }, () => {
+        if (chrome.runtime.lastError) {
+            console.error('Failed to send GPT TTS message:', chrome.runtime.lastError);
+        }
+    });
+}
+
 function stopSpecificAudioType(audioType) {
     // 检查是否使用Orion TTS
     chrome.storage.local.get(['useOrionTTS'], function(result) {

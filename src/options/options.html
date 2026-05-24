@@ -2314,6 +2314,7 @@
         <button id="tab-tts-local" data-i18n="ttsLocal">本地TTS</button>
         <button id="tab-tts-edge" data-i18n="ttsEdge">Edge TTS</button>
         <button id="tab-tts-minimaxi" data-i18n="ttsMinimaxi">Minimaxi TTS</button>
+        <button id="tab-tts-gpt">GPT TTS</button>
         <button id="tab-tts-custom" data-i18n="ttsCustom">自定义URL</button>
       </div>
 
@@ -4622,6 +4623,7 @@ max_tokens=4096" style="width: 100%; padding: 8px; min-height: 80px; resize: ver
             <option value="custom" data-i18n="customUrl">自定义URL1</option>
             <option value="custom2">自定义URL2</option>
             <option value="minimaxi">Minimaxi TTS</option>
+            <option value="gpt">GPT TTS</option>
           </select>
           <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
         </div>
@@ -4632,6 +4634,7 @@ max_tokens=4096" style="width: 100%; padding: 8px; min-height: 80px; resize: ver
             <option value="local" data-i18n="localTts">本地TTS</option>
             <option value="edge" data-i18n="edgeTts">Edge TTS</option>
             <option value="minimaxi">Minimaxi TTS</option>
+            <option value="gpt">GPT TTS</option>
             <option value="custom" data-i18n="customUrl">自定义URL1</option>
             <option value="custom2">自定义URL2</option>
           </select>
@@ -4919,6 +4922,71 @@ max_tokens=4096" style="width: 100%; padding: 8px; min-height: 80px; resize: ver
     </div>
 
     <!-- 自定义URL配置面板 -->
+    <div id="panel-tts-gpt" class="hidden">
+      <h2>GPT TTS Configuration</h2>
+      <div class="settings-section" style="padding: 10px; border-radius: 5px;">
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="gptTTSBaseURL" style="display: block; margin-bottom: 5px;">Base URL:</label>
+          <input type="text" id="gptTTSBaseURL" data-auto-save="true" data-storage-key="gptTTSBaseURL" data-storage-area="aiConfig" placeholder="https://api.openai.com/v1/audio/speech" style="width: 100%; padding: 8px;">
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="gptTTSApiKey" style="display: block; margin-bottom: 5px;">API Key:</label>
+          <input type="password" id="gptTTSApiKey" data-auto-save="true" data-storage-key="gptTTSApiKey" data-storage-area="aiConfig" placeholder="sk-..." style="width: 100%; padding: 8px;">
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="gptTTSModel" style="display: block; margin-bottom: 5px;">Model:</label>
+          <input type="text" id="gptTTSModel" data-auto-save="true" data-storage-key="gptTTSModel" data-storage-area="aiConfig" placeholder="gpt-4o-mini-tts" style="width: 100%; padding: 8px;">
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="gptTTSVoice" style="display: block; margin-bottom: 5px;">Voice:</label>
+          <input type="text" id="gptTTSVoice" list="gptTTSVoiceList" data-auto-save="true" data-storage-key="gptTTSVoice" data-storage-area="aiConfig" placeholder="alloy" style="width: 100%; padding: 8px;">
+          <datalist id="gptTTSVoiceList">
+            <option value="alloy">alloy</option>
+            <option value="ash">ash</option>
+            <option value="ballad">ballad</option>
+            <option value="coral">coral</option>
+            <option value="echo">echo</option>
+            <option value="fable">fable</option>
+            <option value="nova">nova</option>
+            <option value="onyx">onyx</option>
+            <option value="sage">sage</option>
+            <option value="shimmer">shimmer</option>
+            <option value="verse">verse</option>
+            <option value="marin">marin</option>
+            <option value="cedar">cedar</option>
+          </datalist>
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="gptTTSResponseFormat" style="display: block; margin-bottom: 5px;">Audio format:</label>
+          <select id="gptTTSResponseFormat" data-auto-save="true" data-storage-key="gptTTSResponseFormat" data-storage-area="aiConfig" style="width: 100%; padding: 8px;">
+            <option value="mp3">mp3</option>
+            <option value="opus">opus</option>
+            <option value="aac">aac</option>
+            <option value="flac">flac</option>
+            <option value="wav">wav</option>
+          </select>
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="gptTTSSpeed" style="display: block; margin-bottom: 5px;">Speed:</label>
+          <input type="number" id="gptTTSSpeed" data-auto-save="true" data-storage-key="gptTTSSpeed" data-storage-area="aiConfig" min="0.25" max="4.0" step="0.1" placeholder="1.0" style="width: 100%; padding: 8px;">
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 10px;">
+          <label for="gptTTSInstructions" style="display: block; margin-bottom: 5px;">Instructions:</label>
+          <textarea id="gptTTSInstructions" data-auto-save="true" data-storage-key="gptTTSInstructions" data-storage-area="aiConfig" rows="3" placeholder="Speak clearly and naturally." style="width: 100%; padding: 8px;"></textarea>
+          <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
+        </div>
+        <div class="setting-item" style="margin-bottom: 15px;">
+          <button id="testGptTTS" style="padding: 8px 16px;">Test GPT TTS</button>
+        </div>
+      </div>
+    </div>
+
     <div id="panel-tts-custom" class="hidden">
       <h2 data-i18n="customAudioUrlConfig">自定义音频URL配置</h2>
       <div class="settings-section" style="padding: 10px;  border-radius: 5px;">

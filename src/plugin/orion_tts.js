@@ -166,6 +166,8 @@ async function orion_playText(params) {
             await orion_playEdgeTTS(text, lang, isSentence);
         } else if (provider === 'minimaxi') {
             await orion_playMinimaxi(text, lang);
+        } else if (provider === 'gpt') {
+            await orion_playGptTTS(text, true, count);
         } else if (provider === 'custom') {
             await orion_playCustom(text, count, 1, sentence, lang);
         } else if (provider === 'custom2') {
@@ -179,6 +181,8 @@ async function orion_playText(params) {
             await orion_playEdgeTTS(text, lang, isSentence);
         } else if (provider === 'minimaxi') {
             await orion_playMinimaxi(text, lang);
+        } else if (provider === 'gpt') {
+            await orion_playGptTTS(text, false, count);
         } else if (provider === 'custom') {
             await orion_playCustom(text, count, 1, sentence);
         } else if (provider === 'custom2') {
@@ -449,6 +453,122 @@ async function orion_playMinimaxi(sentence, lang) {
 }
 
 // 添加音频数据到流
+function orion_getGptTTSMimeType(format) {
+    switch ((format || 'mp3').toLowerCase()) {
+        case 'aac':
+            return 'audio/aac';
+        case 'flac':
+            return 'audio/flac';
+        case 'opus':
+            return 'audio/ogg';
+        case 'wav':
+            return 'audio/wav';
+        case 'pcm':
+            return 'audio/pcm';
+        case 'mp3':
+        default:
+            return 'audio/mpeg';
+    }
+}
+
+function orion_normalizeGptTTSVoice(voice) {
+    const value = String(voice || 'alloy').trim();
+    if (!value) return 'alloy';
+    if (value.startsWith('{')) {
+        try {
+            return JSON.parse(value);
+        } catch (error) {
+            console.warn('Invalid Orion GPT TTS voice JSON, using alloy:', error);
+            return 'alloy';
+        }
+    }
+    if (value.startsWith('voice_')) {
+        return { id: value };
+    }
+    return value;
+}
+
+async function orion_playGptTTS(text, isSentence, count = 1) {
+    try {
+        if (!orion_aiConfig) {
+            await orion_init();
+        }
+
+        if (isSentence) {
+            orion_stopSentenceAudio();
+        } else {
+            orion_stopWordAudio();
+        }
+
+        const apiKey = orion_aiConfig.gptTTSApiKey || '';
+        if (!apiKey) {
+            console.error('Orion GPT TTS API Key is empty.');
+            return;
+        }
+
+        const responseFormat = orion_aiConfig.gptTTSResponseFormat || 'mp3';
+        const body = {
+            model: orion_aiConfig.gptTTSModel || 'gpt-4o-mini-tts',
+            input: text,
+            voice: orion_normalizeGptTTSVoice(orion_aiConfig.gptTTSVoice),
+            response_format: responseFormat,
+            speed: parseFloat(orion_aiConfig.gptTTSSpeed) || 1.0
+        };
+
+        if (orion_aiConfig.gptTTSInstructions && orion_aiConfig.gptTTSInstructions.trim()) {
+            body.instructions = orion_aiConfig.gptTTSInstructions.trim();
+        }
+
+        const response = await fetch(orion_aiConfig.gptTTSBaseURL || 'https://api.openai.com/v1/audio/speech', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text().catch(() => '');
+            throw new Error(`GPT TTS HTTP error: ${response.status} ${errorText}`);
+        }
+
+        const audioBlob = await response.blob();
+        const typedBlob = audioBlob.type && audioBlob.type.startsWith('audio/')
+            ? audioBlob
+            : new Blob([audioBlob], { type: orion_getGptTTSMimeType(responseFormat) });
+        const audioUrl = URL.createObjectURL(typedBlob);
+
+        orion_setAudioUrl(audioUrl);
+        const player = orion_globalAudioElement || new Audio(audioUrl);
+        if (isSentence) {
+            orion_sentenceAudioPlayer = player;
+        } else {
+            orion_wordAudioPlayer = player;
+        }
+
+        let playCount = 0;
+        player.onended = () => {
+            playCount++;
+            if (!isSentence && playCount < (parseInt(count, 10) || 1) && orion_wordAudioPlayer) {
+                player.currentTime = 0;
+                player.play();
+                return;
+            }
+            URL.revokeObjectURL(audioUrl);
+        };
+
+        player.onerror = () => {
+            URL.revokeObjectURL(audioUrl);
+            console.error('Orion GPT TTS audio playback failed.');
+        };
+
+        await player.play();
+    } catch (error) {
+        console.error('Orion GPT TTS error:', error);
+    }
+}
+
 function orion_appendAudioChunk(hexString) {
     if (!hexString || !orion_sourceBuffer) return null;
 

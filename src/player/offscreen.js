@@ -138,6 +138,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 
+    if (request.action === "playGptTTS") {
+        playGptTTS(request)
+            .then(() => sendResponse({success: true}))
+            .catch(error => sendResponse({success: false, error: error.message}));
+        return true;
+    }
+
     if (request.action === "playEdgeTTS") {
         playEdgeTTS(
             request.text,
@@ -1164,6 +1171,152 @@ async function playMinimaxi(apiEndpoint, apiKey, sentence, voiceId, emotion, lan
 }
 
 // 添加音频数据到流
+function getGptTTSMimeType(format) {
+    switch ((format || 'mp3').toLowerCase()) {
+        case 'aac':
+            return 'audio/aac';
+        case 'flac':
+            return 'audio/flac';
+        case 'opus':
+            return 'audio/ogg';
+        case 'wav':
+            return 'audio/wav';
+        case 'pcm':
+            return 'audio/pcm';
+        case 'mp3':
+        default:
+            return 'audio/mpeg';
+    }
+}
+
+function normalizeGptTTSVoice(voice) {
+    const value = String(voice || 'alloy').trim();
+    if (!value) return 'alloy';
+    if (value.startsWith('{')) {
+        try {
+            return JSON.parse(value);
+        } catch (error) {
+            console.warn('Invalid GPT TTS voice JSON, using alloy:', error);
+            return 'alloy';
+        }
+    }
+    if (value.startsWith('voice_')) {
+        return { id: value };
+    }
+    return value;
+}
+
+async function playGptTTS(options) {
+    const {
+        apiEndpoint,
+        apiKey,
+        text,
+        model,
+        voice,
+        instructions,
+        responseFormat,
+        speed,
+        isSentence,
+        count
+    } = options;
+    const audioType = isSentence ? "sentence" : "word";
+
+    try {
+        if (isSentence) {
+            stopSentenceAudio();
+        } else {
+            stopWordAudio();
+        }
+
+        const body = {
+            model: model || 'gpt-4o-mini-tts',
+            input: text,
+            voice: normalizeGptTTSVoice(voice),
+            response_format: responseFormat || 'mp3',
+            speed: Number.isFinite(Number(speed)) ? Number(speed) : 1.0
+        };
+
+        if (instructions && String(instructions).trim()) {
+            body.instructions = String(instructions).trim();
+        }
+
+        const response = await fetch(apiEndpoint || 'https://api.openai.com/v1/audio/speech', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text().catch(() => '');
+            throw new Error(`GPT TTS HTTP error: ${response.status} ${errorText}`);
+        }
+
+        const audioBlob = await response.blob();
+        const typedBlob = audioBlob.type && audioBlob.type.startsWith('audio/')
+            ? audioBlob
+            : new Blob([audioBlob], { type: getGptTTSMimeType(responseFormat) });
+        const audioUrl = URL.createObjectURL(typedBlob);
+        const player = new Audio(audioUrl);
+
+        if (isSentence) {
+            sentenceAudioPlayer = player;
+        } else {
+            wordAudioPlayer = player;
+        }
+
+        let playCount = 0;
+        player.addEventListener('playing', () => {
+            chrome.runtime.sendMessage({
+                action: "audioPlaybackStarted",
+                audioType: audioType
+            });
+        });
+
+        player.addEventListener('ended', () => {
+            playCount++;
+            if (!isSentence && playCount < (parseInt(count, 10) || 1)) {
+                player.currentTime = 0;
+                player.play().catch(error => {
+                    chrome.runtime.sendMessage({
+                        action: "audioPlaybackError",
+                        error: error.message,
+                        audioType: audioType
+                    });
+                });
+                return;
+            }
+
+            URL.revokeObjectURL(audioUrl);
+            chrome.runtime.sendMessage({
+                action: "audioPlaybackCompleted",
+                audioType: audioType
+            });
+        });
+
+        player.addEventListener('error', () => {
+            URL.revokeObjectURL(audioUrl);
+            chrome.runtime.sendMessage({
+                action: "audioPlaybackError",
+                error: 'GPT TTS audio playback failed.',
+                audioType: audioType
+            });
+        });
+
+        await player.play();
+    } catch (error) {
+        console.error('GPT TTS error:', error);
+        chrome.runtime.sendMessage({
+            action: "audioPlaybackError",
+            error: error.message,
+            audioType: audioType
+        });
+        throw error;
+    }
+}
+
 function appendAudioChunk(hexString) {
     if (!hexString || !sourceBuffer) return null;
 

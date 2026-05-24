@@ -3389,6 +3389,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     console.error("无法初始化offscreen页面，无法播放Edge TTS");
                 }
             }
+        } else if (message.audioType === "playGptTTS") {
+            if (!isOffscreenOpened) {
+                console.log("offscreen page is not initialized, initializing for GPT TTS");
+                await ensureOffscreenDocument();
+            }
+
+            if (isOffscreenOpened) {
+                chrome.runtime.sendMessage({
+                    action: "playGptTTS",
+                    apiEndpoint: message.apiEndpoint,
+                    apiKey: message.apiKey,
+                    text: message.text,
+                    model: message.model,
+                    voice: message.voice,
+                    instructions: message.instructions,
+                    responseFormat: message.responseFormat,
+                    speed: message.speed,
+                    isSentence: message.isSentence,
+                    count: message.count
+                });
+            } else {
+                console.error("Unable to initialize offscreen page for GPT TTS");
+            }
         } else if (message.audioType === "playLocal") {
             // 需要时进行语言检测
             const { text, lang, isSentence, contextSentence, skipLanguageDetection } = message;

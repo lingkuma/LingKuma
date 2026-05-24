@@ -4254,6 +4254,80 @@ function saveEdgeTTSSettings() {
 }
 
 // 添加DOMContentLoaded事件中的语言选择器处理
+function initGptTTSSettings() {
+  chrome.storage.local.get(['aiConfig'], function(result) {
+    const aiConfig = result.aiConfig || {};
+    document.getElementById('gptTTSBaseURL').value = aiConfig.gptTTSBaseURL || 'https://api.openai.com/v1/audio/speech';
+    document.getElementById('gptTTSApiKey').value = aiConfig.gptTTSApiKey || '';
+    document.getElementById('gptTTSModel').value = aiConfig.gptTTSModel || 'gpt-4o-mini-tts';
+    document.getElementById('gptTTSVoice').value = aiConfig.gptTTSVoice || 'alloy';
+    document.getElementById('gptTTSResponseFormat').value = aiConfig.gptTTSResponseFormat || 'mp3';
+    document.getElementById('gptTTSSpeed').value = aiConfig.gptTTSSpeed || 1.0;
+    document.getElementById('gptTTSInstructions').value = aiConfig.gptTTSInstructions || '';
+  });
+
+  [
+    'gptTTSBaseURL',
+    'gptTTSApiKey',
+    'gptTTSModel',
+    'gptTTSVoice',
+    'gptTTSResponseFormat',
+    'gptTTSSpeed',
+    'gptTTSInstructions'
+  ].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.addEventListener(element.tagName === 'SELECT' ? 'change' : 'input', debounce(saveGptTTSSettings, 500));
+    }
+  });
+
+  document.getElementById('testGptTTS').addEventListener('click', function() {
+    saveGptTTSSettings();
+    const aiConfig = {
+      gptTTSBaseURL: document.getElementById('gptTTSBaseURL').value.trim() || 'https://api.openai.com/v1/audio/speech',
+      gptTTSApiKey: document.getElementById('gptTTSApiKey').value.trim(),
+      gptTTSModel: document.getElementById('gptTTSModel').value.trim() || 'gpt-4o-mini-tts',
+      gptTTSVoice: document.getElementById('gptTTSVoice').value || 'alloy',
+      gptTTSResponseFormat: document.getElementById('gptTTSResponseFormat').value || 'mp3',
+      gptTTSSpeed: parseFloat(document.getElementById('gptTTSSpeed').value) || 1.0,
+      gptTTSInstructions: document.getElementById('gptTTSInstructions').value
+    };
+    if (!aiConfig.gptTTSApiKey) {
+      alert('Please enter GPT TTS API Key first.');
+      return;
+    }
+
+    chrome.runtime.sendMessage({
+      action: "playAudio",
+      audioType: "playGptTTS",
+      apiEndpoint: aiConfig.gptTTSBaseURL,
+      apiKey: aiConfig.gptTTSApiKey,
+      text: "This is a GPT TTS test.",
+      model: aiConfig.gptTTSModel,
+      voice: aiConfig.gptTTSVoice,
+      instructions: aiConfig.gptTTSInstructions || '',
+      responseFormat: aiConfig.gptTTSResponseFormat,
+      speed: aiConfig.gptTTSSpeed,
+      isSentence: true,
+      count: 1
+    });
+  });
+}
+
+function saveGptTTSSettings() {
+  chrome.storage.local.get(['aiConfig'], function(result) {
+    const aiConfig = result.aiConfig || {};
+    aiConfig.gptTTSBaseURL = document.getElementById('gptTTSBaseURL').value.trim() || 'https://api.openai.com/v1/audio/speech';
+    aiConfig.gptTTSApiKey = document.getElementById('gptTTSApiKey').value.trim();
+    aiConfig.gptTTSModel = document.getElementById('gptTTSModel').value.trim() || 'gpt-4o-mini-tts';
+    aiConfig.gptTTSVoice = document.getElementById('gptTTSVoice').value || 'alloy';
+    aiConfig.gptTTSResponseFormat = document.getElementById('gptTTSResponseFormat').value || 'mp3';
+    aiConfig.gptTTSSpeed = parseFloat(document.getElementById('gptTTSSpeed').value) || 1.0;
+    aiConfig.gptTTSInstructions = document.getElementById('gptTTSInstructions').value;
+    chrome.storage.local.set({ aiConfig: aiConfig });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   // 设置语言选择器的初始值并添加事件监听
   const uiLanguageSelect = document.getElementById('ui-language');
@@ -5340,6 +5414,7 @@ chrome.storage.local.get('subscriptionConfig', function(result) {
 
   // 初始化Edge TTS设置
   initEdgeTTSSettings();
+  initGptTTSSettings();
 
   // 监听语音选择变化
   document.getElementById('localTTSVoice').addEventListener('change', saveLocalTTSSettings);
@@ -5511,6 +5586,7 @@ chrome.storage.local.get('subscriptionConfig', function(result) {
   document.getElementById('tab-tts-local').addEventListener('click', () => switchTab('panel-tts-local'));
   document.getElementById('tab-tts-edge').addEventListener('click', () => switchTab('panel-tts-edge'));
   document.getElementById('tab-tts-minimaxi').addEventListener('click', () => switchTab('panel-tts-minimaxi'));
+  document.getElementById('tab-tts-gpt').addEventListener('click', () => switchTab('panel-tts-gpt'));
   document.getElementById('tab-tts-custom').addEventListener('click', () => switchTab('panel-tts-custom'));
 
   // 测试按钮事件
