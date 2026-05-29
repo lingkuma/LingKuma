@@ -57,6 +57,25 @@ function isLikelySentenceText(text, sentence) {
 
     return /[\s。！？.!?]/.test(normalizedText);
 }
+
+function normalizeSentenceTextForTTS(text) {
+    if (typeof text !== 'string') return text;
+
+    // Some TTS engines reject German-style double quotes.
+    return text.replace(/[\u201e\u201c]/g, '"');
+}
+
+function normalizeLikelySentenceParamsForTTS(params) {
+    if (!params || !isLikelySentenceText(params.text, params.sentence)) {
+        return params;
+    }
+
+    return {
+        ...params,
+        text: normalizeSentenceTextForTTS(params.text),
+        sentence: normalizeSentenceTextForTTS(params.sentence)
+    };
+}
 /**
  * 播放文本（支持单词或句子）
  * @param {Object} params
@@ -64,7 +83,7 @@ function isLikelySentenceText(text, sentence) {
  * @param {number} [params.count=1] - 重复播放次数（仅对单词有效）
  */
 async function playText(params) {
-    const { text, count = 1, sentence } = params;
+    const ttsParams = normalizeLikelySentenceParamsForTTS(params);
 
     // 检查是否使用Orion TTS
     const useOrionTTS = await new Promise(resolve => {
@@ -76,7 +95,7 @@ async function playText(params) {
     // 如果使用Orion TTS且orion_playText函数可用，则使用Orion TTS
     if (useOrionTTS && window.orion_playText) {
         console.log('使用Orion TTS播放');
-        return window.orion_playText(params);
+        return window.orion_playText(ttsParams);
     }
 
     // 添加防抖机制，避免频繁调用导致冲突
@@ -88,7 +107,7 @@ async function playText(params) {
     return new Promise((resolve) => {
         window.ttsPlayTimeout = setTimeout(async () => {
             try {
-                await playTextInternal(params);
+                await playTextInternal(ttsParams);
                 resolve();
             } catch (error) {
                 console.error('TTS播放失败:', error);
