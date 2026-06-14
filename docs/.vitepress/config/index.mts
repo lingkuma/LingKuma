@@ -26,13 +26,13 @@ export default defineConfig({
   },
   base: '/',
   title: "LingKuma",
-  description: "Learn any language on the web - Better web compatibility, AI parsing, PDF, EPUB, Youtube support",
+  description: "Lingkuma - An open-source alternative to LingQ for learning any language on the web - Better web compatibility, AI parsing, PDF, EPUB, and YouTube support",
   sitemap: {
     hostname: 'https://docs.lingkuma.org'
   },
   head: [
     ['link', { rel: 'icon', href: '/icon32.png' }],
-    ['meta', { name: 'description', content: 'Learn any language on the web with LingKuma - Multi-platform support, AI parsing, PDF, EPUB, Youtube and more' }],
+    ['meta', { name: 'description', content: 'LingKuma is an open-source and free LingQ alternative for learning any language on the web, with better web compatibility, AI parsing, PDF, EPUB, YouTube support, and more' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:site_name', content: 'LingKuma' }],
   ],
@@ -45,7 +45,7 @@ export default defineConfig({
     head.push(['meta', { property: 'og:title', content: ogTitle }])
 
     // 动态设置 og:description
-    const ogDescription = pageData.frontmatter.description || pageData.description || 'Multi-platform language learning tool with AI parsing, PDF, EPUB, Youtube support'
+    const ogDescription = pageData.frontmatter.description || pageData.description || 'Open-source and free LingQ alternative for learning any language on the web, with AI parsing, PDF, EPUB, and YouTube support'
     head.push(['meta', { property: 'og:description', content: ogDescription }])
 
     // 动态设置 og:url

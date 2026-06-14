@@ -44,7 +44,7 @@ export const enSearch = {
     }
 }
 export const en = defineConfig({
-    description: "Learn any language on the web - Multi-platform support, AI parsing, PDF, EPUB, Youtube",
+    description: "Lingkuma - An open-source alternative to LingQ for learning any language on the web - Multi-platform support, AI parsing, PDF, EPUB, and YouTube",
     titleTemplate: ":title - LingKuma",
     themeConfig: {
         outline: {
