@@ -3027,8 +3027,15 @@ function highlightAllWords() {
 // 检查当前网站是否在高亮黑白名单中
 function checkSiteInThemeLists() {
   return new Promise(resolve => { // 返回 Promise
-    chrome.storage.local.get(['highlightDefaultDayWebsites', 'highlightDefaultNightWebsites'], function (result) {
+    chrome.storage.local.get(['highlightDefaultDayWebsites', 'highlightDefaultNightWebsites', 'highlightPageThemeOverrides'], function (result) {
       const currentUrl = window.location.href;
+      const pageThemeOverrides = result.highlightPageThemeOverrides || {};
+      const pageThemeOverride = pageThemeOverrides[getHighlightPageThemeKey()];
+      if (pageThemeOverride && typeof pageThemeOverride.isDark === 'boolean') {
+        resolve(pageThemeOverride.isDark ? 2 : 1);
+        return;
+      }
+
       const dayWebsites = (result.highlightDefaultDayWebsites || '').split(';').filter(Boolean);
       const nightWebsites = (result.highlightDefaultNightWebsites || '*lingkuma*;').split(';').filter(Boolean);
       let themeMode = 3; // 默认返回3，表示不在任何列表中
@@ -3065,6 +3072,14 @@ function checkSiteInThemeLists() {
 }
 
 // 辅助函数：判断URL是否匹配通配符模式
+function getHighlightPageThemeKey() {
+  try {
+    return `${window.location.origin}${window.location.pathname}${window.location.search}`;
+  } catch (error) {
+    return window.location.href.split('#')[0];
+  }
+}
+
 function urlMatchesPattern(url, pattern) {
   const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$");
   return regex.test(url);
@@ -3073,9 +3088,33 @@ function urlMatchesPattern(url, pattern) {
 // 添加消息监听器处理主题切换
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === "updateHighlightTheme") {
-    if (highlightManager) {
-      highlightManager.setDarkMode(request.isDark);
-      highlightManager.reapplyHighlights();
-    }
+    chrome.storage.local.get({ highlightPageThemeOverrides: {} }, function(result) {
+      const pageThemeOverride = (result.highlightPageThemeOverrides || {})[getHighlightPageThemeKey()];
+      const isDark = pageThemeOverride && typeof pageThemeOverride.isDark === 'boolean'
+        ? pageThemeOverride.isDark
+        : request.isDark;
+
+      if (highlightManager) {
+        highlightManager.setDarkMode(isDark);
+        highlightManager.reapplyHighlights();
+      }
+    });
+  }
+});
+
+chrome.storage.onChanged.addListener(function(changes, areaName) {
+  if (areaName !== 'local' || !changes.highlightPageThemeOverrides || !highlightManager) {
+    return;
+  }
+
+  const overrides = changes.highlightPageThemeOverrides.newValue || {};
+  const pageThemeOverride = overrides[getHighlightPageThemeKey()];
+  if (!pageThemeOverride || typeof pageThemeOverride.isDark !== 'boolean') {
+    return;
+  }
+
+  if (highlightManager.isDarkMode !== pageThemeOverride.isDark) {
+    highlightManager.setDarkMode(pageThemeOverride.isDark);
+    highlightManager.reapplyHighlights();
   }
 });

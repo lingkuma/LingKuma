@@ -5,23 +5,29 @@
 
   const FLOATING_BUTTON_ENABLED_KEY = 'wordHighlightFloatingButtonEnabled';
   const HIGHLIGHT_ENABLED_KEY = 'enablePlugin';
+  const PAGE_THEME_OVERRIDES_KEY = 'highlightPageThemeOverrides';
   const POSITION_KEY = 'wordHighlightFloatingButtonPosition';
   const ROOT_ID = 'lingkuma-word-highlight-floating-root';
   const EDGE_THRESHOLD = 35;
   const BUTTON_WIDTH = 86;
   const BUTTON_HEIGHT = 42;
+  const THEME_BUTTON_HEIGHT = 34;
+  const BUTTON_STACK_GAP = 8;
+  const BUTTON_STACK_HEIGHT = BUTTON_HEIGHT + BUTTON_STACK_GAP + THEME_BUTTON_HEIGHT;
 
   let rootHost = null;
   let shadowRoot = null;
   let buttonWrap = null;
+  let themeButtonWrap = null;
   let currentHighlightEnabled = true;
+  let currentPageThemeIsDark = false;
   let currentPosition = null;
   let pointerState = null;
 
   function getDefaultPosition() {
     return {
       x: 18,
-      y: Math.max(80, Math.round((window.innerHeight - BUTTON_HEIGHT) * 0.45)),
+      y: Math.max(80, Math.round((window.innerHeight - BUTTON_STACK_HEIGHT) * 0.45)),
       dock: 'none'
     };
   }
@@ -29,7 +35,7 @@
   function normalizePosition(position) {
     const fallback = getDefaultPosition();
     const maxX = Math.max(0, window.innerWidth - BUTTON_WIDTH);
-    const maxY = Math.max(0, window.innerHeight - BUTTON_HEIGHT);
+    const maxY = Math.max(0, window.innerHeight - BUTTON_STACK_HEIGHT);
 
     return {
       x: Math.min(Math.max(Number(position?.x ?? fallback.x), 0), maxX),
@@ -68,11 +74,16 @@
     buttonWrap.style.left = `${currentPosition.x}px`;
     buttonWrap.style.top = `${currentPosition.y}px`;
     buttonWrap.dataset.dock = currentPosition.dock;
+    if (themeButtonWrap) {
+      themeButtonWrap.style.left = `${currentPosition.x}px`;
+      themeButtonWrap.style.top = `${currentPosition.y + BUTTON_HEIGHT + BUTTON_STACK_GAP}px`;
+      themeButtonWrap.dataset.dock = currentPosition.dock;
+    }
   }
 
   function snapToEdge(position) {
     const maxX = Math.max(0, window.innerWidth - BUTTON_WIDTH);
-    const maxY = Math.max(0, window.innerHeight - BUTTON_HEIGHT);
+    const maxY = Math.max(0, window.innerHeight - BUTTON_STACK_HEIGHT);
     const distances = [
       { edge: 'left', value: position.x },
       { edge: 'right', value: maxX - position.x },
@@ -126,6 +137,90 @@
         console.debug('[LingKuma] broadcastToggleHighlight failed:', chrome.runtime.lastError.message);
       }
     });
+  }
+
+  function getPageThemeKey() {
+    try {
+      return `${window.location.origin}${window.location.pathname}${window.location.search}`;
+    } catch (error) {
+      return window.location.href.split('#')[0];
+    }
+  }
+
+  function getCurrentHighlightTheme(fallback = false) {
+    try {
+      if (typeof highlightManager !== 'undefined' && highlightManager && typeof highlightManager.isDarkMode === 'boolean') {
+        return highlightManager.isDarkMode;
+      }
+    } catch (error) {
+      // The highlighter may not be initialized yet.
+    }
+    return fallback;
+  }
+
+  function updatePageThemeState(isDark) {
+    currentPageThemeIsDark = isDark === true;
+    if (!themeButtonWrap) {
+      return;
+    }
+
+    themeButtonWrap.dataset.theme = currentPageThemeIsDark ? 'dark' : 'light';
+    themeButtonWrap.setAttribute(
+      'aria-label',
+      currentPageThemeIsDark ? 'Current page highlight theme is dark. Click to use light.' : 'Current page highlight theme is light. Click to use dark.'
+    );
+    themeButtonWrap.setAttribute(
+      'title',
+      currentPageThemeIsDark ? 'Current page highlight: Dark' : 'Current page highlight: Light'
+    );
+  }
+
+  function applyCurrentPageTheme(isDark) {
+    updatePageThemeState(isDark);
+
+    try {
+      if (typeof highlightManager !== 'undefined' && highlightManager) {
+        highlightManager.setDarkMode(isDark);
+        highlightManager.reapplyHighlights();
+      }
+    } catch (error) {
+      console.debug('[LingKuma] apply current page highlight theme failed:', error);
+    }
+  }
+
+  function saveCurrentPageTheme(isDark) {
+    chrome.storage.local.get({ [PAGE_THEME_OVERRIDES_KEY]: {} }, (result) => {
+      const overrides = result[PAGE_THEME_OVERRIDES_KEY] || {};
+      const pageKey = getPageThemeKey();
+      const nextOverrides = {
+        ...overrides,
+        [pageKey]: {
+          isDark,
+          url: window.location.href,
+          title: document.title || '',
+          updatedAt: Date.now()
+        }
+      };
+
+      const entries = Object.entries(nextOverrides)
+        .sort((a, b) => (b[1]?.updatedAt || 0) - (a[1]?.updatedAt || 0))
+        .slice(0, 200);
+
+      chrome.storage.local.set({
+        [PAGE_THEME_OVERRIDES_KEY]: Object.fromEntries(entries)
+      });
+    });
+  }
+
+  function toggleCurrentPageTheme(event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    const nextIsDark = !currentPageThemeIsDark;
+    applyCurrentPageTheme(nextIsDark);
+    saveCurrentPageTheme(nextIsDark);
   }
 
   function toggleHighlight() {
@@ -402,6 +497,119 @@
         pointer-events: none;
       }
 
+      .lk-current-page-theme {
+        position: fixed;
+        width: ${BUTTON_WIDTH}px;
+        height: ${THEME_BUTTON_HEIGHT}px;
+        z-index: 2147483647;
+        border: 0;
+        border-radius: 999px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #ebebeb;
+        box-shadow:
+          inset 0 2px 7px rgba(0, 0, 0, 0.26),
+          inset 0 -2px 7px rgba(255, 255, 255, 0.46),
+          0 10px 24px rgba(20, 20, 19, 0.16);
+        cursor: pointer;
+        opacity: 0.88;
+        overflow: hidden;
+        transition:
+          opacity 180ms ease,
+          transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          background 220ms ease,
+          box-shadow 220ms ease;
+        user-select: none;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .lk-current-page-theme:hover,
+      .lk-current-page-theme:focus-visible {
+        opacity: 0.98;
+        transform: translate3d(0, 0, 0) !important;
+      }
+
+      .lk-current-page-theme:focus-visible {
+        outline: 2px solid #3898ec;
+        outline-offset: 3px;
+      }
+
+      .lk-current-page-theme::after {
+        content: "";
+        position: absolute;
+        width: 28px;
+        height: 28px;
+        top: 3px;
+        left: 4px;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #ffcc89, #d8860b);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.22);
+        transition:
+          left 220ms ease,
+          transform 220ms ease,
+          background 220ms ease;
+      }
+
+      .lk-current-page-theme svg {
+        position: relative;
+        z-index: 1;
+        width: 18px;
+        height: 18px;
+        flex: 0 0 18px;
+        transition: fill 220ms ease, color 220ms ease;
+      }
+
+      .lk-current-page-theme .theme-sun {
+        margin-left: 9px;
+        fill: #fff;
+      }
+
+      .lk-current-page-theme .theme-moon {
+        margin-right: 9px;
+        fill: #7e7e7e;
+      }
+
+      .lk-current-page-theme[data-theme="dark"] {
+        background: #242424;
+      }
+
+      .lk-current-page-theme[data-theme="dark"]::after {
+        left: calc(100% - 4px);
+        transform: translateX(-100%);
+        background: linear-gradient(180deg, #777, #3a3a3a);
+      }
+
+      .lk-current-page-theme[data-theme="dark"] .theme-sun {
+        fill: #7e7e7e;
+      }
+
+      .lk-current-page-theme[data-theme="dark"] .theme-moon {
+        fill: #fff;
+      }
+
+      .lk-current-page-theme[data-dock="left"] {
+        opacity: 0.42;
+        transform: translate3d(-58px, 0, 0);
+      }
+
+      .lk-current-page-theme[data-dock="right"] {
+        opacity: 0.42;
+        transform: translate3d(58px, 0, 0);
+      }
+
+      .lk-current-page-theme[data-dock="top"] {
+        opacity: 0.42;
+        transform: translate3d(0, -34px, 0);
+      }
+
+      .lk-current-page-theme[data-dock="bottom"] {
+        opacity: 0.42;
+        transform: translate3d(0, 34px, 0);
+      }
+
       @-webkit-keyframes orbit {
         to {
           transform: translate(-50%, -50%) rotate(10deg) rotate(360deg) translateY(calc(var(--distance) * 1px));
@@ -512,13 +720,18 @@
     }
 
     const maxX = Math.max(0, window.innerWidth - BUTTON_WIDTH);
-    const maxY = Math.max(0, window.innerHeight - BUTTON_HEIGHT);
+    const maxY = Math.max(0, window.innerHeight - BUTTON_STACK_HEIGHT);
     const x = Math.min(Math.max(event.clientX - pointerState.offsetX, 0), maxX);
     const y = Math.min(Math.max(event.clientY - pointerState.offsetY, 0), maxY);
 
     currentPosition = { x, y, dock: 'none' };
     buttonWrap.style.left = `${x}px`;
     buttonWrap.style.top = `${y}px`;
+    if (themeButtonWrap) {
+      themeButtonWrap.style.left = `${x}px`;
+      themeButtonWrap.style.top = `${y + BUTTON_HEIGHT + BUTTON_STACK_GAP}px`;
+      themeButtonWrap.dataset.dock = 'none';
+    }
     event.preventDefault();
   }
 
@@ -544,6 +757,9 @@
     } else {
       const dock = currentPosition?.dock || previousDock || 'none';
       buttonWrap.dataset.dock = dock;
+      if (themeButtonWrap) {
+        themeButtonWrap.dataset.dock = dock;
+      }
       if (dock === 'none') {
         delete buttonWrap.dataset.collapseAfterClick;
       } else {
@@ -568,7 +784,7 @@
     }
   }
 
-  function createButton(savedPosition) {
+  function createButton(savedPosition, pageThemeOverride = null) {
     if (document.getElementById(ROOT_ID)) {
       return;
     }
@@ -616,7 +832,19 @@
       <span class="text">Kuma</span>
     `;
 
-    shadowRoot.append(createStyles(), buttonWrap);
+    themeButtonWrap = document.createElement('button');
+    themeButtonWrap.className = 'lk-current-page-theme';
+    themeButtonWrap.type = 'button';
+    themeButtonWrap.innerHTML = `
+      <svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 18.5a6.5 6.5 0 1 1 0-13 6.5 6.5 0 0 1 0 13Zm0-15.5a1 1 0 0 1-1-1V1a1 1 0 1 1 2 0v1a1 1 0 0 1-1 1Zm0 21a1 1 0 0 1-1-1v-1a1 1 0 1 1 2 0v1a1 1 0 0 1-1 1Zm11-11h-1a1 1 0 1 1 0-2h1a1 1 0 1 1 0 2ZM3 13H1a1 1 0 1 1 0-2h2a1 1 0 1 1 0 2Zm15.78-6.36a1 1 0 0 1-.7-1.71l.7-.71a1 1 0 1 1 1.42 1.42l-.71.7a1 1 0 0 1-.71.3ZM4.93 20.07a1 1 0 0 1-.71-1.7l.71-.71a1 1 0 0 1 1.41 1.41l-.7.71a1 1 0 0 1-.71.29Zm14.56 0a1 1 0 0 1-.71-.29l-.7-.71a1 1 0 0 1 1.41-1.41l.71.7a1 1 0 0 1-.71 1.71ZM5.64 6.34a1 1 0 0 1-.71-.3l-.71-.7a1 1 0 0 1 1.42-1.42l.7.71a1 1 0 0 1-.7 1.71Z"/>
+      </svg>
+      <svg class="theme-moon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M21.3 14.05a1 1 0 0 0-1.08-.25 7.8 7.8 0 0 1-3.2.68 7.95 7.95 0 0 1-7.95-7.95c0-1.1.22-2.18.66-3.2a1 1 0 0 0-1.33-1.3A10.5 10.5 0 1 0 22 15.13a1 1 0 0 0-.7-1.08Z"/>
+      </svg>
+    `;
+
+    shadowRoot.append(createStyles(), buttonWrap, themeButtonWrap);
     document.documentElement.appendChild(rootHost);
 
     buttonWrap.addEventListener('pointerdown', handlePointerDown);
@@ -625,10 +853,28 @@
     buttonWrap.addEventListener('pointercancel', handlePointerUp);
     buttonWrap.addEventListener('pointerleave', handlePointerLeave);
     buttonWrap.addEventListener('keydown', handleKeyDown);
+    themeButtonWrap.addEventListener('click', toggleCurrentPageTheme);
+    themeButtonWrap.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        toggleCurrentPageTheme(event);
+      }
+    });
 
     initializeStars();
     applyPosition(getHostPosition(savedPosition));
     updateHighlightState(currentHighlightEnabled);
+    updatePageThemeState(
+      pageThemeOverride && typeof pageThemeOverride.isDark === 'boolean'
+        ? pageThemeOverride.isDark
+        : getCurrentHighlightTheme(currentPageThemeIsDark)
+    );
+
+    setTimeout(() => {
+      if (!themeButtonWrap || pageThemeOverride) {
+        return;
+      }
+      updatePageThemeState(getCurrentHighlightTheme(currentPageThemeIsDark));
+    }, 800);
   }
 
   function destroyButton() {
@@ -638,6 +884,7 @@
     rootHost = null;
     shadowRoot = null;
     buttonWrap = null;
+    themeButtonWrap = null;
     pointerState = null;
   }
 
@@ -645,12 +892,17 @@
     chrome.storage.local.get({
       [FLOATING_BUTTON_ENABLED_KEY]: false,
       [HIGHLIGHT_ENABLED_KEY]: true,
-      [POSITION_KEY]: null
+      [POSITION_KEY]: null,
+      [PAGE_THEME_OVERRIDES_KEY]: {}
     }, (result) => {
       currentHighlightEnabled = result[HIGHLIGHT_ENABLED_KEY] !== false;
+      const pageThemeOverride = (result[PAGE_THEME_OVERRIDES_KEY] || {})[getPageThemeKey()];
+      currentPageThemeIsDark = pageThemeOverride && typeof pageThemeOverride.isDark === 'boolean'
+        ? pageThemeOverride.isDark
+        : getCurrentHighlightTheme(false);
 
       if (result[FLOATING_BUTTON_ENABLED_KEY] === true) {
-        createButton(result[POSITION_KEY]);
+        createButton(result[POSITION_KEY], pageThemeOverride);
       }
     });
   }
@@ -666,11 +918,19 @@
 
     if (changes[FLOATING_BUTTON_ENABLED_KEY]) {
       if (changes[FLOATING_BUTTON_ENABLED_KEY].newValue === true) {
-        chrome.storage.local.get({ [POSITION_KEY]: null }, (result) => {
-          createButton(result[POSITION_KEY]);
+        chrome.storage.local.get({ [POSITION_KEY]: null, [PAGE_THEME_OVERRIDES_KEY]: {} }, (result) => {
+          const pageThemeOverride = (result[PAGE_THEME_OVERRIDES_KEY] || {})[getPageThemeKey()];
+          createButton(result[POSITION_KEY], pageThemeOverride);
         });
       } else {
         destroyButton();
+      }
+    }
+
+    if (changes[PAGE_THEME_OVERRIDES_KEY]) {
+      const pageThemeOverride = (changes[PAGE_THEME_OVERRIDES_KEY].newValue || {})[getPageThemeKey()];
+      if (pageThemeOverride && typeof pageThemeOverride.isDark === 'boolean') {
+        updatePageThemeState(pageThemeOverride.isDark);
       }
     }
   });
