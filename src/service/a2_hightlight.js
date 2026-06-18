@@ -183,6 +183,7 @@ class ScopeObserver {
     this.parent2Text2RangesView = new Map(); // 存储当前可见的高亮范围
     this.mutPairFlag = 0; // 变更观察器状态标志
     this.wordDetailsFromDB = {}; // 单词详情数据
+    this.highlightEnabled = true; // 插件高亮显示状态，关闭时保留扫描缓存
     // this.wordStatusCache = new Map();           // 单词状态缓存
 
     // 添加高亮开关成员变量，并设置默认值
@@ -217,8 +218,9 @@ class ScopeObserver {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.action === "toggleHighlight") {
         if (message.enabled) {
-          this.reapplyHighlights();
+          this.resumeHighlighting();
         } else {
+          this.highlightEnabled = false;
           this.removeAllHighlights();
         }
       } else if (message.action === "redetectPageLanguage") {
@@ -315,16 +317,65 @@ class ScopeObserver {
     console.log("更新后:", this.wordDetailsFromDB);
   }
 
+  // 恢复高亮显示。只恢复显示层和观察器，不丢弃已扫描的原始分词缓存。
+  resumeHighlighting() {
+    console.log("恢复高亮显示...");
+    this.highlightEnabled = true;
+
+    try {
+      if (!this.handleIntersectingBound) {
+        this.handleIntersectingBound = this.handleIntersecting();
+      }
+      if (!this.hlParentSecOb) {
+        this.hlParentSecOb = this.newTextParentSecOb();
+      }
+      if (!this.mutOb) {
+        this.mutOb = this.newMutOb();
+      }
+
+      // 兼容旧版本关闭逻辑：如果 observer 曾被 disconnect，需要重新 observe 已缓存的 parent。
+      const parentEntries = Array.from(this.parent2Text2RawsAllUnknow.keys());
+      for (let i = 0; i < parentEntries.length; i++) {
+        const parent = parentEntries[i];
+        if (document.contains(parent)) {
+          this.hlParentSecOb.observe(parent);
+        }
+      }
+
+      if (this.walked) {
+        this.mutObserve();
+
+        // 兼容旧版本关闭逻辑：原始缓存被清空但 manager 仍存在时，重新扫描一次。
+        if (this.parent2Text2RawsAllUnknow.size === 0) {
+          console.log("高亮缓存为空，重新扫描文档");
+          this.scanDocument();
+        }
+      } else {
+        this.initWalk();
+        return;
+      }
+    } catch (e) {
+      console.error("恢复高亮观察器时出错:", e);
+    }
+
+    this.reapplyHighlights({ forceEnabled: true });
+  }
+
   // 重新应用所有高亮
-  reapplyHighlights() {
+  reapplyHighlights(options = {}) {
     console.log("重新应用所有高亮...");
     try {
       // 确保先完全清除所有高亮
       this.removeAllHighlights();
 
+      if (!this.highlightEnabled && !options.forceEnabled) {
+        console.log("高亮当前已关闭，不重新应用");
+        return;
+      }
+
       // 检查插件是否启用
       chrome.storage.local.get(['enablePlugin'], (result) => {
-        if (result.enablePlugin === false) {
+        if (result.enablePlugin === false && !options.forceEnabled) {
           console.log("插件已禁用，不重新应用高亮");
           return;
         }
@@ -1678,6 +1729,11 @@ if (window.location.hostname.includes('youtube.com')) {
         }
       }
       removeSet.clear();
+
+      if (!this.highlightEnabled) {
+        addSet.clear();
+        return;
+      }
 
       // Firefox兼容性：添加进入视口元素的高亮
       const addParents = Array.from(addSet);

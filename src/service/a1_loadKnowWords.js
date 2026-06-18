@@ -70,36 +70,8 @@ chrome.storage.local.get([
   if (result.enablePlugin === false) {
     console.log("插件已被禁用，清理资源");
     if (highlightManager) {
-      try {
-        // 1. 断开所有观察器
-        highlightManager.hlParentSecOb.disconnect();
-        highlightManager.mutOb.disconnect();
-
-        // 2. 清除所有CSS Highlights
-        CSS.highlights.clear();
-
-        // 3. 移除所有高亮范围
-        highlightManager.removeAllHighlights();
-
-        // 4. 清空所有数据结构
-        highlightManager.parent2Text2RawsAllUnknow.clear();
-        highlightManager.parent2Text2RangesView.clear();
-        highlightManager.wordStatusCache.clear();
-
-        // 5. 清空全局变量
-        wordDetails = [];
-        wordRangesMap.clear();
-
-        // 6. 重置所有回调和监听器
-        highlightManager.handleIntersectingBound = null;
-
-        // 7. 最后设置为 null
-        highlightManager = null;
-
-        console.log("成功清除所有高亮和相关资源");
-      } catch (error) {
-        console.error("清除高亮时发生错误:", error);
-      }
+      highlightManager.highlightEnabled = false;
+      highlightManager.removeAllHighlights();
     }
     return;
   }
@@ -142,38 +114,11 @@ function initPlugin() {
         // 重新应用高亮
         highlightAllWords();
       } else {
-        // 移除所有高亮并清理资源
+        // 只隐藏高亮，保留扫描缓存和观察器，便于再次开启时恢复
         if (highlightManager) {
-          try {
-            // 1. 断开所有观察器
-            highlightManager.hlParentSecOb.disconnect();  
-            highlightManager.mutOb.disconnect();          
-            
-            // 2. 清除所有CSS Highlights
-            CSS.highlights.clear();
-            
-            // 3. 移除所有高亮范围
-            highlightManager.removeAllHighlights();
-            
-            // 4. 清空所有数据结构
-            highlightManager.parent2Text2RawsAllUnknow.clear();
-            highlightManager.parent2Text2RangesView.clear();
-            highlightManager.wordStatusCache.clear();
-            
-            // 5. 清空全局变量
-            wordDetails = [];
-            wordRangesMap.clear();
-            
-            // 6. 重置所有回调和监听器
-            highlightManager.handleIntersectingBound = null;
-            
-            // 7. 最后设置为 null
-            highlightManager = null;
-
-            console.log("成功清除所有高亮和相关资源");
-          } catch (error) {
-            console.error("清除高亮时发生错误:", error);
-          }
+          highlightManager.highlightEnabled = false;
+          highlightManager.removeAllHighlights();
+          console.log("高亮已隐藏，扫描缓存已保留");
         }
       }
     }
