@@ -281,6 +281,7 @@
       :host {
         all: initial;
         --transition: 0.25s;
+        --dock-motion: 470ms cubic-bezier(0.16, 1, 0.3, 1);
         --spark: 1.8s;
         --hue: 245;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -300,8 +301,8 @@
         transform: translate3d(0, 0, 0);
         transform-origin: center;
         transition:
-          width 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
-          height 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+          width var(--dock-motion),
+          height var(--dock-motion);
       }
 
       .lk-floating-stack[data-dock="top"],
@@ -321,11 +322,11 @@
         transform-origin: center;
         transition:
           opacity 180ms ease,
-          transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
-          top 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
-          left 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
-          width 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
-          height 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+          transform var(--dock-motion),
+          top var(--dock-motion),
+          left var(--dock-motion),
+          width var(--dock-motion),
+          height var(--dock-motion);
       }
 
       .lk-floating-slot--theme {
@@ -430,7 +431,7 @@
         overflow: hidden;
         transition:
           opacity 180ms ease,
-          transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          transform var(--dock-motion),
           box-shadow var(--transition),
           scale var(--transition),
           background var(--transition),
@@ -638,7 +639,7 @@
         overflow: hidden;
         transition:
           opacity 180ms ease,
-          transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          transform var(--dock-motion),
           background 220ms ease,
           box-shadow 220ms ease;
         user-select: none;
