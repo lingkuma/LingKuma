@@ -3074,9 +3074,9 @@ function checkSiteInThemeLists() {
 // 辅助函数：判断URL是否匹配通配符模式
 function getHighlightPageThemeKey() {
   try {
-    return `${window.location.origin}${window.location.pathname}${window.location.search}`;
+    return window.location.hostname.toLowerCase();
   } catch (error) {
-    return window.location.href.split('#')[0];
+    return window.location.host.toLowerCase();
   }
 }
 

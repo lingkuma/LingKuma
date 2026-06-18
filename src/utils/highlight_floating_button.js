@@ -141,9 +141,9 @@
 
   function getPageThemeKey() {
     try {
-      return `${window.location.origin}${window.location.pathname}${window.location.search}`;
+      return window.location.hostname.toLowerCase();
     } catch (error) {
-      return window.location.href.split('#')[0];
+      return window.location.host.toLowerCase();
     }
   }
 
