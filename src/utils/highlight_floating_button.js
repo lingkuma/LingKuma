@@ -10,7 +10,7 @@
   const ROOT_ID = 'lingkuma-word-highlight-floating-root';
   const EDGE_THRESHOLD = 35;
   const BUTTON_WIDTH = 86;
-  const BUTTON_HEIGHT = 42;
+  const BUTTON_HEIGHT = 34;
   const THEME_BUTTON_HEIGHT = 34;
   const BUTTON_STACK_GAP = 8;
   const BUTTON_STACK_HEIGHT = BUTTON_HEIGHT + BUTTON_STACK_GAP + THEME_BUTTON_HEIGHT;
@@ -128,6 +128,19 @@
     }
   }
 
+  function triggerButtonPulse(button) {
+    if (!button) {
+      return;
+    }
+
+    button.dataset.pulse = 'true';
+    window.setTimeout(() => {
+      if (button) {
+        delete button.dataset.pulse;
+      }
+    }, 280);
+  }
+
   function broadcastHighlightState(enabled) {
     chrome.runtime.sendMessage({
       action: 'broadcastToggleHighlight',
@@ -227,6 +240,7 @@
 
     const nextIsDark = !currentPageThemeIsDark;
     applyCurrentPageTheme(nextIsDark);
+    triggerButtonPulse(themeButtonWrap);
     saveCurrentPageTheme(nextIsDark);
   }
 
@@ -234,6 +248,7 @@
     chrome.storage.local.get({ [HIGHLIGHT_ENABLED_KEY]: true }, (result) => {
       const enabled = !(result[HIGHLIGHT_ENABLED_KEY] !== false);
       updateHighlightState(enabled);
+      triggerButtonPulse(buttonWrap);
       chrome.storage.local.set({ [HIGHLIGHT_ENABLED_KEY]: enabled }, () => {
         broadcastHighlightState(enabled);
       });
@@ -317,7 +332,7 @@
         white-space: nowrap;
         opacity: 0.88;
         transform: translate3d(0, 0, 0);
-        scale: calc(1 + (var(--active) * 0.1));
+        scale: 1;
         transform-style: preserve-3d;
         perspective: 100vmin;
         overflow: hidden;
@@ -347,7 +362,12 @@
 
       .lk-floating-highlight:active {
         cursor: grabbing;
-        scale: 1;
+      }
+
+      .lk-floating-highlight[data-pulse="true"],
+      .lk-current-page-theme[data-pulse="true"] {
+        -webkit-animation: lk-button-pop 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        animation: lk-button-pop 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
       }
 
       .lk-floating-highlight[data-highlight="on"] {
@@ -686,6 +706,30 @@
       @keyframes rotate {
         to {
           transform: rotate(90deg);
+        }
+      }
+
+      @-webkit-keyframes lk-button-pop {
+        0% {
+          scale: 1;
+        }
+        45% {
+          scale: 1.08;
+        }
+        100% {
+          scale: 1;
+        }
+      }
+
+      @keyframes lk-button-pop {
+        0% {
+          scale: 1;
+        }
+        45% {
+          scale: 1.08;
+        }
+        100% {
+          scale: 1;
         }
       }
     `;
