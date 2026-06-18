@@ -14,9 +14,15 @@
   const THEME_BUTTON_HEIGHT = 34;
   const BUTTON_STACK_GAP = 8;
   const BUTTON_STACK_HEIGHT = BUTTON_HEIGHT + BUTTON_STACK_GAP + THEME_BUTTON_HEIGHT;
+  const BUTTON_FRAME_HEIGHT = Math.max(BUTTON_STACK_HEIGHT, BUTTON_WIDTH);
+  const DOCK_VISIBLE_SIZE = 28;
+  const SIDE_DOCK_OFFSET = BUTTON_WIDTH - DOCK_VISIBLE_SIZE;
 
   let rootHost = null;
   let shadowRoot = null;
+  let buttonStack = null;
+  let highlightSlot = null;
+  let themeSlot = null;
   let buttonWrap = null;
   let themeButtonWrap = null;
   let currentHighlightEnabled = true;
@@ -27,7 +33,7 @@
   function getDefaultPosition() {
     return {
       x: 18,
-      y: Math.max(80, Math.round((window.innerHeight - BUTTON_STACK_HEIGHT) * 0.45)),
+      y: Math.max(80, Math.round((window.innerHeight - BUTTON_FRAME_HEIGHT) * 0.45)),
       dock: 'none'
     };
   }
@@ -35,7 +41,7 @@
   function normalizePosition(position) {
     const fallback = getDefaultPosition();
     const maxX = Math.max(0, window.innerWidth - BUTTON_WIDTH);
-    const maxY = Math.max(0, window.innerHeight - BUTTON_STACK_HEIGHT);
+    const maxY = Math.max(0, window.innerHeight - BUTTON_FRAME_HEIGHT);
 
     return {
       x: Math.min(Math.max(Number(position?.x ?? fallback.x), 0), maxX),
@@ -66,24 +72,19 @@
   }
 
   function applyPosition(position) {
-    if (!buttonWrap) {
+    if (!buttonStack) {
       return;
     }
 
     currentPosition = normalizePosition(position);
-    buttonWrap.style.left = `${currentPosition.x}px`;
-    buttonWrap.style.top = `${currentPosition.y}px`;
-    buttonWrap.dataset.dock = currentPosition.dock;
-    if (themeButtonWrap) {
-      themeButtonWrap.style.left = `${currentPosition.x}px`;
-      themeButtonWrap.style.top = `${currentPosition.y + BUTTON_HEIGHT + BUTTON_STACK_GAP}px`;
-      themeButtonWrap.dataset.dock = currentPosition.dock;
-    }
+    buttonStack.style.left = `${currentPosition.x}px`;
+    buttonStack.style.top = `${currentPosition.y}px`;
+    buttonStack.dataset.dock = currentPosition.dock;
   }
 
   function snapToEdge(position) {
     const maxX = Math.max(0, window.innerWidth - BUTTON_WIDTH);
-    const maxY = Math.max(0, window.innerHeight - BUTTON_STACK_HEIGHT);
+    const maxY = Math.max(0, window.innerHeight - BUTTON_FRAME_HEIGHT);
     const distances = [
       { edge: 'left', value: position.x },
       { edge: 'right', value: maxX - position.x },
@@ -291,6 +292,96 @@
         box-sizing: border-box;
       }
 
+      .lk-floating-stack {
+        position: fixed;
+        width: ${BUTTON_WIDTH}px;
+        height: ${BUTTON_STACK_HEIGHT}px;
+        z-index: 2147483647;
+        transform: translate3d(0, 0, 0);
+        transform-origin: center;
+        transition:
+          width 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          height 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      .lk-floating-stack[data-dock="top"],
+      .lk-floating-stack[data-dock="bottom"] {
+        width: ${BUTTON_STACK_HEIGHT}px;
+        height: ${BUTTON_WIDTH}px;
+      }
+
+      .lk-floating-slot {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: ${BUTTON_WIDTH}px;
+        height: ${BUTTON_HEIGHT}px;
+        opacity: 0.88;
+        transform: translate3d(0, 0, 0);
+        transform-origin: center;
+        transition:
+          opacity 180ms ease,
+          transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          top 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          left 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          width 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          height 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      .lk-floating-slot--theme {
+        top: ${BUTTON_HEIGHT + BUTTON_STACK_GAP}px;
+      }
+
+      .lk-floating-stack[data-dock="left"] .lk-floating-slot {
+        opacity: 0.42;
+        transform: translate3d(-${SIDE_DOCK_OFFSET}px, 0, 0);
+      }
+
+      .lk-floating-stack[data-dock="right"] .lk-floating-slot {
+        opacity: 0.42;
+        transform: translate3d(${SIDE_DOCK_OFFSET}px, 0, 0);
+      }
+
+      .lk-floating-stack[data-dock="top"] .lk-floating-slot,
+      .lk-floating-stack[data-dock="bottom"] .lk-floating-slot {
+        width: ${BUTTON_HEIGHT}px;
+        height: ${BUTTON_WIDTH}px;
+        opacity: 0.42;
+      }
+
+      .lk-floating-stack[data-dock="top"] .lk-floating-slot {
+        top: 0;
+        transform: translate3d(0, -${SIDE_DOCK_OFFSET}px, 0);
+      }
+
+      .lk-floating-stack[data-dock="bottom"] .lk-floating-slot {
+        top: 0;
+        transform: translate3d(0, ${SIDE_DOCK_OFFSET}px, 0);
+      }
+
+      .lk-floating-stack[data-dock="top"] .lk-floating-slot--highlight,
+      .lk-floating-stack[data-dock="bottom"] .lk-floating-slot--highlight {
+        left: 0;
+      }
+
+      .lk-floating-stack[data-dock="top"] .lk-floating-slot--theme,
+      .lk-floating-stack[data-dock="bottom"] .lk-floating-slot--theme {
+        left: ${BUTTON_HEIGHT + BUTTON_STACK_GAP}px;
+      }
+
+      .lk-floating-stack[data-dock="left"] .lk-floating-slot:hover,
+      .lk-floating-stack[data-dock="left"] .lk-floating-slot:focus-within,
+      .lk-floating-stack[data-dock="right"] .lk-floating-slot:hover,
+      .lk-floating-stack[data-dock="right"] .lk-floating-slot:focus-within,
+      .lk-floating-stack[data-dock="top"] .lk-floating-slot:hover,
+      .lk-floating-stack[data-dock="top"] .lk-floating-slot:focus-within,
+      .lk-floating-stack[data-dock="bottom"] .lk-floating-slot:hover,
+      .lk-floating-stack[data-dock="bottom"] .lk-floating-slot:focus-within,
+      .lk-floating-stack[data-dragging="true"] .lk-floating-slot {
+        opacity: 0.98;
+        transform: translate3d(0, 0, 0);
+      }
+
       .lk-floating-highlight {
         --cut: 0.1em;
         --active: 0;
@@ -306,10 +397,11 @@
             transparent 70%
           ) calc(100px - (var(--active) * 100px)) 0 / 100% 100% no-repeat,
           hsl(var(--hue) calc(var(--active) * 100%) calc(12% - (var(--active) * 8%)));
-        position: fixed;
+        position: absolute;
+        top: 0;
+        left: 0;
         width: ${BUTTON_WIDTH}px;
         height: ${BUTTON_HEIGHT}px;
-        z-index: 2147483647;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -348,11 +440,31 @@
         -webkit-tap-highlight-color: transparent;
       }
 
+      .lk-floating-stack[data-dock="top"] .lk-floating-highlight,
+      .lk-floating-stack[data-dock="top"] .lk-current-page-theme {
+        top: ${Math.round((BUTTON_WIDTH - BUTTON_HEIGHT) / 2)}px;
+        left: -${Math.round((BUTTON_WIDTH - BUTTON_HEIGHT) / 2)}px;
+        transform: rotate(-90deg);
+      }
+
+      .lk-floating-stack[data-dock="bottom"] .lk-floating-highlight,
+      .lk-floating-stack[data-dock="bottom"] .lk-current-page-theme {
+        top: ${Math.round((BUTTON_WIDTH - BUTTON_HEIGHT) / 2)}px;
+        left: -${Math.round((BUTTON_WIDTH - BUTTON_HEIGHT) / 2)}px;
+        transform: rotate(90deg);
+      }
+
+      .lk-floating-stack[data-dragging="true"] .lk-floating-highlight,
+      .lk-floating-stack[data-dragging="true"] .lk-current-page-theme {
+        top: 0;
+        left: 0;
+        transform: translate3d(0, 0, 0);
+      }
+
       .lk-floating-highlight:hover:not([data-collapse-after-click="true"]),
       .lk-floating-highlight:focus-visible,
       .lk-floating-highlight[data-dragging="true"] {
         opacity: 0.98;
-        transform: translate3d(0, 0, 0) !important;
       }
 
       .lk-floating-highlight:focus-visible {
@@ -377,26 +489,6 @@
 
       .lk-floating-highlight[data-highlight="off"] {
         --active: 0;
-      }
-
-      .lk-floating-highlight[data-dock="left"] {
-        opacity: 0.42;
-        transform: translate3d(-58px, 0, 0);
-      }
-
-      .lk-floating-highlight[data-dock="right"] {
-        opacity: 0.42;
-        transform: translate3d(58px, 0, 0);
-      }
-
-      .lk-floating-highlight[data-dock="top"] {
-        opacity: 0.42;
-        transform: translate3d(0, -34px, 0);
-      }
-
-      .lk-floating-highlight[data-dock="bottom"] {
-        opacity: 0.42;
-        transform: translate3d(0, 34px, 0);
       }
 
       .spark {
@@ -525,10 +617,11 @@
       }
 
       .lk-current-page-theme {
-        position: fixed;
+        position: absolute;
+        top: 0;
+        left: 0;
         width: ${BUTTON_WIDTH}px;
         height: ${THEME_BUTTON_HEIGHT}px;
-        z-index: 2147483647;
         border: 0;
         border-radius: 999px;
         padding: 0;
@@ -556,7 +649,6 @@
       .lk-current-page-theme:hover,
       .lk-current-page-theme:focus-visible {
         opacity: 0.98;
-        transform: translate3d(0, 0, 0) !important;
       }
 
       .lk-current-page-theme:focus-visible {
@@ -615,26 +707,6 @@
 
       .lk-current-page-theme[data-theme="dark"] .theme-moon {
         fill: #fff;
-      }
-
-      .lk-current-page-theme[data-dock="left"] {
-        opacity: 0.42;
-        transform: translate3d(-58px, 0, 0);
-      }
-
-      .lk-current-page-theme[data-dock="right"] {
-        opacity: 0.42;
-        transform: translate3d(58px, 0, 0);
-      }
-
-      .lk-current-page-theme[data-dock="top"] {
-        opacity: 0.42;
-        transform: translate3d(0, -34px, 0);
-      }
-
-      .lk-current-page-theme[data-dock="bottom"] {
-        opacity: 0.42;
-        transform: translate3d(0, 34px, 0);
       }
 
       @-webkit-keyframes orbit {
@@ -741,20 +813,22 @@
       return;
     }
 
-    const rect = buttonWrap.getBoundingClientRect();
+    const baseX = currentPosition?.x ?? buttonStack.getBoundingClientRect().left;
+    const baseY = currentPosition?.y ?? buttonStack.getBoundingClientRect().top;
     pointerState = {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
-      offsetX: event.clientX - rect.left,
-      offsetY: event.clientY - rect.top,
-      dock: currentPosition?.dock || buttonWrap.dataset.dock || 'none',
+      offsetX: event.clientX - baseX,
+      offsetY: event.clientY - baseY,
+      dock: currentPosition?.dock || buttonStack.dataset.dock || 'none',
       moved: false
     };
 
+    buttonStack.dataset.dragging = 'true';
+    buttonStack.dataset.dock = 'none';
     buttonWrap.dataset.dragging = 'true';
     delete buttonWrap.dataset.collapseAfterClick;
-    buttonWrap.dataset.dock = 'none';
     buttonWrap.setPointerCapture(event.pointerId);
     event.preventDefault();
   }
@@ -771,18 +845,14 @@
     }
 
     const maxX = Math.max(0, window.innerWidth - BUTTON_WIDTH);
-    const maxY = Math.max(0, window.innerHeight - BUTTON_STACK_HEIGHT);
+    const maxY = Math.max(0, window.innerHeight - BUTTON_FRAME_HEIGHT);
     const x = Math.min(Math.max(event.clientX - pointerState.offsetX, 0), maxX);
     const y = Math.min(Math.max(event.clientY - pointerState.offsetY, 0), maxY);
 
     currentPosition = { x, y, dock: 'none' };
-    buttonWrap.style.left = `${x}px`;
-    buttonWrap.style.top = `${y}px`;
-    if (themeButtonWrap) {
-      themeButtonWrap.style.left = `${x}px`;
-      themeButtonWrap.style.top = `${y + BUTTON_HEIGHT + BUTTON_STACK_GAP}px`;
-      themeButtonWrap.dataset.dock = 'none';
-    }
+    buttonStack.style.left = `${x}px`;
+    buttonStack.style.top = `${y}px`;
+    buttonStack.dataset.dock = 'none';
     event.preventDefault();
   }
 
@@ -794,6 +864,7 @@
     const wasMoved = pointerState.moved;
     const previousDock = pointerState.dock;
     pointerState = null;
+    buttonStack.dataset.dragging = 'false';
     buttonWrap.dataset.dragging = 'false';
 
     try {
@@ -807,10 +878,7 @@
       savePosition();
     } else {
       const dock = currentPosition?.dock || previousDock || 'none';
-      buttonWrap.dataset.dock = dock;
-      if (themeButtonWrap) {
-        themeButtonWrap.dataset.dock = dock;
-      }
+      buttonStack.dataset.dock = dock;
       if (dock === 'none') {
         delete buttonWrap.dataset.collapseAfterClick;
       } else {
@@ -843,6 +911,12 @@
     rootHost = document.createElement('div');
     rootHost.id = ROOT_ID;
     shadowRoot = rootHost.attachShadow({ mode: 'open' });
+
+    buttonStack = document.createElement('div');
+    buttonStack.className = 'lk-floating-stack';
+
+    highlightSlot = document.createElement('div');
+    highlightSlot.className = 'lk-floating-slot lk-floating-slot--highlight';
 
     buttonWrap = document.createElement('button');
     buttonWrap.className = 'lk-floating-highlight';
@@ -883,6 +957,9 @@
       <span class="text">Kuma</span>
     `;
 
+    themeSlot = document.createElement('div');
+    themeSlot.className = 'lk-floating-slot lk-floating-slot--theme';
+
     themeButtonWrap = document.createElement('button');
     themeButtonWrap.className = 'lk-current-page-theme';
     themeButtonWrap.type = 'button';
@@ -895,7 +972,10 @@
       </svg>
     `;
 
-    shadowRoot.append(createStyles(), buttonWrap, themeButtonWrap);
+    highlightSlot.append(buttonWrap);
+    themeSlot.append(themeButtonWrap);
+    buttonStack.append(highlightSlot, themeSlot);
+    shadowRoot.append(createStyles(), buttonStack);
     document.documentElement.appendChild(rootHost);
 
     buttonWrap.addEventListener('pointerdown', handlePointerDown);
@@ -935,6 +1015,9 @@
     }
     rootHost = null;
     shadowRoot = null;
+    buttonStack = null;
+    highlightSlot = null;
+    themeSlot = null;
     buttonWrap = null;
     themeButtonWrap = null;
     pointerState = null;

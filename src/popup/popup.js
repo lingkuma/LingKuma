@@ -5905,12 +5905,12 @@ document.addEventListener('DOMContentLoaded', function() {
             break;
           case 'openLingkuma':
             chrome.tabs.create({
-              url: "https://lingkuma.org/"
+              url: "https://docs.lingkuma.org/"
             });
             break;
           case 'openLingkumaBlog':
             chrome.tabs.create({
-              url: "https://blog.lingkuma.org/"
+              url: "https://lingkuma.org/"
             });
             break;
           case 'openKoodoReader':
