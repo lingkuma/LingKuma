@@ -231,7 +231,7 @@
         -webkit-tap-highlight-color: transparent;
       }
 
-      .lk-floating-highlight:hover,
+      .lk-floating-highlight:hover:not([data-collapse-after-click="true"]),
       .lk-floating-highlight:focus-visible,
       .lk-floating-highlight[data-dragging="true"] {
         opacity: 0.98;
@@ -489,10 +489,12 @@
       startY: event.clientY,
       offsetX: event.clientX - rect.left,
       offsetY: event.clientY - rect.top,
+      dock: currentPosition?.dock || buttonWrap.dataset.dock || 'none',
       moved: false
     };
 
     buttonWrap.dataset.dragging = 'true';
+    delete buttonWrap.dataset.collapseAfterClick;
     buttonWrap.dataset.dock = 'none';
     buttonWrap.setPointerCapture(event.pointerId);
     event.preventDefault();
@@ -526,6 +528,7 @@
     }
 
     const wasMoved = pointerState.moved;
+    const previousDock = pointerState.dock;
     pointerState = null;
     buttonWrap.dataset.dragging = 'false';
 
@@ -539,10 +542,23 @@
       applyPosition(snapToEdge(currentPosition));
       savePosition();
     } else {
+      const dock = currentPosition?.dock || previousDock || 'none';
+      buttonWrap.dataset.dock = dock;
+      if (dock === 'none') {
+        delete buttonWrap.dataset.collapseAfterClick;
+      } else {
+        buttonWrap.dataset.collapseAfterClick = 'true';
+      }
       toggleHighlight();
     }
 
     event.preventDefault();
+  }
+
+  function handlePointerLeave() {
+    if (buttonWrap) {
+      delete buttonWrap.dataset.collapseAfterClick;
+    }
   }
 
   function handleKeyDown(event) {
@@ -607,6 +623,7 @@
     buttonWrap.addEventListener('pointermove', handlePointerMove);
     buttonWrap.addEventListener('pointerup', handlePointerUp);
     buttonWrap.addEventListener('pointercancel', handlePointerUp);
+    buttonWrap.addEventListener('pointerleave', handlePointerLeave);
     buttonWrap.addEventListener('keydown', handleKeyDown);
 
     initializeStars();

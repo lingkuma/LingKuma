@@ -4575,7 +4575,15 @@ chrome.runtime.onInstalled.addListener((details) => {
     contexts: ["action"] // 只在插件图标上显示
   });
 
-  // 新增：创建右键菜单项 - SyncLingua
+  // Create KumaTools menu item - Clipboard
+  chrome.contextMenus.create({
+    id: "openClipboard",
+    title: "Clipboard",
+    parentId: "kumaToolsMenu",
+    contexts: ["action"]
+  });
+
+  // Create KumaTools menu item - SyncLingua
   chrome.contextMenus.create({
     id: "openSyncLingua",
     title: "SyncLingua",
@@ -4745,6 +4753,10 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   } else if (info.menuItemId === "openLingkumaBlog") { // 新增处理逻辑
     chrome.tabs.create({
       url: "https://lingkuma.org/"
+    });
+  } else if (info.menuItemId === "openClipboard") { // Clipboard
+    chrome.tabs.create({
+      url: "https://clipboard.lingkuma.org/"
     });
   } else if (info.menuItemId === "openSyncLingua") { // SyncLingua
     chrome.tabs.create({
