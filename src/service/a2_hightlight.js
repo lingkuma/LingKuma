@@ -218,7 +218,9 @@ class ScopeObserver {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.action === "toggleHighlight") {
         if (message.enabled) {
-          this.resumeHighlighting();
+          // A1/highlightAllWords 会先刷新词库状态，再调用 resumeHighlighting。
+          // 这里不要抢先重绘，否则 offscreen 节点会使用旧缓存落到默认蓝色。
+          return;
         } else {
           this.highlightEnabled = false;
           this.removeAllHighlights();
@@ -313,6 +315,10 @@ class ScopeObserver {
     console.log("更新词典数据");
     console.log("更新前:", this.wordDetailsFromDB);
     // console.log("[setWordDetails] 调用堆栈:", new Error().stack);
+    if (!details || Object.keys(details).length === 0) {
+      console.warn("词典数据为空，保留现有缓存，避免重新开启后全部落到默认蓝色");
+      return;
+    }
     this.wordDetailsFromDB = details;
     console.log("更新后:", this.wordDetailsFromDB);
   }
@@ -2972,7 +2978,7 @@ function highlightAllWords() {
       chrome.runtime.sendMessage({
         action: "getAllWordStatusMap"
       }, (response) => {
-        let wordDetailsFromDB = response.statusMap || {};
+        let wordDetailsFromDB = response?.statusMap || {};
 
         // Firefox兼容性：处理单词详情数据格式
         if (Array.isArray(wordDetailsFromDB)) {
@@ -2995,6 +3001,7 @@ function highlightAllWords() {
 
         // 更新高亮管理器的单词详情
         highlightManager.setWordDetails(wordDetailsFromDB);
+        highlightManager.resumeHighlighting();
       });
     } else {
       console.log("初始化高亮管理器");
