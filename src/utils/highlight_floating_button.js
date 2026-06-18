@@ -175,6 +175,16 @@
     );
   }
 
+  function normalizePageThemeOverride(value) {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+    if (value && typeof value.isDark === 'boolean') {
+      return value.isDark;
+    }
+    return null;
+  }
+
   function applyCurrentPageTheme(isDark) {
     updatePageThemeState(isDark);
 
@@ -192,22 +202,19 @@
     chrome.storage.local.get({ [PAGE_THEME_OVERRIDES_KEY]: {} }, (result) => {
       const overrides = result[PAGE_THEME_OVERRIDES_KEY] || {};
       const pageKey = getPageThemeKey();
-      const nextOverrides = {
-        ...overrides,
-        [pageKey]: {
-          isDark,
-          url: window.location.href,
-          title: document.title || '',
-          updatedAt: Date.now()
-        }
-      };
+      const nextOverrides = {};
 
-      const entries = Object.entries(nextOverrides)
-        .sort((a, b) => (b[1]?.updatedAt || 0) - (a[1]?.updatedAt || 0))
-        .slice(0, 200);
+      Object.entries(overrides).forEach(([key, value]) => {
+        const normalized = normalizePageThemeOverride(value);
+        if (normalized !== null) {
+          nextOverrides[key] = normalized;
+        }
+      });
+
+      nextOverrides[pageKey] = isDark === true;
 
       chrome.storage.local.set({
-        [PAGE_THEME_OVERRIDES_KEY]: Object.fromEntries(entries)
+        [PAGE_THEME_OVERRIDES_KEY]: nextOverrides
       });
     });
   }
@@ -863,9 +870,10 @@
     initializeStars();
     applyPosition(getHostPosition(savedPosition));
     updateHighlightState(currentHighlightEnabled);
+    const pageThemeIsDark = normalizePageThemeOverride(pageThemeOverride);
     updatePageThemeState(
-      pageThemeOverride && typeof pageThemeOverride.isDark === 'boolean'
-        ? pageThemeOverride.isDark
+      pageThemeIsDark !== null
+        ? pageThemeIsDark
         : getCurrentHighlightTheme(currentPageThemeIsDark)
     );
 
@@ -897,8 +905,9 @@
     }, (result) => {
       currentHighlightEnabled = result[HIGHLIGHT_ENABLED_KEY] !== false;
       const pageThemeOverride = (result[PAGE_THEME_OVERRIDES_KEY] || {})[getPageThemeKey()];
-      currentPageThemeIsDark = pageThemeOverride && typeof pageThemeOverride.isDark === 'boolean'
-        ? pageThemeOverride.isDark
+      const pageThemeIsDark = normalizePageThemeOverride(pageThemeOverride);
+      currentPageThemeIsDark = pageThemeIsDark !== null
+        ? pageThemeIsDark
         : getCurrentHighlightTheme(false);
 
       if (result[FLOATING_BUTTON_ENABLED_KEY] === true) {
@@ -929,8 +938,9 @@
 
     if (changes[PAGE_THEME_OVERRIDES_KEY]) {
       const pageThemeOverride = (changes[PAGE_THEME_OVERRIDES_KEY].newValue || {})[getPageThemeKey()];
-      if (pageThemeOverride && typeof pageThemeOverride.isDark === 'boolean') {
-        updatePageThemeState(pageThemeOverride.isDark);
+      const pageThemeIsDark = normalizePageThemeOverride(pageThemeOverride);
+      if (pageThemeIsDark !== null) {
+        updatePageThemeState(pageThemeIsDark);
       }
     }
   });

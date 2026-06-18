@@ -3031,8 +3031,9 @@ function checkSiteInThemeLists() {
       const currentUrl = window.location.href;
       const pageThemeOverrides = result.highlightPageThemeOverrides || {};
       const pageThemeOverride = pageThemeOverrides[getHighlightPageThemeKey()];
-      if (pageThemeOverride && typeof pageThemeOverride.isDark === 'boolean') {
-        resolve(pageThemeOverride.isDark ? 2 : 1);
+      const pageThemeIsDark = normalizeHighlightPageThemeOverride(pageThemeOverride);
+      if (pageThemeIsDark !== null) {
+        resolve(pageThemeIsDark ? 2 : 1);
         return;
       }
 
@@ -3080,6 +3081,16 @@ function getHighlightPageThemeKey() {
   }
 }
 
+function normalizeHighlightPageThemeOverride(value) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (value && typeof value.isDark === 'boolean') {
+    return value.isDark;
+  }
+  return null;
+}
+
 function urlMatchesPattern(url, pattern) {
   const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$");
   return regex.test(url);
@@ -3090,8 +3101,9 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === "updateHighlightTheme") {
     chrome.storage.local.get({ highlightPageThemeOverrides: {} }, function(result) {
       const pageThemeOverride = (result.highlightPageThemeOverrides || {})[getHighlightPageThemeKey()];
-      const isDark = pageThemeOverride && typeof pageThemeOverride.isDark === 'boolean'
-        ? pageThemeOverride.isDark
+      const pageThemeIsDark = normalizeHighlightPageThemeOverride(pageThemeOverride);
+      const isDark = pageThemeIsDark !== null
+        ? pageThemeIsDark
         : request.isDark;
 
       if (highlightManager) {
@@ -3109,12 +3121,13 @@ chrome.storage.onChanged.addListener(function(changes, areaName) {
 
   const overrides = changes.highlightPageThemeOverrides.newValue || {};
   const pageThemeOverride = overrides[getHighlightPageThemeKey()];
-  if (!pageThemeOverride || typeof pageThemeOverride.isDark !== 'boolean') {
+  const pageThemeIsDark = normalizeHighlightPageThemeOverride(pageThemeOverride);
+  if (pageThemeIsDark === null) {
     return;
   }
 
-  if (highlightManager.isDarkMode !== pageThemeOverride.isDark) {
-    highlightManager.setDarkMode(pageThemeOverride.isDark);
+  if (highlightManager.isDarkMode !== pageThemeIsDark) {
+    highlightManager.setDarkMode(pageThemeIsDark);
     highlightManager.reapplyHighlights();
   }
 });
