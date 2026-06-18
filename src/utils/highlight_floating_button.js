@@ -825,9 +825,6 @@
       moved: false
     };
 
-    buttonStack.dataset.dragging = 'true';
-    buttonStack.dataset.dock = 'none';
-    buttonWrap.dataset.dragging = 'true';
     delete buttonWrap.dataset.collapseAfterClick;
     buttonWrap.setPointerCapture(event.pointerId);
     event.preventDefault();
@@ -840,8 +837,17 @@
 
     const deltaX = Math.abs(event.clientX - pointerState.startX);
     const deltaY = Math.abs(event.clientY - pointerState.startY);
-    if (deltaX > 3 || deltaY > 3) {
+    if (!pointerState.moved && (deltaX > 3 || deltaY > 3)) {
       pointerState.moved = true;
+      buttonStack.dataset.dragging = 'true';
+      buttonStack.dataset.dock = 'none';
+      buttonWrap.dataset.dragging = 'true';
+      delete buttonWrap.dataset.collapseAfterClick;
+    }
+
+    if (!pointerState.moved) {
+      event.preventDefault();
+      return;
     }
 
     const maxX = Math.max(0, window.innerWidth - BUTTON_WIDTH);
@@ -864,8 +870,8 @@
     const wasMoved = pointerState.moved;
     const previousDock = pointerState.dock;
     pointerState = null;
-    buttonStack.dataset.dragging = 'false';
-    buttonWrap.dataset.dragging = 'false';
+    delete buttonStack.dataset.dragging;
+    delete buttonWrap.dataset.dragging;
 
     try {
       buttonWrap.releasePointerCapture(event.pointerId);
