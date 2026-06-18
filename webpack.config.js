@@ -34,6 +34,7 @@ module.exports = {
     a6_custom_highlight: "./src/service/a6_custom_highlight.js",
     a7_words_boom: "./src/service/a7_words_boom.js",
     a7_1_sentence_navigator: "./src/service/a7.1_sentence_navigator.js",
+    highlight_floating_button: "./src/utils/highlight_floating_button.js",
     tts: "./src/plugin/tts.js",
     orion_tts: "./src/plugin/orion_tts.js",
     edge_tts: "./src/plugin/edge_tts.js", 
@@ -119,6 +120,9 @@ module.exports = {
       }
       if (pathData.chunk.name === 'a7_1_sentence_navigator') {
         return 'src/service/a7.1_sentence_navigator.js';
+      }
+      if (pathData.chunk.name === 'highlight_floating_button') {
+        return 'src/utils/highlight_floating_button.js';
       }
 
 

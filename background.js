@@ -2575,7 +2575,35 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("[background.js] 收到消息:", message);
 
-  if (message.action === 'getWordDetails') {
+  if (message.action === 'broadcastToggleHighlight') {
+    const enabled = message.enabled !== false;
+
+    chrome.storage.local.set({ enablePlugin: enabled }, () => {
+      chrome.tabs.query({}, (tabs) => {
+        tabs.forEach((tab) => {
+          if (!tab.id) {
+            return;
+          }
+
+          try {
+            chrome.tabs.sendMessage(tab.id, {
+              action: "toggleHighlight",
+              enabled
+            }, () => {
+              void chrome.runtime.lastError;
+            });
+          } catch (error) {
+            console.debug("[background.js] toggleHighlight broadcast skipped:", error);
+          }
+        });
+
+        sendResponse({ success: true, enabled });
+      });
+    });
+
+    return true;
+  }
+  else if (message.action === 'getWordDetails') {
     const word = message.word;
 
     // 检查是否启用云端数据库
