@@ -2974,6 +2974,12 @@ function highlightAllWords() {
 
     // 继续原有的高亮逻辑
     if (highlightManager) {
+      if (highlightManager.walked && highlightManager.parent2Text2RawsAllUnknow.size > 0) {
+        console.log("复用高亮缓存，直接恢复显示");
+        highlightManager.resumeHighlighting();
+        return;
+      }
+
       console.log("更新高亮管理器");
       chrome.runtime.sendMessage({
         action: "getAllWordStatusMap"
