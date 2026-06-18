@@ -7,8 +7,8 @@
   const HIGHLIGHT_ENABLED_KEY = 'enablePlugin';
   const POSITION_KEY = 'wordHighlightFloatingButtonPosition';
   const ROOT_ID = 'lingkuma-word-highlight-floating-root';
-  const EDGE_THRESHOLD = 30;
-  const BUTTON_WIDTH = 58;
+  const EDGE_THRESHOLD = 35;
+  const BUTTON_WIDTH = 86;
   const BUTTON_HEIGHT = 42;
 
   let rootHost = null;
@@ -138,14 +138,57 @@
     });
   }
 
+  function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  }
+
+  function initializeStars() {
+    if (!buttonWrap) {
+      return;
+    }
+
+    buttonWrap.querySelectorAll('.star').forEach((star) => {
+      star.style.setProperty('--angle', randomInt(0, 360));
+      star.style.setProperty('--duration', randomInt(6, 20));
+      star.style.setProperty('--delay', randomInt(1, 10));
+      star.style.setProperty('--alpha', randomInt(40, 90) / 100);
+      star.style.setProperty('--size', randomInt(2, 6));
+      star.style.setProperty('--distance', randomInt(40, 200));
+    });
+  }
+
   function createStyles() {
     const style = document.createElement('style');
     style.textContent = `
       :host {
         all: initial;
+        --transition: 0.25s;
+        --spark: 1.8s;
+        --hue: 245;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
       }
 
       .lk-floating-highlight {
+        --cut: 0.1em;
+        --active: 0;
+        --bg:
+          radial-gradient(
+            120% 120% at 126% 126%,
+            hsl(var(--hue) calc(var(--active) * 97%) 98% / calc(var(--active) * 0.9)) 40%,
+            transparent 50%
+          ) calc(100px - (var(--active) * 100px)) 0 / 100% 100% no-repeat,
+          radial-gradient(
+            120% 120% at 120% 120%,
+            hsl(var(--hue) calc(var(--active) * 97%) 70% / calc(var(--active) * 1)) 30%,
+            transparent 70%
+          ) calc(100px - (var(--active) * 100px)) 0 / 100% 100% no-repeat,
+          hsl(var(--hue) calc(var(--active) * 100%) calc(12% - (var(--active) * 8%)));
         position: fixed;
         width: ${BUTTON_WIDTH}px;
         height: ${BUTTON_HEIGHT}px;
@@ -153,27 +196,39 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        gap: 0.25em;
         border: 0;
-        border-radius: 14px;
-        padding: 0;
-        color: #4d4c48;
-        background: rgba(250, 249, 245, 0.68);
+        border-radius: 2rem;
+        padding: 0.9em 1.3em;
+        color: hsl(0 0% calc(60% + (var(--active) * 26%)));
+        background: var(--bg);
         box-shadow:
-          0 0 0 1px rgba(209, 207, 197, 0.88),
-          0 12px 30px rgba(20, 20, 19, 0.12);
-        backdrop-filter: blur(14px) saturate(1.08);
-        -webkit-backdrop-filter: blur(14px) saturate(1.08);
+          0 0 calc(var(--active) * 6em) calc(var(--active) * 3em) hsl(var(--hue) 97% 61% / 0.5),
+          0 0.05em 0 0 hsl(var(--hue) calc(var(--active) * 97%) calc((var(--active) * 50%) + 30%)) inset,
+          0 -0.05em 0 0 hsl(var(--hue) calc(var(--active) * 97%) calc(var(--active) * 10%)) inset,
+          0 12px 30px rgba(20, 20, 19, 0.18);
         cursor: grab;
-        opacity: 0.78;
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: 0;
+        white-space: nowrap;
+        opacity: 0.88;
         transform: translate3d(0, 0, 0);
+        scale: calc(1 + (var(--active) * 0.1));
+        transform-style: preserve-3d;
+        perspective: 100vmin;
+        overflow: hidden;
         transition:
           opacity 180ms ease,
           transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
-          background-color 180ms ease,
-          box-shadow 180ms ease,
-          color 180ms ease;
+          box-shadow var(--transition),
+          scale var(--transition),
+          background var(--transition),
+          color var(--transition);
         user-select: none;
         touch-action: none;
+        -webkit-tap-highlight-color: transparent;
       }
 
       .lk-floating-highlight:hover,
@@ -190,85 +245,233 @@
 
       .lk-floating-highlight:active {
         cursor: grabbing;
+        scale: 1;
       }
 
       .lk-floating-highlight[data-highlight="on"] {
-        color: #faf9f5;
-        background: rgba(201, 100, 66, 0.78);
-        box-shadow:
-          0 0 0 1px rgba(201, 100, 66, 0.92),
-          0 12px 30px rgba(201, 100, 66, 0.22);
+        --active: 1;
+        --play-state: running;
       }
 
       .lk-floating-highlight[data-highlight="off"] {
-        color: #5e5d59;
-        background: rgba(232, 230, 220, 0.58);
-        box-shadow:
-          0 0 0 1px rgba(194, 192, 182, 0.72),
-          0 10px 26px rgba(20, 20, 19, 0.08);
+        --active: 0;
       }
 
       .lk-floating-highlight[data-dock="left"] {
         opacity: 0.42;
-        transform: translate3d(-36px, 0, 0);
+        transform: translate3d(-58px, 0, 0);
       }
 
       .lk-floating-highlight[data-dock="right"] {
         opacity: 0.42;
-        transform: translate3d(36px, 0, 0);
+        transform: translate3d(58px, 0, 0);
       }
 
       .lk-floating-highlight[data-dock="top"] {
         opacity: 0.42;
-        transform: translate3d(0, -26px, 0);
+        transform: translate3d(0, -34px, 0);
       }
 
       .lk-floating-highlight[data-dock="bottom"] {
         opacity: 0.42;
-        transform: translate3d(0, 26px, 0);
+        transform: translate3d(0, 34px, 0);
       }
 
-      .lk-icon {
-        position: relative;
-        width: 38px;
-        height: 28px;
-        display: grid;
-        place-items: center;
-        font: 600 14px/1 Georgia, "Times New Roman", serif;
-        letter-spacing: 0;
+      .spark {
+        position: absolute;
+        inset: 0;
+        border-radius: 2rem;
+        rotate: 0deg;
+        overflow: hidden;
+        -webkit-mask: linear-gradient(white, transparent 50%);
+        mask: linear-gradient(white, transparent 50%);
+        -webkit-animation: flip calc(var(--spark) * 2) infinite steps(2, end);
+        animation: flip calc(var(--spark) * 2) infinite steps(2, end);
       }
 
-      .lk-icon::before {
+      .spark::before {
         content: "";
         position: absolute;
-        inset: 2px 3px;
-        border-radius: 10px;
-        background: rgba(250, 249, 245, 0.2);
-        box-shadow: inset 0 0 0 1px rgba(250, 249, 245, 0.2);
+        width: 200%;
+        aspect-ratio: 1;
+        top: 0%;
+        left: 50%;
+        z-index: -1;
+        translate: -50% -15%;
+        rotate: 0;
+        transform: rotate(-90deg);
+        opacity: calc((var(--active)) + 0.4);
+        background: conic-gradient(
+          from 0deg,
+          transparent 0 340deg,
+          white 360deg
+        );
+        transition: opacity var(--transition);
+        -webkit-animation: rotate var(--spark) linear infinite both;
+        animation: rotate var(--spark) linear infinite both;
       }
 
-      .lk-icon span {
-        position: relative;
-        transform: translateY(-1px);
-      }
-
-      .lk-status-dot {
+      .spark::after {
+        content: "";
         position: absolute;
-        right: 6px;
-        bottom: 5px;
-        width: 8px;
-        height: 8px;
-        border-radius: 999px;
-        background: #87867f;
-        box-shadow: 0 0 0 2px rgba(250, 249, 245, 0.82);
+        inset: var(--cut);
+        border-radius: 2rem;
       }
 
-      .lk-floating-highlight[data-highlight="on"] .lk-status-dot {
-        background: #f5f4ed;
+      .backdrop {
+        position: absolute;
+        inset: var(--cut);
+        background: var(--bg);
+        border-radius: 2rem;
+        transition: background var(--transition);
       }
 
-      .lk-floating-highlight[data-highlight="off"] .lk-status-dot {
-        background: #b0aea5;
+      .galaxy {
+        position: absolute;
+        width: 100%;
+        aspect-ratio: 1;
+        top: 50%;
+        left: 50%;
+        translate: -50% -50%;
+        overflow: hidden;
+        opacity: var(--active);
+        transition: opacity var(--transition);
+      }
+
+      .galaxy__ring {
+        height: 200%;
+        width: 200%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        border-radius: 50%;
+        transform: translate(-28%, -40%) rotateX(-24deg) rotateY(-30deg) rotateX(90deg);
+        transform-style: preserve-3d;
+      }
+
+      .galaxy__container {
+        position: absolute;
+        inset: 0;
+        opacity: var(--active);
+        transition: opacity var(--transition);
+        -webkit-mask: radial-gradient(white, transparent);
+        mask: radial-gradient(white, transparent);
+      }
+
+      .star {
+        height: calc(var(--size) * 1px);
+        aspect-ratio: 1;
+        background: white;
+        border-radius: 50%;
+        position: absolute;
+        opacity: var(--alpha);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(10deg) rotate(0deg) translateY(calc(var(--distance) * 1px));
+        -webkit-animation: orbit calc(var(--duration) * 1s) calc(var(--delay) * -1s) infinite linear;
+        animation: orbit calc(var(--duration) * 1s) calc(var(--delay) * -1s) infinite linear;
+      }
+
+      .star--static {
+        -webkit-animation:
+          move-x calc(var(--duration) * 0.1s) calc(var(--delay) * -0.1s) infinite linear,
+          move-y calc(var(--duration) * 0.2s) calc(var(--delay) * -0.2s) infinite linear;
+        animation:
+          move-x calc(var(--duration) * 0.1s) calc(var(--delay) * -0.1s) infinite linear,
+          move-y calc(var(--duration) * 0.2s) calc(var(--delay) * -0.2s) infinite linear;
+        top: 50%;
+        left: 50%;
+        transform: translate(0, 0);
+        max-height: 4px;
+        filter: brightness(4);
+        opacity: 0.9;
+      }
+
+      .lk-floating-highlight[data-highlight="on"] .star--static {
+        -webkit-animation-play-state: paused;
+        animation-play-state: paused;
+      }
+
+      .text {
+        position: relative;
+        z-index: 1;
+        translate: 2% -6%;
+        color: hsl(0 0% calc(60% + (var(--active) * 26%)));
+        letter-spacing: 0.01ch;
+        transition: color var(--transition);
+        pointer-events: none;
+      }
+
+      @-webkit-keyframes orbit {
+        to {
+          transform: translate(-50%, -50%) rotate(10deg) rotate(360deg) translateY(calc(var(--distance) * 1px));
+        }
+      }
+
+      @keyframes orbit {
+        to {
+          transform: translate(-50%, -50%) rotate(10deg) rotate(360deg) translateY(calc(var(--distance) * 1px));
+        }
+      }
+
+      @-webkit-keyframes move-x {
+        0% {
+          translate: -100px 0;
+        }
+        100% {
+          translate: 100px 0;
+        }
+      }
+
+      @keyframes move-x {
+        0% {
+          translate: -100px 0;
+        }
+        100% {
+          translate: 100px 0;
+        }
+      }
+
+      @-webkit-keyframes move-y {
+        0% {
+          transform: translate(0, -50px);
+        }
+        100% {
+          transform: translate(0, 50px);
+        }
+      }
+
+      @keyframes move-y {
+        0% {
+          transform: translate(0, -50px);
+        }
+        100% {
+          transform: translate(0, 50px);
+        }
+      }
+
+      @-webkit-keyframes flip {
+        to {
+          rotate: 360deg;
+        }
+      }
+
+      @keyframes flip {
+        to {
+          rotate: 360deg;
+        }
+      }
+
+      @-webkit-keyframes rotate {
+        to {
+          transform: rotate(90deg);
+        }
+      }
+
+      @keyframes rotate {
+        to {
+          transform: rotate(90deg);
+        }
       }
     `;
     return style;
@@ -362,8 +565,39 @@
     buttonWrap.className = 'lk-floating-highlight';
     buttonWrap.type = 'button';
     buttonWrap.innerHTML = `
-      <span class="lk-icon" aria-hidden="true"><span>Aa</span></span>
-      <span class="lk-status-dot" aria-hidden="true"></span>
+      <span class="spark" aria-hidden="true"></span>
+      <span class="backdrop" aria-hidden="true"></span>
+      <span class="galaxy__container" aria-hidden="true">
+        <span class="star star--static"></span>
+        <span class="star star--static"></span>
+        <span class="star star--static"></span>
+        <span class="star star--static"></span>
+      </span>
+      <span class="galaxy" aria-hidden="true">
+        <span class="galaxy__ring">
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+          <span class="star"></span>
+        </span>
+      </span>
+      <span class="text">Kuma</span>
     `;
 
     shadowRoot.append(createStyles(), buttonWrap);
@@ -375,6 +609,7 @@
     buttonWrap.addEventListener('pointercancel', handlePointerUp);
     buttonWrap.addEventListener('keydown', handleKeyDown);
 
+    initializeStars();
     applyPosition(getHostPosition(savedPosition));
     updateHighlightState(currentHighlightEnabled);
   }

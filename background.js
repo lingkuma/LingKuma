@@ -4740,11 +4740,11 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     });
   } else if (info.menuItemId === "openLingkuma") { // 新增处理逻辑
     chrome.tabs.create({
-      url: "https://lingkuma.org/"
+      url: "https://docs.lingkuma.org/"
     });
   } else if (info.menuItemId === "openLingkumaBlog") { // 新增处理逻辑
     chrome.tabs.create({
-      url: "https://blog.lingkuma.org/"
+      url: "https://lingkuma.org/"
     });
   } else if (info.menuItemId === "openSyncLingua") { // SyncLingua
     chrome.tabs.create({
