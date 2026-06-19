@@ -64,7 +64,7 @@
     // 配置项（从storage加载）
     let posHighlightConfig = {
         enabled: false, // 功能总开关
-        language: 'english', // 高亮语言：german, english
+        language: 'english', // POS language: german, english, auto
         
         // 动词高亮设置
         verbEnabled: true, // 动词高亮开关
@@ -90,6 +90,10 @@
     // 全局变量
     let posHighlightObserver = null; // 观察器实例
     let nlpInstance = null; // NLP 实例（德语或英语）
+    let nlpInstances = {
+        english: null,
+        german: null
+    };
 
     // CSS Highlight 组名
     const VERB_UNDERLINE_GROUP = 'pos-verb-underline-group';
@@ -158,54 +162,88 @@
     // =======================
     function startPosHighlight() {
         const language = posHighlightConfig.language;
-        
-        // 根据语言选择对应的 NLP 库
+
+        if (language === 'auto') {
+            if (areAutoModeDependenciesReady()) {
+                nlpInstances = {
+                    english: window.nlp,
+                    german: window.deCompromise
+                };
+                console.log('[PosHighlight] Auto language detection enabled');
+                initializeHighlighter();
+            } else {
+                console.warn('[PosHighlight] Auto language dependencies not loaded, waiting...');
+                setTimeout(() => {
+                    if (areAutoModeDependenciesReady()) {
+                        nlpInstances = {
+                            english: window.nlp,
+                            german: window.deCompromise
+                        };
+                        initializeHighlighter();
+                    } else {
+                        console.error('[PosHighlight] Auto language dependencies failed to load');
+                    }
+                }, 1000);
+            }
+            return;
+        }
+
+        // Select the NLP library for the configured language
         if (language === 'german') {
             if (typeof window.deCompromise !== 'undefined') {
                 nlpInstance = window.deCompromise;
-                console.log('[PosHighlight] de-compromise 已加载');
+                nlpInstances.german = window.deCompromise;
+                console.log('[PosHighlight] de-compromise loaded');
                 initializeHighlighter();
             } else {
-                console.warn('[PosHighlight] de-compromise 未加载，等待加载...');
+                console.warn('[PosHighlight] de-compromise not loaded, waiting...');
                 setTimeout(() => {
                     if (typeof window.deCompromise !== 'undefined') {
                         nlpInstance = window.deCompromise;
+                        nlpInstances.german = window.deCompromise;
                         initializeHighlighter();
                     } else {
-                        console.error('[PosHighlight] de-compromise 加载失败');
+                        console.error('[PosHighlight] de-compromise failed to load');
                     }
                 }, 1000);
             }
         } else if (language === 'english') {
             if (typeof window.nlp !== 'undefined') {
                 nlpInstance = window.nlp;
-                console.log('[PosHighlight] compromise (English) 已加载');
+                nlpInstances.english = window.nlp;
+                console.log('[PosHighlight] compromise (English) loaded');
                 initializeHighlighter();
             } else {
-                console.warn('[PosHighlight] compromise 未加载，等待加载...');
+                console.warn('[PosHighlight] compromise not loaded, waiting...');
                 setTimeout(() => {
                     if (typeof window.nlp !== 'undefined') {
                         nlpInstance = window.nlp;
+                        nlpInstances.english = window.nlp;
                         initializeHighlighter();
                     } else {
-                        console.error('[PosHighlight] compromise 加载失败');
+                        console.error('[PosHighlight] compromise failed to load');
                     }
                 }, 1000);
             }
         } else {
-            console.log('[PosHighlight] 当前语言不支持:', language);
+            console.log('[PosHighlight] Unsupported language:', language);
         }
     }
 
-    // =======================
-    // 初始化高亮器
-    // =======================
+    function areAutoModeDependenciesReady() {
+        return typeof window.eld !== 'undefined' &&
+            typeof window.eld.detect === 'function' &&
+            typeof window.nlp !== 'undefined' &&
+            typeof window.deCompromise !== 'undefined';
+    }
+
     function initializeHighlighter() {
         injectHighlightStyles();
 
         posHighlightObserver = new PosHighlightObserver({
             scope: document.body,
             nlp: nlpInstance,
+            nlpInstances: nlpInstances,
             language: posHighlightConfig.language
         });
 
@@ -309,14 +347,35 @@
     // =======================
     // 词性高亮观察器类
     // =======================
+
+    function schedulePosHighlightReapply() {
+        if (!posHighlightConfig.enabled) return;
+
+        [80, 400].forEach(delay => {
+            setTimeout(() => {
+                if (posHighlightObserver && posHighlightConfig.enabled) {
+                    posHighlightObserver.reapplyHighlights();
+                }
+            }, delay);
+        });
+    }
+
     class PosHighlightObserver {
         constructor(options) {
             this.scope = options.scope || document.body;
             this.nlp = options.nlp;
+            this.nlpInstances = options.nlpInstances || {};
             this.language = options.language || 'german';
             this.intersectionObserver = null;
             this.mutationObserver = null;
             this.processedTextNodes = new Map();
+            this.pendingTextNodes = new Map();
+            this.processingQueue = [];
+            this.processingTextNodes = new WeakSet();
+            this.processingScheduled = false;
+            this.scanCancelled = false;
+            this.languageDetectionCache = new Map();
+            this.autoSegmentsPerTextNode = 12;
             this.visibleRanges = new Map();
 
             this.ignoredSelectors = [
@@ -347,7 +406,7 @@
             });
 
             this.scanExistingNodes();
-            console.log('[PosHighlightObserver] 初始化完成');
+            console.log('[PosHighlightObserver] Initialized');
         }
 
         disconnect() {
@@ -357,7 +416,12 @@
             if (this.mutationObserver) {
                 this.mutationObserver.disconnect();
             }
+            this.scanCancelled = true;
+            this.processingQueue = [];
+            this.processingScheduled = false;
             this.processedTextNodes.clear();
+            this.pendingTextNodes.clear();
+            this.languageDetectionCache.clear();
             this.visibleRanges.clear();
         }
 
@@ -368,10 +432,39 @@
                 { acceptNode: this.acceptNode.bind(this) }
             );
 
-            let textNode;
-            while (textNode = walker.nextNode()) {
-                this.processTextNode(textNode);
+            const scanChunk = (deadline) => {
+                if (this.scanCancelled) return;
+
+                let count = 0;
+                let textNode = null;
+                const hasIdleTime = deadline && typeof deadline.timeRemaining === 'function';
+
+                while (count < 120) {
+                    if (hasIdleTime && deadline.timeRemaining() < 3 && count > 0) break;
+
+                    textNode = walker.nextNode();
+                    if (!textNode) {
+                        console.log('[PosHighlightObserver] Initial scan complete');
+                        return;
+                    }
+
+                    this.queueTextNode(textNode);
+                    count++;
+                }
+
+                this.scheduleIdle(scanChunk);
+            };
+
+            this.scheduleIdle(scanChunk);
+        }
+
+        scheduleIdle(callback) {
+            if (typeof window.requestIdleCallback === 'function') {
+                window.requestIdleCallback(callback, { timeout: 500 });
+                return;
             }
+
+            setTimeout(() => callback({ timeRemaining: () => 8 }), 16);
         }
 
         acceptNode(node) {
@@ -391,6 +484,70 @@
             return NodeFilter.FILTER_ACCEPT;
         }
 
+        queueTextNode(textNode) {
+            if (!textNode || !textNode.parentElement) return false;
+            if (this.processedTextNodes.has(textNode) || this.processingTextNodes.has(textNode)) return false;
+
+            const parent = textNode.parentElement;
+            const text = textNode.textContent;
+            if (!text || !text.trim()) return false;
+
+            for (const selector of this.ignoredSelectors) {
+                if (parent.closest(selector)) return false;
+            }
+
+            this.intersectionObserver.observe(parent);
+
+            if (this.isElementInViewport(parent)) {
+                this.enqueueTextNodeProcessing(textNode);
+                return true;
+            }
+
+            if (!this.pendingTextNodes.has(parent)) {
+                this.pendingTextNodes.set(parent, new Set());
+            }
+            this.pendingTextNodes.get(parent).add(textNode);
+            return true;
+        }
+
+        enqueueTextNodeProcessing(textNode) {
+            if (!textNode || this.processedTextNodes.has(textNode) || this.processingTextNodes.has(textNode)) return;
+
+            this.processingTextNodes.add(textNode);
+            this.processingQueue.push(textNode);
+            this.scheduleTextNodeProcessing();
+        }
+
+        scheduleTextNodeProcessing() {
+            if (this.processingScheduled) return;
+
+            this.processingScheduled = true;
+            this.scheduleIdle(deadline => this.processQueuedTextNodes(deadline));
+        }
+
+        processQueuedTextNodes(deadline) {
+            this.processingScheduled = false;
+            const start = performance.now();
+            let count = 0;
+            const hasIdleTime = deadline && typeof deadline.timeRemaining === 'function';
+
+            const maxNodes = this.language === 'auto' ? 1 : 6;
+            const maxMs = this.language === 'auto' ? 4 : 8;
+
+            while (this.processingQueue.length > 0 && count < maxNodes && performance.now() - start < maxMs) {
+                if (hasIdleTime && deadline.timeRemaining() < 3 && count > 0) break;
+
+                const textNode = this.processingQueue.shift();
+                this.processingTextNodes.delete(textNode);
+                this.processTextNode(textNode);
+                count++;
+            }
+
+            if (this.processingQueue.length > 0) {
+                this.scheduleTextNodeProcessing();
+            }
+        }
+
         processTextNode(textNode) {
             if (!textNode || !textNode.parentElement) return;
 
@@ -405,16 +562,15 @@
                 if (parent.closest(selector)) return;
             }
 
-            // 使用 NLP 提取动词和介词
             const { verbs, prepositions } = this.extractPOS(text);
-            
-            if (verbs.length === 0 && prepositions.length === 0) return;
 
             this.processedTextNodes.set(textNode, {
                 verbs: verbs,
                 prepositions: prepositions,
                 text: text
             });
+
+            if (verbs.length === 0 && prepositions.length === 0) return;
 
             this.intersectionObserver.observe(parent);
 
@@ -423,48 +579,145 @@
             }
         }
 
-        // 使用 NLP 提取词性
         extractPOS(text) {
-            if (!this.nlp) return { verbs: [], prepositions: [] };
+            if (this.language === 'auto') {
+                return this.extractAutoPOS(text);
+            }
 
+            if (!this.nlp) return { verbs: [], prepositions: [] };
+            return this.extractPOSWithNlp(text, this.nlp);
+        }
+
+        extractAutoPOS(text) {
+            const result = {
+                verbs: [],
+                prepositions: []
+            };
+
+            this.getLanguageDetectionSegments(text, this.autoSegmentsPerTextNode).forEach(segment => {
+                const nlp = this.getNlpForText(segment.text);
+                if (!nlp) return;
+
+                const segmentResult = this.extractPOSWithNlp(segment.text, nlp, segment.start);
+                result.verbs.push(...segmentResult.verbs);
+                result.prepositions.push(...segmentResult.prepositions);
+            });
+
+            return result;
+        }
+
+        getLanguageDetectionSegments(text, maxSegments = 12) {
+            const segments = [];
+            const sentencePattern = /[^.!?]+(?:[.!?]+|$)/g;
+            let match;
+
+            while ((match = sentencePattern.exec(text)) !== null) {
+                const rawText = match[0];
+                const leadingWhitespace = rawText.match(/^\s*/)[0].length;
+                const trailingWhitespace = rawText.match(/\s*$/)[0].length;
+                const segmentText = rawText.slice(leadingWhitespace, rawText.length - trailingWhitespace);
+
+                if (segmentText && segmentText.length <= 240) {
+                    segments.push({
+                        text: segmentText,
+                        start: match.index + leadingWhitespace
+                    });
+                    if (segments.length >= maxSegments) break;
+                }
+            }
+
+            if (segments.length === 0 && maxSegments > 0 && text.trim()) {
+                const leadingWhitespace = text.match(/^\s*/)[0].length;
+                segments.push({
+                    text: text.trim().slice(0, 240),
+                    start: leadingWhitespace
+                });
+            }
+
+            return segments;
+        }
+
+        extractPOSWithNlp(text, nlp, offset = 0) {
             const result = {
                 verbs: [],
                 prepositions: []
             };
 
             try {
-                const doc = this.nlp(text);
-                
-                // 提取动词 - 使用 offset 获取精确位置
-                // out('offset') 返回格式: [{ text: '...', offset: { index, start, length } }, ...]
+                const doc = nlp(text);
+
                 const verbMatches = doc.verbs().out('offset');
                 verbMatches.forEach(match => {
                     if (match.offset && match.offset.start !== undefined && match.offset.length !== undefined) {
                         result.verbs.push({
                             word: match.text || text.substring(match.offset.start, match.offset.start + match.offset.length),
-                            start: match.offset.start,
-                            end: match.offset.start + match.offset.length
+                            start: offset + match.offset.start,
+                            end: offset + match.offset.start + match.offset.length
                         });
                     }
                 });
 
-                // 提取介词 - 使用 match('#Preposition') 获取
-                // 注意：compromise/de-compromise 没有 prepositions() 方法
                 const prepMatches = doc.match('#Preposition').out('offset');
                 prepMatches.forEach(match => {
                     if (match.offset && match.offset.start !== undefined && match.offset.length !== undefined) {
                         result.prepositions.push({
                             word: match.text || text.substring(match.offset.start, match.offset.start + match.offset.length),
-                            start: match.offset.start,
-                            end: match.offset.start + match.offset.length
+                            start: offset + match.offset.start,
+                            end: offset + match.offset.start + match.offset.length
                         });
                     }
                 });
 
                 return result;
             } catch (error) {
-                console.error('[PosHighlight] 提取词性失败:', error);
+                console.error('[PosHighlight] Failed to extract POS:', error);
                 return result;
+            }
+        }
+
+        getNlpForText(text) {
+            if (this.language !== 'auto') {
+                return this.nlp;
+            }
+
+            const detectedLanguage = this.detectSupportedLanguage(text);
+            if (detectedLanguage === 'en') {
+                return this.nlpInstances.english || window.nlp;
+            }
+            if (detectedLanguage === 'de') {
+                return this.nlpInstances.german || window.deCompromise;
+            }
+
+            return null;
+        }
+
+        detectSupportedLanguage(text) {
+            if (!text || typeof window.eld === 'undefined' || typeof window.eld.detect !== 'function') {
+                return '';
+            }
+
+            const sample = text.trim().slice(0, 160);
+            if (sample.length < 12) return '';
+
+            const cacheKey = sample.toLowerCase();
+            if (this.languageDetectionCache.has(cacheKey)) {
+                return this.languageDetectionCache.get(cacheKey);
+            }
+
+            try {
+                const result = window.eld.detect(sample);
+                const language = result && (!result.isReliable || result.isReliable()) && (result.language === 'en' || result.language === 'de')
+                    ? result.language
+                    : '';
+
+                if (this.languageDetectionCache.size > 500) {
+                    this.languageDetectionCache.clear();
+                }
+                this.languageDetectionCache.set(cacheKey, language);
+                return language;
+            } catch (error) {
+                console.error('[PosHighlight] Auto language detection failed:', error);
+                return '';
             }
         }
 
@@ -478,40 +731,31 @@
             );
         }
 
-        // 高亮词性
         highlightPOS(textNode, verbs, prepositions) {
             if (!textNode) return;
 
             const verbRanges = [];
             const prepRanges = [];
 
-            // 创建动词 Range
             verbs.forEach(verb => {
                 try {
                     const range = new Range();
                     range.setStart(textNode, verb.start);
                     range.setEnd(textNode, verb.end);
                     verbRanges.push(range);
-                } catch (error) {
-                    // 忽略无效的范围
-                }
+                } catch (error) {}
             });
 
-            // 创建介词 Range
             prepositions.forEach(prep => {
                 try {
                     const range = new Range();
                     range.setStart(textNode, prep.start);
                     range.setEnd(textNode, prep.end);
                     prepRanges.push(range);
-                } catch (error) {
-                    // 忽略无效的范围
-                }
+                } catch (error) {}
             });
 
-            // 添加动词高亮
             if (posHighlightConfig.verbEnabled && verbRanges.length > 0) {
-                // 背景高亮
                 if (posHighlightConfig.verbBackgroundEnabled) {
                     let highlight;
                     if (!CSS.highlights.has(VERB_BACKGROUND_GROUP)) {
@@ -523,7 +767,6 @@
                     verbRanges.forEach(range => highlight.add(range));
                 }
 
-                // 下划线高亮
                 if (posHighlightConfig.verbUnderlineEnabled) {
                     let highlight;
                     if (!CSS.highlights.has(VERB_UNDERLINE_GROUP)) {
@@ -536,9 +779,7 @@
                 }
             }
 
-            // 添加介词高亮
             if (posHighlightConfig.prepositionEnabled && prepRanges.length > 0) {
-                // 背景高亮
                 if (posHighlightConfig.prepositionBackgroundEnabled) {
                     let highlight;
                     if (!CSS.highlights.has(PREPOSITION_BACKGROUND_GROUP)) {
@@ -550,7 +791,6 @@
                     prepRanges.forEach(range => highlight.add(range));
                 }
 
-                // 下划线高亮
                 if (posHighlightConfig.prepositionUnderlineEnabled) {
                     let highlight;
                     if (!CSS.highlights.has(PREPOSITION_UNDERLINE_GROUP)) {
@@ -563,7 +803,6 @@
                 }
             }
 
-            // 存储可见范围
             if (verbRanges.length > 0 || prepRanges.length > 0) {
                 this.visibleRanges.set(textNode, {
                     verbs: verbRanges,
@@ -572,10 +811,39 @@
             }
         }
 
+        removePendingTextNode(textNode) {
+            this.pendingTextNodes.forEach((textNodes, parent) => {
+                if (textNodes.has(textNode)) {
+                    textNodes.delete(textNode);
+                    if (textNodes.size === 0) {
+                        this.pendingTextNodes.delete(parent);
+                    }
+                }
+            });
+        }
+
+        removePendingNodesInside(element) {
+            this.pendingTextNodes.forEach((textNodes, parent) => {
+                if (parent === element || element.contains(parent)) {
+                    this.pendingTextNodes.delete(parent);
+                    return;
+                }
+
+                textNodes.forEach(textNode => {
+                    if (element.contains(textNode)) {
+                        textNodes.delete(textNode);
+                    }
+                });
+
+                if (textNodes.size === 0) {
+                    this.pendingTextNodes.delete(parent);
+                }
+            });
+        }
+
         removeHighlight(textNode) {
             const ranges = this.visibleRanges.get(textNode);
             if (ranges) {
-                // 移除动词高亮
                 if (ranges.verbs && ranges.verbs.length > 0) {
                     [VERB_BACKGROUND_GROUP, VERB_UNDERLINE_GROUP].forEach(group => {
                         if (CSS.highlights.has(group)) {
@@ -587,7 +855,6 @@
                     });
                 }
 
-                // 移除介词高亮
                 if (ranges.prepositions && ranges.prepositions.length > 0) {
                     [PREPOSITION_BACKGROUND_GROUP, PREPOSITION_UNDERLINE_GROUP].forEach(group => {
                         if (CSS.highlights.has(group)) {
@@ -606,7 +873,15 @@
         handleIntersection(entries) {
             entries.forEach(entry => {
                 const element = entry.target;
-                
+
+                if (entry.isIntersecting) {
+                    const pendingNodes = this.pendingTextNodes.get(element);
+                    if (pendingNodes) {
+                        pendingNodes.forEach(textNode => this.enqueueTextNodeProcessing(textNode));
+                        this.pendingTextNodes.delete(element);
+                    }
+                }
+
                 this.processedTextNodes.forEach((data, textNode) => {
                     if (textNode.parentElement === element) {
                         if (entry.isIntersecting) {
@@ -623,7 +898,7 @@
             mutations.forEach(mutation => {
                 mutation.addedNodes.forEach(node => {
                     if (node.nodeType === Node.TEXT_NODE) {
-                        this.processTextNode(node);
+                        this.queueTextNode(node);
                     } else if (node.nodeType === Node.ELEMENT_NODE) {
                         const walker = document.createTreeWalker(
                             node,
@@ -631,8 +906,8 @@
                             { acceptNode: this.acceptNode.bind(this) }
                         );
                         let textNode;
-                        while (textNode = walker.nextNode()) {
-                            this.processTextNode(textNode);
+                        while ((textNode = walker.nextNode())) {
+                            this.queueTextNode(textNode);
                         }
                     }
                 });
@@ -640,8 +915,10 @@
                 mutation.removedNodes.forEach(node => {
                     if (node.nodeType === Node.TEXT_NODE) {
                         this.removeHighlight(node);
+                        this.removePendingTextNode(node);
                         this.processedTextNodes.delete(node);
                     } else if (node.nodeType === Node.ELEMENT_NODE) {
+                        this.removePendingNodesInside(node);
                         this.processedTextNodes.forEach((data, textNode) => {
                             if (node.contains(textNode)) {
                                 this.removeHighlight(textNode);
@@ -655,14 +932,14 @@
                     const textNode = mutation.target;
                     this.removeHighlight(textNode);
                     this.processedTextNodes.delete(textNode);
-                    this.processTextNode(textNode);
+                    this.removePendingTextNode(textNode);
+                    this.queueTextNode(textNode);
                 }
             });
         }
 
-        reapplyHighlights() {
-            // 清除所有现有高亮
-            [VERB_UNDERLINE_GROUP, VERB_BACKGROUND_GROUP, 
+        reapplyHighlights(options = {}) {
+            [VERB_UNDERLINE_GROUP, VERB_BACKGROUND_GROUP,
              PREPOSITION_UNDERLINE_GROUP, PREPOSITION_BACKGROUND_GROUP].forEach(group => {
                 if (CSS.highlights.has(group)) {
                     CSS.highlights.delete(group);
@@ -670,17 +947,27 @@
             });
             this.visibleRanges.clear();
 
-            // 重新处理所有文本节点
             this.processedTextNodes.forEach((data, textNode) => {
-                if (textNode.parentElement && this.isElementInViewport(textNode.parentElement)) {
-                    this.highlightPOS(textNode, data.verbs, data.prepositions);
+                if (!textNode.parentElement) return;
+
+                let nextData = data;
+                if (options.refreshPOS) {
+                    const refreshed = this.extractPOS(textNode.textContent || '');
+                    nextData = {
+                        verbs: refreshed.verbs,
+                        prepositions: refreshed.prepositions,
+                        text: textNode.textContent || ''
+                    };
+                    this.processedTextNodes.set(textNode, nextData);
+                }
+
+                if (this.isElementInViewport(textNode.parentElement)) {
+                    this.highlightPOS(textNode, nextData.verbs, nextData.prepositions);
                 }
             });
         }
     }
 
-    // =======================
-    // 消息监听器
     // =======================
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === 'togglePosHighlight') {
@@ -712,9 +999,11 @@
             
             updateHighlightStyles();
             sendResponse({ success: true });
+        } else if (message.action === 'toggleHighlight') {
+            schedulePosHighlightReapply();
         }
         
-        return true;
+        return false;
     });
 
 })();

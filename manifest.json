@@ -49,6 +49,7 @@
       "src/plugin/youtubeVideoOverlay.js",
       "src/plugin/min/compromise.js",
       "src/plugin/min/de-compromise.min.js",
+      "src/utils/language-detector/eld.extrasmall.global.js",
       "src/plugin/pos-highlight.js",
       "src/service/a1_loadKnowWords.js",
       "src/service/a2_hightlight.js",

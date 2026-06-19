@@ -2705,25 +2705,25 @@ if (window.location.hostname.includes('youtube.com')) {
     }
   }
 
-  // 新增方法：移除所有高亮
+  // 新增方法：移除本插件的单词高亮
+  // 只移除主单词高亮的 CSS Highlight groups，不清空全局 CSS.highlights
   removeAllHighlights() {
-    console.log("移除所有高亮...");
+    console.log("移除单词高亮...");
     try {
-      // 清除所有 CSS Highlights
-      CSS.highlights.clear();
-
-      // 清除视图中的高亮记录
-      this.parent2Text2RangesView.clear();
-
-      // 遍历所有已知的高亮组，确保它们被清除
-      const darkModePrefix = this.isDarkMode ? "dark-" : "";
+      // 只删除主单词高亮自己的组，避免清掉词性高亮、句子高亮、词组高亮等其他 CSS Highlight。
       const groups = [
-        darkModePrefix + "default",
-        darkModePrefix + "state1",
-        darkModePrefix + "state2",
-        darkModePrefix + "state3",
-        darkModePrefix + "state4",
-        darkModePrefix + "hidden"
+        "default",
+        "state1",
+        "state2",
+        "state3",
+        "state4",
+        "hidden",
+        "dark-default",
+        "dark-state1",
+        "dark-state2",
+        "dark-state3",
+        "dark-state4",
+        "dark-hidden"
       ];
 
       // Firefox兼容性：使用传统for循环
@@ -2734,7 +2734,10 @@ if (window.location.hostname.includes('youtube.com')) {
         }
       }
 
-      console.log("所有高亮已移除");
+      // 清除视图中的高亮记录
+      this.parent2Text2RangesView.clear();
+
+      console.log("单词高亮已移除");
     } catch (e) {
       console.error("移除高亮时出错:", e);
     }
