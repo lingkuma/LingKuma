@@ -837,13 +837,18 @@
     }
 
     .update-message {
+      display: block;
       font-size: 12px;
       color: var(--ios-text);
       opacity: 0.75;
       width: 100%;
       margin-top: 6px;
       padding-left: 4px;
-      line-height: 1.5;
+      line-height: 1.35;
+    }
+
+    .update-message-line + .update-message-line {
+      margin-top: 2px;
     }
 
     .update-link {
@@ -1260,10 +1265,13 @@
         <span class="update-text" id="update-text">版本已更新</span>
         <a href="#" id="update-link" class="update-link">what's new?</a>
       </div>
-      <span class="update-message" id="update-message">
-        1.感谢助力开发：<a href="https://0-0.pro/register?ref=75RRBBR3" target="_blank" rel="noopener noreferrer">推荐api平台，注册双方奖励</a>
-      </p>2.new floating button (turn on in Word Highlight's settings)  2026-6-19 
-      </span>
+      <div class="update-message" id="update-message">
+        <div class="update-message-line">感谢助力开发：<a href="https://0-0.pro/register?ref=75RRBBR3" target="_blank" rel="noopener noreferrer">推荐api平台，注册双方奖励</a></div>
+        <div class="update-message-line">1. 网页快捷高亮开关按钮（可关闭） </div>
+        <div class="update-message-line">En: new floating button (could turn off)  </div>
+        <div class="update-message-line">2. Youtube沉浸模式UI优化</div>
+        <div class="update-message-line">En: Youtube film mode UI fix.</div>
+      </div>
       <button id="update-close-btn" class="update-close-btn" title="关闭">×</button>
     </div>
   </section>
