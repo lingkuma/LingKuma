@@ -12,6 +12,15 @@
 (function() {
     'use strict';
 
+    const FLOAT_BUTTON_POSITION_KEY = 'youtubeOverlayFloatButtonPosition';
+    const FLOAT_BUTTON_ROOT_ID = 'youtube-overlay-float-button-root';
+    const FLOAT_EDGE_THRESHOLD = 35;
+    const FLOAT_BUTTON_WIDTH = 86;
+    const FLOAT_BUTTON_HEIGHT = 34;
+    const FLOAT_BUTTON_FRAME_HEIGHT = Math.max(FLOAT_BUTTON_HEIGHT, FLOAT_BUTTON_WIDTH);
+    const FLOAT_DOCK_VISIBLE_SIZE = 28;
+    const FLOAT_SIDE_DOCK_OFFSET = FLOAT_BUTTON_WIDTH - FLOAT_DOCK_VISIBLE_SIZE;
+
     let overlayContainer = null;
     let videoContainer = null;
     let originalVideo = null;
@@ -19,6 +28,11 @@
     let isOverlayActive = false;
     let currentUrl = window.location.href;
     let floatButton = null;
+    let floatButtonHost = null;
+    let floatButtonShadowRoot = null;
+    let floatButtonStack = null;
+    let currentFloatButtonPosition = null;
+    let floatButtonPointerState = null;
 
     let subtitles = [];
     let rebuiltSubtitles = [];
@@ -48,76 +62,776 @@
         return window.location.hostname.includes('youtube.com');
     }
 
-    function createFloatButton() {
-        if (floatButton) return;
+    function getDefaultFloatButtonPosition() {
+        return {
+            x: Math.max(0, window.innerWidth - FLOAT_BUTTON_WIDTH - 20),
+            y: Math.max(80, Math.round((window.innerHeight - FLOAT_BUTTON_FRAME_HEIGHT) * 0.5)),
+            dock: 'none'
+        };
+    }
 
-        if (!isYouTubePage()) {
-            console.log('不是YouTube页面，不创建右侧按钮');
+    function normalizeFloatButtonPosition(position) {
+        const fallback = getDefaultFloatButtonPosition();
+        const maxX = Math.max(0, window.innerWidth - FLOAT_BUTTON_WIDTH);
+        const maxY = Math.max(0, window.innerHeight - FLOAT_BUTTON_FRAME_HEIGHT);
+
+        return {
+            x: Math.min(Math.max(Number(position?.x ?? fallback.x), 0), maxX),
+            y: Math.min(Math.max(Number(position?.y ?? fallback.y), 0), maxY),
+            dock: ['left', 'right', 'top', 'bottom', 'none'].includes(position?.dock) ? position.dock : 'none'
+        };
+    }
+
+    function getFloatButtonHostPosition(savedPosition) {
+        const host = location.hostname || 'local';
+        if (savedPosition && savedPosition.host === host && savedPosition.position) {
+            return normalizeFloatButtonPosition(savedPosition.position);
+        }
+        return getDefaultFloatButtonPosition();
+    }
+
+    function saveFloatButtonPosition() {
+        if (!currentFloatButtonPosition) {
             return;
         }
 
-        floatButton = document.createElement('button');
-        floatButton.id = 'youtube-overlay-float-button';
-        const iconUrl = chrome.runtime.getURL('src/icons/icon48.png');
-        floatButton.innerHTML = `<img src="${iconUrl}" alt="覆盖层" style="width: 100%; height: 100%; object-fit: contain;">`;
-        Object.assign(floatButton.style, {
-            position: 'fixed',
-            right: '20px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            backgroundColor: '#ffffff',
-            border: '2px solid #ff0000',
-            cursor: 'pointer',
-            zIndex: '114512',
-            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.3)',
-            transition: 'all 0.3s ease',
-            padding: '4px'
-        });
-
-        floatButton.addEventListener('mouseenter', () => {
-            floatButton.style.transform = 'translateY(-50%) scale(1.1)';
-            floatButton.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.4)';
-        });
-
-        floatButton.addEventListener('mouseleave', () => {
-            floatButton.style.transform = 'translateY(-50%) scale(1)';
-            floatButton.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.3)';
-        });
-
-        floatButton.addEventListener('click', () => {
-            if (isOverlayActive) {
-                cleanupOverlay();
-            } else {
-                initializeOverlay();
+        chrome.storage.local.set({
+            [FLOAT_BUTTON_POSITION_KEY]: {
+                host: location.hostname || 'local',
+                position: currentFloatButtonPosition
             }
         });
+    }
 
-        document.body.appendChild(floatButton);
+    function applyFloatButtonPosition(position) {
+        if (!floatButtonStack) {
+            return;
+        }
+
+        currentFloatButtonPosition = normalizeFloatButtonPosition(position);
+        floatButtonStack.style.left = `${currentFloatButtonPosition.x}px`;
+        floatButtonStack.style.top = `${currentFloatButtonPosition.y}px`;
+        floatButtonStack.dataset.dock = currentFloatButtonPosition.dock;
+    }
+
+    function snapFloatButtonToEdge(position) {
+        const maxX = Math.max(0, window.innerWidth - FLOAT_BUTTON_WIDTH);
+        const maxY = Math.max(0, window.innerHeight - FLOAT_BUTTON_FRAME_HEIGHT);
+        const distances = [
+            { edge: 'left', value: position.x },
+            { edge: 'right', value: maxX - position.x },
+            { edge: 'top', value: position.y },
+            { edge: 'bottom', value: maxY - position.y }
+        ].sort((a, b) => a.value - b.value);
+
+        const closest = distances[0];
+        const nextPosition = normalizeFloatButtonPosition(position);
+
+        if (closest.value > FLOAT_EDGE_THRESHOLD) {
+            nextPosition.dock = 'none';
+            return nextPosition;
+        }
+
+        nextPosition.dock = closest.edge;
+        if (closest.edge === 'left') {
+            nextPosition.x = 0;
+        } else if (closest.edge === 'right') {
+            nextPosition.x = maxX;
+        } else if (closest.edge === 'top') {
+            nextPosition.y = 0;
+        } else if (closest.edge === 'bottom') {
+            nextPosition.y = maxY;
+        }
+
+        return nextPosition;
+    }
+
+    function triggerFloatButtonPulse() {
+        if (!floatButton) {
+            return;
+        }
+
+        floatButton.dataset.pulse = 'true';
+        window.setTimeout(() => {
+            if (floatButton) {
+                delete floatButton.dataset.pulse;
+            }
+        }, 280);
+    }
+
+    function toggleOverlayFromFloatButton() {
+        triggerFloatButtonPulse();
+        if (isOverlayActive) {
+            cleanupOverlay();
+        } else {
+            initializeOverlay();
+        }
+    }
+
+    function randomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1) + min);
+    }
+
+    function initializeFloatButtonStars() {
+        if (!floatButton) {
+            return;
+        }
+
+        floatButton.querySelectorAll('.star').forEach((star) => {
+            star.style.setProperty('--angle', randomInt(0, 360));
+            star.style.setProperty('--duration', randomInt(6, 20));
+            star.style.setProperty('--delay', randomInt(1, 10));
+            star.style.setProperty('--alpha', randomInt(40, 90) / 100);
+            star.style.setProperty('--size', randomInt(2, 6));
+            star.style.setProperty('--distance', randomInt(40, 200));
+        });
+    }
+
+    function createFloatButtonStyles() {
+        const style = document.createElement('style');
+        style.textContent = `
+            :host {
+                all: initial;
+                --transition: 0.25s;
+                --dock-motion: 470ms cubic-bezier(0.16, 1, 0.3, 1);
+                --spark: 1.8s;
+                --hue: 245;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            }
+
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+            }
+
+            .lk-youtube-sync-stack {
+                position: fixed;
+                width: ${FLOAT_BUTTON_WIDTH}px;
+                height: ${FLOAT_BUTTON_FRAME_HEIGHT}px;
+                z-index: 2147483647;
+                transform: translate3d(0, 0, 0);
+                transform-origin: center;
+                transition:
+                    width var(--dock-motion),
+                    height var(--dock-motion);
+            }
+
+            .lk-youtube-sync-stack[data-dock="top"],
+            .lk-youtube-sync-stack[data-dock="bottom"] {
+                width: ${FLOAT_BUTTON_FRAME_HEIGHT}px;
+                height: ${FLOAT_BUTTON_WIDTH}px;
+            }
+
+            .lk-youtube-sync-slot {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: ${FLOAT_BUTTON_WIDTH}px;
+                height: ${FLOAT_BUTTON_HEIGHT}px;
+                opacity: 0.88;
+                transform: translate3d(0, 0, 0);
+                transform-origin: center;
+                transition:
+                    opacity 180ms ease,
+                    transform var(--dock-motion),
+                    top var(--dock-motion),
+                    left var(--dock-motion),
+                    width var(--dock-motion),
+                    height var(--dock-motion);
+            }
+
+            .lk-youtube-sync-stack[data-dock="left"] .lk-youtube-sync-slot {
+                opacity: 0.42;
+                transform: translate3d(-${FLOAT_SIDE_DOCK_OFFSET}px, 0, 0);
+            }
+
+            .lk-youtube-sync-stack[data-dock="right"] .lk-youtube-sync-slot {
+                opacity: 0.42;
+                transform: translate3d(${FLOAT_SIDE_DOCK_OFFSET}px, 0, 0);
+            }
+
+            .lk-youtube-sync-stack[data-dock="top"] .lk-youtube-sync-slot,
+            .lk-youtube-sync-stack[data-dock="bottom"] .lk-youtube-sync-slot {
+                width: ${FLOAT_BUTTON_HEIGHT}px;
+                height: ${FLOAT_BUTTON_WIDTH}px;
+                opacity: 0.42;
+            }
+
+            .lk-youtube-sync-stack[data-dock="top"] .lk-youtube-sync-slot {
+                top: 0;
+                transform: translate3d(0, -${FLOAT_SIDE_DOCK_OFFSET}px, 0);
+            }
+
+            .lk-youtube-sync-stack[data-dock="bottom"] .lk-youtube-sync-slot {
+                top: 0;
+                transform: translate3d(0, ${FLOAT_SIDE_DOCK_OFFSET}px, 0);
+            }
+
+            .lk-youtube-sync-stack[data-dock="left"] .lk-youtube-sync-slot:hover,
+            .lk-youtube-sync-stack[data-dock="left"] .lk-youtube-sync-slot:focus-within,
+            .lk-youtube-sync-stack[data-dock="right"] .lk-youtube-sync-slot:hover,
+            .lk-youtube-sync-stack[data-dock="right"] .lk-youtube-sync-slot:focus-within,
+            .lk-youtube-sync-stack[data-dock="top"] .lk-youtube-sync-slot:hover,
+            .lk-youtube-sync-stack[data-dock="top"] .lk-youtube-sync-slot:focus-within,
+            .lk-youtube-sync-stack[data-dock="bottom"] .lk-youtube-sync-slot:hover,
+            .lk-youtube-sync-stack[data-dock="bottom"] .lk-youtube-sync-slot:focus-within,
+            .lk-youtube-sync-stack[data-dragging="true"] .lk-youtube-sync-slot {
+                opacity: 0.98;
+                transform: translate3d(0, 0, 0);
+            }
+
+            .lk-youtube-sync {
+                --cut: 0.1em;
+                --active: 0;
+                --bg:
+                    radial-gradient(
+                        120% 120% at 126% 126%,
+                        hsl(var(--hue) calc(var(--active) * 97%) 98% / calc(var(--active) * 0.9)) 40%,
+                        transparent 50%
+                    ) calc(100px - (var(--active) * 100px)) 0 / 100% 100% no-repeat,
+                    radial-gradient(
+                        120% 120% at 120% 120%,
+                        hsl(var(--hue) calc(var(--active) * 97%) 70% / calc(var(--active) * 1)) 30%,
+                        transparent 70%
+                    ) calc(100px - (var(--active) * 100px)) 0 / 100% 100% no-repeat,
+                    hsl(var(--hue) calc(var(--active) * 100%) calc(12% - (var(--active) * 8%)));
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: ${FLOAT_BUTTON_WIDTH}px;
+                height: ${FLOAT_BUTTON_HEIGHT}px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.25em;
+                border: 0;
+                border-radius: 2rem;
+                padding: 0.9em 1.3em;
+                color: hsl(0 0% calc(60% + (var(--active) * 26%)));
+                background: var(--bg);
+                // box-shadow:
+                //   0 0 calc(var(--active) * 6em) calc(var(--active) * 3em) hsl(var(--hue) 97% 61% / 0.5),
+                //   0 0.05em 0 0 hsl(var(--hue) calc(var(--active) * 97%) calc((var(--active) * 50%) + 30%)) inset,
+                //   0 -0.05em 0 0 hsl(var(--hue) calc(var(--active) * 97%) calc(var(--active) * 10%)) inset,
+                //   0 12px 30px rgba(20, 20, 19, 0.18);
+                cursor: grab;
+                font-size: 16px;
+                font-weight: 600;
+                line-height: 1;
+                letter-spacing: 0;
+                white-space: nowrap;
+                opacity: 0.88;
+                transform: translate3d(0, 0, 0);
+                scale: 1;
+                transform-style: preserve-3d;
+                perspective: 100vmin;
+                overflow: hidden;
+                transition:
+                    opacity 180ms ease,
+                    transform var(--dock-motion),
+                    box-shadow var(--transition),
+                    scale var(--transition),
+                    background var(--transition),
+                    color var(--transition);
+                user-select: none;
+                touch-action: none;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+
+            .lk-youtube-sync-stack[data-dock="top"] .lk-youtube-sync {
+                top: ${Math.round((FLOAT_BUTTON_WIDTH - FLOAT_BUTTON_HEIGHT) / 2)}px;
+                left: -${Math.round((FLOAT_BUTTON_WIDTH - FLOAT_BUTTON_HEIGHT) / 2)}px;
+                transform: rotate(-90deg);
+            }
+
+            .lk-youtube-sync-stack[data-dock="bottom"] .lk-youtube-sync {
+                top: ${Math.round((FLOAT_BUTTON_WIDTH - FLOAT_BUTTON_HEIGHT) / 2)}px;
+                left: -${Math.round((FLOAT_BUTTON_WIDTH - FLOAT_BUTTON_HEIGHT) / 2)}px;
+                transform: rotate(90deg);
+            }
+
+            .lk-youtube-sync-stack[data-dragging="true"] .lk-youtube-sync {
+                top: 0;
+                left: 0;
+                transform: translate3d(0, 0, 0);
+            }
+            .lk-youtube-sync:hover:not([data-collapse-after-click="true"]),
+            .lk-youtube-sync:focus-visible,
+            .lk-youtube-sync[data-dragging="true"] {
+                opacity: 0.98;
+            }
+
+            .lk-youtube-sync:focus-visible {
+                outline: 2px solid #3898ec;
+                outline-offset: 3px;
+            }
+
+            .lk-youtube-sync:active {
+                cursor: grabbing;
+            }
+
+            .lk-youtube-sync[data-pulse="true"] {
+                -webkit-animation: lk-button-pop 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+                animation: lk-button-pop 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+            }
+
+            .lk-youtube-sync[data-overlay="on"] {
+                --active: 1;
+                --play-state: running;
+            }
+
+            .lk-youtube-sync[data-overlay="off"] {
+                --active: 0;
+            }
+
+            .spark {
+                position: absolute;
+                inset: 0;
+                border-radius: 2rem;
+                rotate: 0deg;
+                overflow: hidden;
+                -webkit-mask: linear-gradient(white, transparent 50%);
+                mask: linear-gradient(white, transparent 50%);
+                -webkit-animation: flip calc(var(--spark) * 2) infinite steps(2, end);
+                animation: flip calc(var(--spark) * 2) infinite steps(2, end);
+            }
+
+            .spark::before {
+                content: "";
+                position: absolute;
+                width: 200%;
+                aspect-ratio: 1;
+                top: 0%;
+                left: 50%;
+                z-index: -1;
+                translate: -50% -15%;
+                rotate: 0;
+                transform: rotate(-90deg);
+                opacity: calc((var(--active)) + 0.4);
+                background: conic-gradient(
+                    from 0deg,
+                    transparent 0 340deg,
+                    white 360deg
+                );
+                transition: opacity var(--transition);
+                -webkit-animation: rotate var(--spark) linear infinite both;
+                animation: rotate var(--spark) linear infinite both;
+            }
+
+            .spark::after {
+                content: "";
+                position: absolute;
+                inset: var(--cut);
+                border-radius: 2rem;
+            }
+
+            .backdrop {
+                position: absolute;
+                inset: var(--cut);
+                background: var(--bg);
+                border-radius: 2rem;
+                transition: background var(--transition);
+            }
+
+            .galaxy {
+                position: absolute;
+                width: 100%;
+                aspect-ratio: 1;
+                top: 50%;
+                left: 50%;
+                translate: -50% -50%;
+                overflow: hidden;
+                opacity: var(--active);
+                transition: opacity var(--transition);
+            }
+
+            .galaxy__ring {
+                height: 200%;
+                width: 200%;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                border-radius: 50%;
+                transform: translate(-28%, -40%) rotateX(-24deg) rotateY(-30deg) rotateX(90deg);
+                transform-style: preserve-3d;
+            }
+
+            .galaxy__container {
+                position: absolute;
+                inset: 0;
+                opacity: var(--active);
+                transition: opacity var(--transition);
+                -webkit-mask: radial-gradient(white, transparent);
+                mask: radial-gradient(white, transparent);
+            }
+
+            .star {
+                height: calc(var(--size) * 1px);
+                aspect-ratio: 1;
+                background: white;
+                border-radius: 50%;
+                position: absolute;
+                opacity: var(--alpha);
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(10deg) rotate(0deg) translateY(calc(var(--distance) * 1px));
+                -webkit-animation: orbit calc(var(--duration) * 1s) calc(var(--delay) * -1s) infinite linear;
+                animation: orbit calc(var(--duration) * 1s) calc(var(--delay) * -1s) infinite linear;
+            }
+
+            .star--static {
+                -webkit-animation:
+                    move-x calc(var(--duration) * 0.1s) calc(var(--delay) * -0.1s) infinite linear,
+                    move-y calc(var(--duration) * 0.2s) calc(var(--delay) * -0.2s) infinite linear;
+                animation:
+                    move-x calc(var(--duration) * 0.1s) calc(var(--delay) * -0.1s) infinite linear,
+                    move-y calc(var(--duration) * 0.2s) calc(var(--delay) * -0.2s) infinite linear;
+                top: 50%;
+                left: 50%;
+                transform: translate(0, 0);
+                max-height: 4px;
+                filter: brightness(4);
+                opacity: 0.9;
+            }
+
+            .lk-youtube-sync[data-overlay="on"] .star--static {
+                -webkit-animation-play-state: paused;
+                animation-play-state: paused;
+            }
+
+            .text {
+                position: relative;
+                z-index: 1;
+                translate: 2% -6%;
+                color: hsl(0 0% calc(60% + (var(--active) * 26%)));
+                letter-spacing: 0.01ch;
+                transition: color var(--transition);
+                pointer-events: none;
+            }
+
+            @-webkit-keyframes orbit {
+                to {
+                    transform: translate(-50%, -50%) rotate(10deg) rotate(360deg) translateY(calc(var(--distance) * 1px));
+                }
+            }
+
+            @keyframes orbit {
+                to {
+                    transform: translate(-50%, -50%) rotate(10deg) rotate(360deg) translateY(calc(var(--distance) * 1px));
+                }
+            }
+
+            @-webkit-keyframes move-x {
+                0% {
+                    translate: -100px 0;
+                }
+                100% {
+                    translate: 100px 0;
+                }
+            }
+
+            @keyframes move-x {
+                0% {
+                    translate: -100px 0;
+                }
+                100% {
+                    translate: 100px 0;
+                }
+            }
+
+            @-webkit-keyframes move-y {
+                0% {
+                    transform: translate(0, -50px);
+                }
+                100% {
+                    transform: translate(0, 50px);
+                }
+            }
+
+            @keyframes move-y {
+                0% {
+                    transform: translate(0, -50px);
+                }
+                100% {
+                    transform: translate(0, 50px);
+                }
+            }
+
+            @-webkit-keyframes flip {
+                to {
+                    rotate: 360deg;
+                }
+            }
+
+            @keyframes flip {
+                to {
+                    rotate: 360deg;
+                }
+            }
+
+            @-webkit-keyframes rotate {
+                to {
+                    transform: rotate(90deg);
+                }
+            }
+
+            @keyframes rotate {
+                to {
+                    transform: rotate(90deg);
+                }
+            }
+
+            @-webkit-keyframes lk-button-pop {
+                0% {
+                    scale: 1;
+                }
+                45% {
+                    scale: 1.08;
+                }
+                100% {
+                    scale: 1;
+                }
+            }
+
+            @keyframes lk-button-pop {
+                0% {
+                    scale: 1;
+                }
+                45% {
+                    scale: 1.08;
+                }
+                100% {
+                    scale: 1;
+                }
+            }
+        `;
+        return style;
+    }
+
+    function handleFloatButtonPointerDown(event) {
+        if (event.button !== undefined && event.button !== 0) {
+            return;
+        }
+
+        const baseX = currentFloatButtonPosition?.x ?? floatButtonStack.getBoundingClientRect().left;
+        const baseY = currentFloatButtonPosition?.y ?? floatButtonStack.getBoundingClientRect().top;
+        floatButtonPointerState = {
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            offsetX: event.clientX - baseX,
+            offsetY: event.clientY - baseY,
+            dock: currentFloatButtonPosition?.dock || floatButtonStack.dataset.dock || 'none',
+            moved: false
+        };
+
+        if (floatButtonShadowRoot?.activeElement && floatButtonShadowRoot.activeElement !== floatButton) {
+            floatButtonShadowRoot.activeElement.blur();
+        }
+        delete floatButton.dataset.collapseAfterClick;
+        floatButton.setPointerCapture(event.pointerId);
+        event.preventDefault();
+    }
+
+    function handleFloatButtonPointerMove(event) {
+        if (!floatButtonPointerState || floatButtonPointerState.pointerId !== event.pointerId) {
+            return;
+        }
+
+        const deltaX = Math.abs(event.clientX - floatButtonPointerState.startX);
+        const deltaY = Math.abs(event.clientY - floatButtonPointerState.startY);
+        if (!floatButtonPointerState.moved && (deltaX > 3 || deltaY > 3)) {
+            floatButtonPointerState.moved = true;
+            floatButtonStack.dataset.dragging = 'true';
+            floatButtonStack.dataset.dock = 'none';
+            floatButton.dataset.dragging = 'true';
+            delete floatButton.dataset.collapseAfterClick;
+        }
+
+        if (!floatButtonPointerState.moved) {
+            event.preventDefault();
+            return;
+        }
+
+        const maxX = Math.max(0, window.innerWidth - FLOAT_BUTTON_WIDTH);
+        const maxY = Math.max(0, window.innerHeight - FLOAT_BUTTON_FRAME_HEIGHT);
+        const x = Math.min(Math.max(event.clientX - floatButtonPointerState.offsetX, 0), maxX);
+        const y = Math.min(Math.max(event.clientY - floatButtonPointerState.offsetY, 0), maxY);
+
+        currentFloatButtonPosition = { x, y, dock: 'none' };
+        floatButtonStack.style.left = `${x}px`;
+        floatButtonStack.style.top = `${y}px`;
+        floatButtonStack.dataset.dock = 'none';
+        event.preventDefault();
+    }
+
+    function handleFloatButtonPointerUp(event) {
+        if (!floatButtonPointerState || floatButtonPointerState.pointerId !== event.pointerId) {
+            return;
+        }
+
+        const wasMoved = floatButtonPointerState.moved;
+        const previousDock = floatButtonPointerState.dock;
+        floatButtonPointerState = null;
+        delete floatButtonStack.dataset.dragging;
+        delete floatButton.dataset.dragging;
+
+        try {
+            floatButton.releasePointerCapture(event.pointerId);
+        } catch (error) {
+            // Pointer capture may already be released by the browser.
+        }
+
+        if (wasMoved) {
+            applyFloatButtonPosition(snapFloatButtonToEdge(currentFloatButtonPosition));
+            saveFloatButtonPosition();
+        } else {
+            const dock = currentFloatButtonPosition?.dock || previousDock || 'none';
+            floatButtonStack.dataset.dock = dock;
+            if (dock === 'none') {
+                delete floatButton.dataset.collapseAfterClick;
+            } else {
+                floatButton.dataset.collapseAfterClick = 'true';
+            }
+            toggleOverlayFromFloatButton();
+        }
+
+        event.preventDefault();
+    }
+
+    function handleFloatButtonPointerLeave() {
+        if (floatButton) {
+            delete floatButton.dataset.collapseAfterClick;
+        }
+    }
+
+    function handleFloatButtonKeyDown(event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            toggleOverlayFromFloatButton();
+        }
+    }
+
+    function createFloatButton() {
+        if (floatButtonHost) return;
+
+        if (!isYouTubePage()) {
+            console.log('[LingKuma] Not a YouTube page; skip overlay float button.');
+            return;
+        }
+
+        const existingHost = document.getElementById(FLOAT_BUTTON_ROOT_ID);
+        if (existingHost) {
+            floatButtonHost = existingHost;
+            floatButtonShadowRoot = existingHost.shadowRoot;
+            floatButtonStack = floatButtonShadowRoot?.querySelector('.lk-youtube-sync-stack') || null;
+            floatButton = floatButtonShadowRoot?.getElementById('youtube-overlay-float-button') || null;
+            updateFloatButtonState();
+            return;
+        }
+
+        floatButtonHost = document.createElement('div');
+        floatButtonHost.id = FLOAT_BUTTON_ROOT_ID;
+        floatButtonShadowRoot = floatButtonHost.attachShadow({ mode: 'open' });
+
+        floatButtonStack = document.createElement('div');
+        floatButtonStack.className = 'lk-youtube-sync-stack';
+
+        floatButton = document.createElement('button');
+        floatButton.id = 'youtube-overlay-float-button';
+        floatButton.className = 'lk-youtube-sync';
+        floatButton.type = 'button';
+        floatButton.innerHTML = `
+            <span class="spark" aria-hidden="true"></span>
+            <span class="backdrop" aria-hidden="true"></span>
+            <span class="galaxy__container" aria-hidden="true">
+                <span class="star star--static"></span>
+                <span class="star star--static"></span>
+                <span class="star star--static"></span>
+                <span class="star star--static"></span>
+            </span>
+            <span class="galaxy" aria-hidden="true">
+                <span class="galaxy__ring">
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                    <span class="star"></span>
+                </span>
+            </span>
+            <span class="text">SYNC</span>
+        `;
+
+        const floatButtonSlot = document.createElement('div');
+        floatButtonSlot.className = 'lk-youtube-sync-slot';
+        floatButtonSlot.append(floatButton);
+        floatButtonStack.append(floatButtonSlot);
+        floatButtonShadowRoot.append(createFloatButtonStyles(), floatButtonStack);
+        document.documentElement.appendChild(floatButtonHost);
+
+        floatButton.addEventListener('pointerdown', handleFloatButtonPointerDown);
+        floatButton.addEventListener('pointermove', handleFloatButtonPointerMove);
+        floatButton.addEventListener('pointerup', handleFloatButtonPointerUp);
+        floatButton.addEventListener('pointercancel', handleFloatButtonPointerUp);
+        floatButton.addEventListener('pointerleave', handleFloatButtonPointerLeave);
+        floatButton.addEventListener('keydown', handleFloatButtonKeyDown);
+
+        initializeFloatButtonStars();
+        applyFloatButtonPosition(getDefaultFloatButtonPosition());
+        chrome.storage.local.get({ [FLOAT_BUTTON_POSITION_KEY]: null }, (result) => {
+            applyFloatButtonPosition(getFloatButtonHostPosition(result[FLOAT_BUTTON_POSITION_KEY]));
+        });
+        updateFloatButtonState();
     }
 
     function updateFloatButtonVisibility() {
-        if (!floatButton) return;
+        if (!floatButtonHost) return;
 
         if (isYouTubePage()) {
-            floatButton.style.display = 'block';
+            floatButtonHost.style.display = '';
         } else {
-            floatButton.style.display = 'none';
+            floatButtonHost.style.display = 'none';
         }
     }
 
     function updateFloatButtonState() {
         if (!floatButton) return;
         if (isOverlayActive) {
-            floatButton.style.backgroundColor = '#ff0000';
-            floatButton.style.borderColor = '#ffffff';
+            floatButton.dataset.overlay = 'on';
+            floatButton.setAttribute('aria-label', 'YouTube overlay is on. Click to turn off.');
+            floatButton.setAttribute('title', 'YouTube overlay: On');
+            floatButton.setAttribute('aria-pressed', 'true');
         } else {
-            floatButton.style.backgroundColor = '#ffffff';
-            floatButton.style.borderColor = '#ff0000';
+            floatButton.dataset.overlay = 'off';
+            floatButton.setAttribute('aria-label', 'YouTube overlay is off. Click to turn on.');
+            floatButton.setAttribute('title', 'YouTube overlay: Off');
+            floatButton.setAttribute('aria-pressed', 'false');
         }
     }
+    window.addEventListener('resize', () => {
+        if (!currentFloatButtonPosition || !floatButton) {
+            return;
+        }
+        applyFloatButtonPosition(currentFloatButtonPosition);
+        saveFloatButtonPosition();
+    });
 
     chrome.storage.local.get({
         youtubeVideoOverlay: false,
