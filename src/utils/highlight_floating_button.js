@@ -416,11 +416,11 @@
         padding: 0.9em 1.3em;
         color: hsl(0 0% calc(60% + (var(--active) * 26%)));
         background: var(--bg);
-        box-shadow:
-          0 0 calc(var(--active) * 6em) calc(var(--active) * 3em) hsl(var(--hue) 97% 61% / 0.5),
-          0 0.05em 0 0 hsl(var(--hue) calc(var(--active) * 97%) calc((var(--active) * 50%) + 30%)) inset,
-          0 -0.05em 0 0 hsl(var(--hue) calc(var(--active) * 97%) calc(var(--active) * 10%)) inset,
-          0 12px 30px rgba(20, 20, 19, 0.18);
+        // box-shadow:
+        //   0 0 calc(var(--active) * 6em) calc(var(--active) * 3em) hsl(var(--hue) 97% 61% / 0.5),
+        //   0 0.05em 0 0 hsl(var(--hue) calc(var(--active) * 97%) calc((var(--active) * 50%) + 30%)) inset,
+        //   0 -0.05em 0 0 hsl(var(--hue) calc(var(--active) * 97%) calc(var(--active) * 10%)) inset,
+        //   0 12px 30px rgba(20, 20, 19, 0.18);
         cursor: grab;
         font-size: 16px;
         font-weight: 600;
