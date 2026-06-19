@@ -1039,7 +1039,7 @@
 
   function initializeFloatingButton() {
     chrome.storage.local.get({
-      [FLOATING_BUTTON_ENABLED_KEY]: false,
+      [FLOATING_BUTTON_ENABLED_KEY]: true,
       [HIGHLIGHT_ENABLED_KEY]: true,
       [POSITION_KEY]: null,
       [PAGE_THEME_OVERRIDES_KEY]: {}
@@ -1051,7 +1051,7 @@
         ? pageThemeIsDark
         : getCurrentHighlightTheme(false);
 
-      if (result[FLOATING_BUTTON_ENABLED_KEY] === true) {
+      if (result[FLOATING_BUTTON_ENABLED_KEY] !== false) {
         createButton(result[POSITION_KEY], pageThemeOverride);
       }
     });
