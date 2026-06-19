@@ -1001,7 +1001,9 @@ async function showEnhancedTooltipForWord(word, sentence, wordRect, parent, orig
     }
 
     // 确保加载完整的单词详情数据（如果缓存中只有轻量级数据，会自动从数据库加载）
-    await ensureFullWordDetails(word);
+    ensureFullWordDetails(word).catch((error) => {
+      console.error('后台加载完整单词详情失败:', error);
+    });
 
     // 加载背景设置
     await loadBackgroundSettings();
