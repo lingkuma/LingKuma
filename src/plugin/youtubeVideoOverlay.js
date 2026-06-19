@@ -869,6 +869,16 @@
             overlayContainer = null;
         }
 
+        const closeButton = document.getElementById('overlay-close-button');
+        if (closeButton) {
+            closeButton.remove();
+        }
+
+        const controlBar = document.getElementById('overlay-control-bar');
+        if (controlBar) {
+            controlBar.remove();
+        }
+
         if (keydownHandler) {
             document.removeEventListener('keydown', keydownHandler);
             keydownHandler = null;
@@ -956,6 +966,7 @@
         });
 
         const closeButton = document.createElement('button');
+        closeButton.id = 'overlay-close-button';
         closeButton.textContent = '✕';
         Object.assign(closeButton.style, {
             position: 'fixed',
