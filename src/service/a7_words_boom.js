@@ -3633,6 +3633,7 @@ function updateWordExplosionLayout() {
 
 // 鼠标移动事件处理 - 悬停触发模式（基于单词位置信息）
 document.addEventListener('mousemove', (e) => {
+  if (shouldIgnoreA7SyntheticMouseEvent(e)) return;
   // 检查插件总开关
   if (!isPluginEnabled) return;
 
@@ -3832,7 +3833,52 @@ function isClickOnHighlightedWord(x, y) {
 
 // 点击事件处理（兼容移动设备）- 基于单词位置信息
 // 改成pointerdown，兼容触控
-document.addEventListener('pointerdown',async (e) => {
+// Desktop keeps pointerdown behavior. Touch waits for pointerup and ignores scroll/drag.
+const A7_TOUCH_TAP_MOVE_THRESHOLD = 12;
+const A7_TOUCH_TAP_MAX_DURATION = 800;
+let a7PendingTouchTap = null;
+let a7TouchInteractionActive = false;
+let a7IgnoreSyntheticMouseUntil = 0;
+
+function isA7TouchPointerEvent(e) {
+  return e && e.pointerType === 'touch';
+}
+
+function isA7CoarsePointerDevice() {
+  return (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ||
+         navigator.maxTouchPoints > 0 ||
+         /iPhone|iPad|iPod|Android|Mobile|Orion|Samsung/i.test(navigator.userAgent);
+}
+
+function shouldUseA7TouchTapFlow(e) {
+  return isA7TouchPointerEvent(e) || isA7CoarsePointerDevice();
+}
+
+function shouldIgnoreA7SyntheticMouseEvent(e) {
+  if (a7TouchInteractionActive || Date.now() < a7IgnoreSyntheticMouseUntil) {
+    return true;
+  }
+
+  if (e && e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) {
+    return true;
+  }
+
+  return isA7CoarsePointerDevice();
+}
+
+function getA7PointerDistance(startX, startY, endX, endY) {
+  const dx = endX - startX;
+  const dy = endY - startY;
+  return Math.sqrt((dx * dx) + (dy * dy));
+}
+
+function resetA7PendingTouchTap() {
+  a7PendingTouchTap = null;
+  a7TouchInteractionActive = false;
+  a7IgnoreSyntheticMouseUntil = Date.now() + 700;
+}
+
+async function handleA7PointerActivation(e) {
   // === 关键修复：在延迟之前保存composedPath，因为延迟后事件对象可能失效 ===
   const eventPath = e.composedPath ? e.composedPath() : [e.target];
   const eventTarget = e.target;
@@ -3970,7 +4016,65 @@ document.addEventListener('pointerdown',async (e) => {
       sentenceLength: sentenceInfo && sentenceInfo.sentence ? sentenceInfo.sentence.trim().length : 0
     });
   }
+}
+
+document.addEventListener('pointerdown', (e) => {
+  if (!shouldUseA7TouchTapFlow(e)) {
+    handleA7PointerActivation(e);
+    return;
+  }
+
+  if (e.isPrimary === false) {
+    resetA7PendingTouchTap();
+    return;
+  }
+
+  a7TouchInteractionActive = true;
+  a7PendingTouchTap = {
+    pointerId: e.pointerId,
+    startX: e.clientX,
+    startY: e.clientY,
+    startTime: Date.now(),
+    moved: false
+  };
 }, true);
+
+document.addEventListener('pointermove', (e) => {
+  if (!a7PendingTouchTap || e.pointerId !== a7PendingTouchTap.pointerId) {
+    return;
+  }
+
+  const distance = getA7PointerDistance(
+    a7PendingTouchTap.startX,
+    a7PendingTouchTap.startY,
+    e.clientX,
+    e.clientY
+  );
+
+  if (distance > A7_TOUCH_TAP_MOVE_THRESHOLD) {
+    a7PendingTouchTap.moved = true;
+  }
+}, true);
+
+document.addEventListener('pointerup', (e) => {
+  if (!a7PendingTouchTap || e.pointerId !== a7PendingTouchTap.pointerId) {
+    return;
+  }
+
+  const touchTap = a7PendingTouchTap;
+  resetA7PendingTouchTap();
+
+  const duration = Date.now() - touchTap.startTime;
+  const distance = getA7PointerDistance(touchTap.startX, touchTap.startY, e.clientX, e.clientY);
+
+  if (touchTap.moved || distance > A7_TOUCH_TAP_MOVE_THRESHOLD || duration > A7_TOUCH_TAP_MAX_DURATION) {
+    return;
+  }
+
+  handleA7PointerActivation(e);
+}, true);
+
+document.addEventListener('pointercancel', resetA7PendingTouchTap, true);
 
 // 备用方案：使用传统方法查找单词和句子（当highlightManager不可用时）
 function findWordAndSentenceAtPositionFallback(x, y) {

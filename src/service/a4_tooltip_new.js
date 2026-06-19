@@ -9379,6 +9379,7 @@ function setupMouseListeners() {
 
     // console.log(`[a4_tooltip_new.js @ ${window.location.href.substring(0, 50)}] Actually adding mousemove listener inside setTimeout.`);
     document.addEventListener("mousemove", (e) => {
+        if (shouldIgnoreA4SyntheticMouseEvent(e)) return;
         // console.log(`[a4_tooltip_new.js @ ${window.location.href.substring(0, 50)}] Mousemove listener triggered.`);
         // --- 日志结束 ---
 
@@ -9644,7 +9645,52 @@ document.addEventListener('keydown', function(e) {
 
 ////////////////////// 添加点击事件监听器来处理tooltip的关闭
 // 改成pointerdown，兼容触控
-document.addEventListener('pointerdown',  (e) => {
+// Desktop keeps pointerdown behavior. Touch waits for pointerup and ignores scroll/drag.
+const A4_TOUCH_TAP_MOVE_THRESHOLD = 12;
+const A4_TOUCH_TAP_MAX_DURATION = 800;
+let a4PendingTouchTap = null;
+let a4TouchInteractionActive = false;
+let a4IgnoreSyntheticMouseUntil = 0;
+
+function isA4TouchPointerEvent(e) {
+  return e && e.pointerType === 'touch';
+}
+
+function isA4CoarsePointerDevice() {
+  return (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ||
+         navigator.maxTouchPoints > 0 ||
+         /iPhone|iPad|iPod|Android|Mobile|Orion|Samsung/i.test(navigator.userAgent);
+}
+
+function shouldUseA4TouchTapFlow(e) {
+  return isA4TouchPointerEvent(e) || isA4CoarsePointerDevice();
+}
+
+function shouldIgnoreA4SyntheticMouseEvent(e) {
+  if (a4TouchInteractionActive || Date.now() < a4IgnoreSyntheticMouseUntil) {
+    return true;
+  }
+
+  if (e && e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) {
+    return true;
+  }
+
+  return isA4CoarsePointerDevice();
+}
+
+function getA4PointerDistance(startX, startY, endX, endY) {
+  const dx = endX - startX;
+  const dy = endY - startY;
+  return Math.sqrt((dx * dx) + (dy * dy));
+}
+
+function resetA4PendingTouchTap() {
+  a4PendingTouchTap = null;
+  a4TouchInteractionActive = false;
+  a4IgnoreSyntheticMouseUntil = Date.now() + 700;
+}
+
+function handleA4PointerActivation(e) {
 
   // 会覆盖原始网页的请求
   // e.preventDefault();
@@ -9698,8 +9744,65 @@ document.addEventListener('pointerdown',  (e) => {
   closeTooltipWithAnimation();
 
   return
+}
 
+document.addEventListener('pointerdown', (e) => {
+  if (!shouldUseA4TouchTapFlow(e)) {
+    handleA4PointerActivation(e);
+    return;
+  }
+
+  if (e.isPrimary === false) {
+    resetA4PendingTouchTap();
+    return;
+  }
+
+  a4TouchInteractionActive = true;
+  a4PendingTouchTap = {
+    pointerId: e.pointerId,
+    startX: e.clientX,
+    startY: e.clientY,
+    startTime: Date.now(),
+    moved: false
+  };
 });
+
+document.addEventListener('pointermove', (e) => {
+  if (!a4PendingTouchTap || e.pointerId !== a4PendingTouchTap.pointerId) {
+    return;
+  }
+
+  const distance = getA4PointerDistance(
+    a4PendingTouchTap.startX,
+    a4PendingTouchTap.startY,
+    e.clientX,
+    e.clientY
+  );
+
+  if (distance > A4_TOUCH_TAP_MOVE_THRESHOLD) {
+    a4PendingTouchTap.moved = true;
+  }
+}, true);
+
+document.addEventListener('pointerup', (e) => {
+  if (!a4PendingTouchTap || e.pointerId !== a4PendingTouchTap.pointerId) {
+    return;
+  }
+
+  const touchTap = a4PendingTouchTap;
+  resetA4PendingTouchTap();
+
+  const duration = Date.now() - touchTap.startTime;
+  const distance = getA4PointerDistance(touchTap.startX, touchTap.startY, e.clientX, e.clientY);
+
+  if (touchTap.moved || distance > A4_TOUCH_TAP_MOVE_THRESHOLD || duration > A4_TOUCH_TAP_MAX_DURATION) {
+    return;
+  }
+
+  handleA4PointerActivation(e);
+}, true);
+
+document.addEventListener('pointercancel', resetA4PendingTouchTap, true);
 
 }
 
