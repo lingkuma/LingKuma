@@ -375,8 +375,10 @@
             this.processingScheduled = false;
             this.scanCancelled = false;
             this.languageDetectionCache = new Map();
-            this.autoSegmentsPerTextNode = 12;
+            this.autoSegmentsPerTextNode = 0;
             this.visibleRanges = new Map();
+            this.viewportRefreshScheduled = false;
+            this.boundHandleViewportChange = this.handleViewportChange.bind(this);
 
             this.ignoredSelectors = [
                 'script', 'style', 'noscript', 'iframe',
@@ -405,7 +407,11 @@
                 characterData: true
             });
 
+            window.addEventListener('scroll', this.boundHandleViewportChange, { passive: true, capture: true });
+            window.addEventListener('resize', this.boundHandleViewportChange, { passive: true });
+
             this.scanExistingNodes();
+            this.handleViewportChange();
             console.log('[PosHighlightObserver] Initialized');
         }
 
@@ -416,6 +422,8 @@
             if (this.mutationObserver) {
                 this.mutationObserver.disconnect();
             }
+            window.removeEventListener('scroll', this.boundHandleViewportChange, true);
+            window.removeEventListener('resize', this.boundHandleViewportChange);
             this.scanCancelled = true;
             this.processingQueue = [];
             this.processingScheduled = false;
@@ -467,6 +475,125 @@
             setTimeout(() => callback({ timeRemaining: () => 8 }), 16);
         }
 
+        handleViewportChange() {
+            if (this.scanCancelled || this.viewportRefreshScheduled) return;
+
+            this.viewportRefreshScheduled = true;
+            const refresh = () => {
+                this.viewportRefreshScheduled = false;
+                if (!this.scanCancelled) {
+                    this.refreshVisibleTextNodes();
+                }
+            };
+
+            if (typeof window.requestAnimationFrame === 'function') {
+                window.requestAnimationFrame(refresh);
+                return;
+            }
+
+            setTimeout(refresh, 16);
+        }
+
+        refreshVisibleTextNodes() {
+            this.pendingTextNodes.forEach((textNodes, parent) => {
+                if (!parent || !parent.isConnected) {
+                    this.pendingTextNodes.delete(parent);
+                    return;
+                }
+
+                if (this.isElementNearViewport(parent)) {
+                    textNodes.forEach(textNode => this.enqueueTextNodeProcessing(textNode));
+                    this.pendingTextNodes.delete(parent);
+                }
+            });
+
+            const seenTextNodes = new Set();
+            this.collectViewportCandidateElements().forEach(element => {
+                this.queueVisibleTextNodesInElement(element, seenTextNodes);
+            });
+
+            this.processedTextNodes.forEach((data, textNode) => {
+                const parent = textNode.parentElement;
+                if (!parent) return;
+
+                if (this.isElementInViewport(parent) && !this.visibleRanges.has(textNode)) {
+                    this.highlightPOS(textNode, data.verbs, data.prepositions);
+                }
+            });
+        }
+
+        collectViewportCandidateElements() {
+            const candidates = new Set();
+            const width = Math.max(window.innerWidth || 0, document.documentElement.clientWidth || 0);
+            const height = Math.max(window.innerHeight || 0, document.documentElement.clientHeight || 0);
+
+            if (!width || !height || typeof document.elementFromPoint !== 'function') {
+                candidates.add(this.scope);
+                return candidates;
+            }
+
+            const xPoints = [0.25, 0.5, 0.75].map(ratio => Math.max(0, Math.min(width - 1, Math.floor(width * ratio))));
+            const yPoints = [];
+            const yStep = Math.max(120, Math.floor(height / 6));
+
+            for (let y = 0; y < height; y += yStep) {
+                yPoints.push(Math.min(height - 1, y));
+            }
+            yPoints.push(height - 1);
+
+            yPoints.forEach(y => {
+                xPoints.forEach(x => {
+                    let element = document.elementFromPoint(x, y);
+                    let depth = 0;
+
+                    while (element && depth < 4) {
+                        if (element === this.scope || this.scope.contains(element)) {
+                            candidates.add(element);
+                        }
+                        element = element.parentElement;
+                        depth++;
+                    }
+                });
+            });
+
+            return candidates;
+        }
+
+        queueVisibleTextNodesInElement(element, seenTextNodes) {
+            if (!element || element.nodeType !== Node.ELEMENT_NODE) return;
+
+            for (const selector of this.ignoredSelectors) {
+                if (element.closest(selector)) return;
+            }
+
+            const walker = document.createTreeWalker(
+                element,
+                NodeFilter.SHOW_TEXT,
+                { acceptNode: this.acceptNode.bind(this) }
+            );
+
+            let textNode;
+            let count = 0;
+            while ((textNode = walker.nextNode()) && count < 120) {
+                if (seenTextNodes.has(textNode)) continue;
+                seenTextNodes.add(textNode);
+
+                const parent = textNode.parentElement;
+                if (!parent || !this.isElementNearViewport(parent)) continue;
+
+                if (this.processedTextNodes.has(textNode)) {
+                    const data = this.processedTextNodes.get(textNode);
+                    if (this.isElementInViewport(parent) && !this.visibleRanges.has(textNode)) {
+                        this.highlightPOS(textNode, data.verbs, data.prepositions);
+                    }
+                } else {
+                    this.queueTextNode(textNode);
+                }
+
+                count++;
+            }
+        }
+
         acceptNode(node) {
             if (!node.textContent || !node.textContent.trim()) {
                 return NodeFilter.FILTER_REJECT;
@@ -498,7 +625,7 @@
 
             this.intersectionObserver.observe(parent);
 
-            if (this.isElementInViewport(parent)) {
+            if (this.isElementNearViewport(parent)) {
                 this.enqueueTextNodeProcessing(textNode);
                 return true;
             }
@@ -606,10 +733,11 @@
             return result;
         }
 
-        getLanguageDetectionSegments(text, maxSegments = 12) {
+        getLanguageDetectionSegments(text, maxSegments = 0) {
             const segments = [];
             const sentencePattern = /[^.!?]+(?:[.!?]+|$)/g;
             let match;
+            const hasSegmentLimit = maxSegments > 0;
 
             while ((match = sentencePattern.exec(text)) !== null) {
                 const rawText = match[0];
@@ -622,11 +750,11 @@
                         text: segmentText,
                         start: match.index + leadingWhitespace
                     });
-                    if (segments.length >= maxSegments) break;
+                    if (hasSegmentLimit && segments.length >= maxSegments) break;
                 }
             }
 
-            if (segments.length === 0 && maxSegments > 0 && text.trim()) {
+            if (segments.length === 0 && text.trim()) {
                 const leadingWhitespace = text.match(/^\s*/)[0].length;
                 segments.push({
                     text: text.trim().slice(0, 240),
@@ -731,8 +859,19 @@
             );
         }
 
+        isElementNearViewport(element, margin = 250) {
+            const rect = element.getBoundingClientRect();
+            return (
+                rect.top < window.innerHeight + margin &&
+                rect.bottom > -margin &&
+                rect.left < window.innerWidth + margin &&
+                rect.right > -margin
+            );
+        }
+
         highlightPOS(textNode, verbs, prepositions) {
             if (!textNode) return;
+            if (this.visibleRanges.has(textNode)) return;
 
             const verbRanges = [];
             const prepRanges = [];
