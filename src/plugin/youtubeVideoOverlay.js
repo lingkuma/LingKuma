@@ -62,6 +62,71 @@
         return window.location.hostname.includes('youtube.com');
     }
 
+    const YOUTUBE_OVERLAY_UI = {
+        nearBlack: '#141413',
+        darkSurface: '#30302e',
+        parchment: '#f5f4ed',
+        ivory: '#faf9f5',
+        warmSand: '#e8e6dc',
+        borderCream: '#f0eee6',
+        borderWarm: '#e8e6dc',
+        ringWarm: '#d1cfc5',
+        ringDeep: '#c2c0b6',
+        terracotta: '#c96442',
+        coral: '#d97757',
+        charcoal: '#4d4c48',
+        olive: '#5e5d59',
+        stone: '#87867f',
+        warmSilver: '#b0aea5'
+    };
+
+    function youtubeOverlayIcon(name, size = 18) {
+        const attrs = 'width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"';
+        const icons = {
+            close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+            pause: '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
+            play: '<path d="m8 5 11 7-11 7Z"/>',
+            skipBack: '<path d="m19 20-11-8 11-8v16Z"/><path d="M5 19V5"/>',
+            skipForward: '<path d="m5 4 11 8-11 8V4Z"/><path d="M19 5v14"/>',
+            replay: '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/>',
+            layout: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M12 10v10"/>',
+            clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+            autoPause: '<circle cx="12" cy="12" r="9"/><path d="M10 8v8"/><path d="M14 8v8"/>'
+        };
+        return '<svg ' + attrs + '>' + (icons[name] || icons.play) + '</svg>';
+    }
+
+    function setWarmButtonState(button, active = false) {
+        if (!button) return;
+        button.dataset.active = active ? 'true' : 'false';
+        Object.assign(button.style, {
+            backgroundColor: active ? YOUTUBE_OVERLAY_UI.terracotta : YOUTUBE_OVERLAY_UI.warmSand,
+            color: active ? YOUTUBE_OVERLAY_UI.ivory : YOUTUBE_OVERLAY_UI.charcoal,
+            boxShadow: active ? '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.terracotta + ', 0 8px 22px rgba(201, 100, 66, 0.22)' : '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.ringWarm
+        });
+    }
+
+    function styleControlBar(controlBar) {
+        if (!controlBar) return;
+        Object.assign(controlBar.style, {
+            position: 'fixed',
+            bottom: '18px',
+            left: '50%',
+            right: 'auto',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '10px 12px',
+            backgroundColor: YOUTUBE_OVERLAY_UI.ivory,
+            border: '1px solid ' + YOUTUBE_OVERLAY_UI.borderWarm,
+            borderRadius: '16px',
+            boxShadow: '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.borderCream + ', 0 12px 34px rgba(20, 20, 19, 0.12)',
+            zIndex: '114514',
+            boxSizing: 'border-box'
+        });
+    }
     function getDefaultFloatButtonPosition() {
         return {
             x: Math.max(0, window.innerWidth - FLOAT_BUTTON_WIDTH - 20),
@@ -956,7 +1021,9 @@
             left: '0',
             width: '100vw',
             height: '100vh',
-            backgroundColor: '#ffffff',
+            backgroundColor: YOUTUBE_OVERLAY_UI.parchment,
+            color: YOUTUBE_OVERLAY_UI.nearBlack,
+            fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif',
             zIndex: '114513',
             display: 'flex',
             flexDirection: 'column',
@@ -967,33 +1034,39 @@
 
         const closeButton = document.createElement('button');
         closeButton.id = 'overlay-close-button';
-        closeButton.textContent = '✕';
+        closeButton.innerHTML = youtubeOverlayIcon('close', 20);
+        closeButton.setAttribute('aria-label', 'Close overlay');
+        closeButton.title = 'Close overlay';
         Object.assign(closeButton.style, {
             position: 'fixed',
-            top: '20px',
-            right: '20px',
-            width: '40px',
-            height: '40px',
-            fontSize: '24px',
-            backgroundColor: '#DCE2AF',
-            color: '#ffffff',
+            top: '18px',
+            right: '18px',
+            width: '44px',
+            height: '44px',
+            padding: '0',
+            backgroundColor: YOUTUBE_OVERLAY_UI.ivory,
+            color: YOUTUBE_OVERLAY_UI.charcoal,
             border: 'none',
-            borderRadius: '50%',
+            borderRadius: '12px',
             cursor: 'pointer',
             zIndex: '114515',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'all 0.3s ease',
-            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.3)'
+            transition: 'transform 160ms ease, background 160ms ease, color 160ms ease, box-shadow 160ms ease',
+            boxShadow: '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.ringWarm + ', 0 8px 24px rgba(20, 20, 19, 0.12)'
         });
         closeButton.addEventListener('mouseenter', () => {
-            closeButton.style.transform = 'scale(1.1)';
-            closeButton.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.4)';
+            closeButton.style.transform = 'translateY(-1px)';
+            closeButton.style.backgroundColor = YOUTUBE_OVERLAY_UI.nearBlack;
+            closeButton.style.color = YOUTUBE_OVERLAY_UI.ivory;
+            closeButton.style.boxShadow = '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.darkSurface + ', 0 12px 28px rgba(20, 20, 19, 0.18)';
         });
         closeButton.addEventListener('mouseleave', () => {
-            closeButton.style.transform = 'scale(1)';
-            closeButton.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.3)';
+            closeButton.style.transform = 'translateY(0)';
+            closeButton.style.backgroundColor = YOUTUBE_OVERLAY_UI.ivory;
+            closeButton.style.color = YOUTUBE_OVERLAY_UI.charcoal;
+            closeButton.style.boxShadow = '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.ringWarm + ', 0 8px 24px rgba(20, 20, 19, 0.12)';
         });
         closeButton.addEventListener('click', () => {
             cleanupOverlay();
@@ -1008,7 +1081,7 @@
             justifyContent: 'center',
             width: '100%',
             maxWidth: '1280px',
-            padding: '20px',
+            padding: '24px 24px 96px',
             boxSizing: 'border-box'
         });
 
@@ -1019,10 +1092,11 @@
             width: '100%',
             maxWidth: '100%',
             aspectRatio: '16/9',
-            backgroundColor: '#000',
-            borderRadius: '10px',
+            backgroundColor: YOUTUBE_OVERLAY_UI.nearBlack,
+            borderRadius: '18px',
             overflow: 'hidden',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+            border: '1px solid ' + YOUTUBE_OVERLAY_UI.darkSurface,
+            boxShadow: '0 18px 48px rgba(20, 20, 19, 0.18)'
         });
 
         videoWrapper.appendChild(originalVideo);
@@ -1855,30 +1929,16 @@
     function createControlButtons() {
         const controlBar = document.createElement('div');
         controlBar.id = 'overlay-control-bar';
-        Object.assign(controlBar.style, {
-            position: 'fixed',
-            bottom: '0',
-            left: '0',
-            right: '0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px',
-            padding: '15px',
-            backgroundColor: '#f5f5f5',
-            borderBottom: '1px solid #e0e0e0',
-            zIndex: '114514'
-        });
+        styleControlBar(controlBar);
 
-        const autoPauseBtn = createControlButton('🚦', 'Auto Pause', () => {
+        const autoPauseBtn = createControlButton('autoPause', 'Auto Pause', () => {
             autoPauseEnabled = !autoPauseEnabled;
-            autoPauseBtn.style.backgroundColor = autoPauseEnabled ? '#4CAF50' : '#ffffff';
-            autoPauseBtn.style.color = autoPauseEnabled ? '#ffffff' : '#333333';
+            setWarmButtonState(autoPauseBtn, autoPauseEnabled);
             console.log('自动暂停:', autoPauseEnabled);
-        }); 
+        });
+        setWarmButtonState(autoPauseBtn, autoPauseEnabled);
 
-        // 播放/暂停切换按钮
-        const playPauseBtn = createControlButton('▶️', 'Play/Pause', () => {
+        const playPauseBtn = createControlButton('play', 'Play/Pause', () => {
             const video = getVideoElement();
             if (video) {
                 if (video.paused) {
@@ -1889,23 +1949,23 @@
             }
         });
 
-        const prevBtn = createControlButton('⏮️', 'Previous', () => {
+        const prevBtn = createControlButton('skipBack', 'Previous', () => {
             navigateSubtitles('prev');
         });
 
-        const replayBtn = createControlButton('🔄', 'Replay', () => {
+        const replayBtn = createControlButton('replay', 'Replay', () => {
             navigateSubtitles('replay');
         });
 
-        const nextBtn = createControlButton('⏭️', 'Next', () => {
+        const nextBtn = createControlButton('skipForward', 'Next', () => {
             navigateSubtitles('next');
         });
 
-        const modeBtn = createControlButton('🎬', 'Display Mode', () => {
+        const modeBtn = createControlButton('layout', 'Display Mode', () => {
             showModeSelector();
         });
 
-        const offsetBtn = createControlButton('⏱️', 'Subtitle Offset', () => {
+        const offsetBtn = createControlButton('clock', 'Subtitle Offset', () => {
             showSubtitleOffsetSelector();
         });
 
@@ -1922,37 +1982,43 @@
 
     function createControlButton(icon, title, onClick) {
         const button = document.createElement('button');
-        button.innerHTML = icon;
+        button.innerHTML = youtubeOverlayIcon(icon, 18);
         button.title = title;
+        button.setAttribute('aria-label', title);
         Object.assign(button.style, {
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            backgroundColor: '#ffffff',
-            border: '1px solid #cccccc',
+            width: '44px',
+            height: '44px',
+            borderRadius: '12px',
+            backgroundColor: YOUTUBE_OVERLAY_UI.warmSand,
+            color: YOUTUBE_OVERLAY_UI.charcoal,
+            border: 'none',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '18px',
-            transition: 'all 0.2s ease'
+            padding: '0',
+            transition: 'transform 160ms ease, background 160ms ease, color 160ms ease, box-shadow 160ms ease',
+            boxShadow: '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.ringWarm,
+            flex: '0 0 44px'
         });
 
         button.addEventListener('mouseenter', () => {
-            button.style.transform = 'scale(1.1)';
-            button.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
+            if (button.dataset.active === 'true') return;
+            button.style.transform = 'translateY(-1px)';
+            button.style.backgroundColor = YOUTUBE_OVERLAY_UI.ivory;
+            button.style.boxShadow = '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.ringDeep + ', 0 8px 20px rgba(20, 20, 19, 0.1)';
         });
 
         button.addEventListener('mouseleave', () => {
-            button.style.transform = 'scale(1)';
-            button.style.boxShadow = 'none';
+            button.style.transform = 'translateY(0)';
+            setWarmButtonState(button, button.dataset.active === 'true');
         });
 
         button.addEventListener('click', onClick);
+        setWarmButtonState(button, false);
 
         return button;
     }
-
     function showModeSelector() {
         const existingSelector = document.getElementById('mode-selector');
         if (existingSelector) {
@@ -1967,9 +2033,9 @@
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            backgroundColor: '#ffffff',
-            borderRadius: '10px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+            backgroundColor: YOUTUBE_OVERLAY_UI.ivory,
+            borderRadius: '14px',
+            boxShadow: '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.borderWarm + ', 0 18px 48px rgba(20, 20, 19, 0.16)',
             zIndex: '114515',
             padding: '20px',
             minWidth: '300px'
@@ -1980,7 +2046,7 @@
         Object.assign(title.style, {
             margin: '0 0 15px 0',
             textAlign: 'center',
-            color: '#333333'
+            color: YOUTUBE_OVERLAY_UI.charcoal
         });
 
         const modes = [
@@ -2004,10 +2070,10 @@
             modeBtn.innerHTML = `<strong>${mode.name}</strong><br><small>${mode.desc}</small>`;
             Object.assign(modeBtn.style, {
                 padding: '10px',
-                border: '1px solid #e0e0e0',
-                borderRadius: '5px',
-                backgroundColor: currentDisplayMode === mode.id ? '#4CAF50' : '#ffffff',
-                color: currentDisplayMode === mode.id ? '#ffffff' : '#333333',
+                border: '1px solid ' + YOUTUBE_OVERLAY_UI.borderWarm,
+                borderRadius: '14px',
+                backgroundColor: currentDisplayMode === mode.id ? YOUTUBE_OVERLAY_UI.terracotta : YOUTUBE_OVERLAY_UI.ivory,
+                color: currentDisplayMode === mode.id ? YOUTUBE_OVERLAY_UI.ivory : YOUTUBE_OVERLAY_UI.charcoal,
                 cursor: 'pointer',
                 textAlign: 'left',
                 transition: 'all 0.2s ease'
@@ -2015,13 +2081,13 @@
 
             modeBtn.addEventListener('mouseenter', () => {
                 if (currentDisplayMode !== mode.id) {
-                    modeBtn.style.backgroundColor = '#f5f5f5';
+                    modeBtn.style.backgroundColor = YOUTUBE_OVERLAY_UI.warmSand;
                 }
             });
 
             modeBtn.addEventListener('mouseleave', () => {
                 if (currentDisplayMode !== mode.id) {
-                    modeBtn.style.backgroundColor = '#ffffff';
+                    modeBtn.style.backgroundColor = YOUTUBE_OVERLAY_UI.ivory;
                 }
             });
 
@@ -2040,10 +2106,10 @@
         Object.assign(closeBtn.style, {
             marginTop: '15px',
             padding: '8px 16px',
-            backgroundColor: '#f44336',
-            color: '#ffffff',
+            backgroundColor: YOUTUBE_OVERLAY_UI.nearBlack,
+            color: YOUTUBE_OVERLAY_UI.ivory,
             border: 'none',
-            borderRadius: '5px',
+            borderRadius: '14px',
             cursor: 'pointer',
             width: '100%'
         });
@@ -2072,9 +2138,9 @@
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            backgroundColor: '#ffffff',
-            borderRadius: '10px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+            backgroundColor: YOUTUBE_OVERLAY_UI.ivory,
+            borderRadius: '14px',
+            boxShadow: '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.borderWarm + ', 0 18px 48px rgba(20, 20, 19, 0.16)',
             zIndex: '114515',
             padding: '20px',
             minWidth: '300px'
@@ -2085,7 +2151,7 @@
         Object.assign(title.style, {
             margin: '0 0 15px 0',
             textAlign: 'center',
-            color: '#333333'
+            color: YOUTUBE_OVERLAY_UI.charcoal
         });
 
         const modes = [
@@ -2106,10 +2172,10 @@
             modeBtn.innerHTML = `<strong>${mode.name}</strong><br><small>${mode.desc}</small>`;
             Object.assign(modeBtn.style, {
                 padding: '10px',
-                border: '1px solid #e0e0e0',
-                borderRadius: '5px',
-                backgroundColor: subtitleOffsetMode === mode.id ? '#4CAF50' : '#ffffff',
-                color: subtitleOffsetMode === mode.id ? '#ffffff' : '#333333',
+                border: '1px solid ' + YOUTUBE_OVERLAY_UI.borderWarm,
+                borderRadius: '14px',
+                backgroundColor: subtitleOffsetMode === mode.id ? YOUTUBE_OVERLAY_UI.terracotta : YOUTUBE_OVERLAY_UI.ivory,
+                color: subtitleOffsetMode === mode.id ? YOUTUBE_OVERLAY_UI.ivory : YOUTUBE_OVERLAY_UI.charcoal,
                 cursor: 'pointer',
                 textAlign: 'left',
                 transition: 'all 0.2s ease'
@@ -2117,13 +2183,13 @@
 
             modeBtn.addEventListener('mouseenter', () => {
                 if (subtitleOffsetMode !== mode.id) {
-                    modeBtn.style.backgroundColor = '#f5f5f5';
+                    modeBtn.style.backgroundColor = YOUTUBE_OVERLAY_UI.warmSand;
                 }
             });
 
             modeBtn.addEventListener('mouseleave', () => {
                 if (subtitleOffsetMode !== mode.id) {
-                    modeBtn.style.backgroundColor = '#ffffff';
+                    modeBtn.style.backgroundColor = YOUTUBE_OVERLAY_UI.ivory;
                 }
             });
 
@@ -2142,10 +2208,10 @@
         Object.assign(closeBtn.style, {
             marginTop: '15px',
             padding: '8px 16px',
-            backgroundColor: '#f44336',
-            color: '#ffffff',
+            backgroundColor: YOUTUBE_OVERLAY_UI.nearBlack,
+            color: YOUTUBE_OVERLAY_UI.ivory,
             border: 'none',
-            borderRadius: '5px',
+            borderRadius: '14px',
             cursor: 'pointer',
             width: '100%'
         });
@@ -2223,13 +2289,7 @@
         });
 
         if (controlBar) {
-            Object.assign(controlBar.style, {
-                position: 'fixed',
-                bottom: '0',
-                left: '0',
-                right: '0',
-                zIndex: '114514'
-            });
+            styleControlBar(controlBar);
         }
 
         const subtitleContainer = createSubtitleContainer();
@@ -2237,7 +2297,7 @@
             flex: '1',
             width: '100%',
             maxWidth: '1280px',
-            padding: '20px',
+            padding: '24px 24px 96px',
             boxSizing: 'border-box',
             display: 'flex',
             alignItems: 'center',
@@ -2263,13 +2323,7 @@
         });
 
         if (controlBar) {
-            Object.assign(controlBar.style, {
-                position: 'fixed',
-                bottom: '0',
-                left: '0',
-                right: '0',
-                zIndex: '114514'
-            });
+            styleControlBar(controlBar);
         }
 
         const subtitleContainer = createSubtitleContainer();
@@ -2278,10 +2332,10 @@
             bottom: '10%',
             left: '50%',
             transform: 'translateX(-50%)',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            color: '#ffffff',
+            backgroundColor: 'rgba(20, 20, 19, 0.82)',
+            color: YOUTUBE_OVERLAY_UI.ivory,
             padding: '15px 30px',
-            borderRadius: '10px',
+            borderRadius: '14px',
             maxWidth: '80%',
             textAlign: 'center',
             zIndex: '114514'
@@ -2289,7 +2343,7 @@
 
         const subtitleText = subtitleContainer.querySelector('#overlay-subtitle-text');
         if (subtitleText) {
-            subtitleText.style.color = '#ffffff';
+            subtitleText.style.color = YOUTUBE_OVERLAY_UI.ivory;
         }
 
         overlay.appendChild(subtitleContainer);
@@ -2309,13 +2363,7 @@
         });
 
         if (controlBar) {
-            Object.assign(controlBar.style, {
-                position: 'fixed',
-                bottom: '0',
-                left: '0',
-                right: '0',
-                zIndex: '114514'
-            });
+            styleControlBar(controlBar);
         }
 
         const subtitleListContainer = createSubtitleListContainer();
@@ -2324,9 +2372,9 @@
             maxWidth: '50%',
             height: 'calc(100vh - 80px)',
             overflow: 'auto',
-            padding: '20px',
+            padding: '24px 24px 96px',
             boxSizing: 'border-box',
-            backgroundColor: '#f9f9f9',
+            backgroundColor: YOUTUBE_OVERLAY_UI.ivory,
             marginBottom: '80px'
         });
 
@@ -2341,13 +2389,7 @@
         });
 
         if (controlBar) {
-            Object.assign(controlBar.style, {
-                position: 'fixed',
-                bottom: '0',
-                left: '0',
-                right: '0',
-                zIndex: '114514'
-            });
+            styleControlBar(controlBar);
         }
 
         const leftContainer = document.createElement('div');
@@ -2373,8 +2415,8 @@
             flex: '1',
             padding: '20px',
             minHeight: '100px',
-            backgroundColor: '#f5f5f5',
-            borderTop: '1px solid #e0e0e0'
+            backgroundColor: YOUTUBE_OVERLAY_UI.warmSand,
+            borderTop: '1px solid ' + YOUTUBE_OVERLAY_UI.borderWarm
         });
 
         const rightContainer = document.createElement('div');
@@ -2384,9 +2426,9 @@
             maxWidth: '40%',
             height: 'calc(100vh - 80px)',
             overflow: 'auto',
-            padding: '20px',
+            padding: '24px 24px 96px',
             boxSizing: 'border-box',
-            backgroundColor: '#f9f9f9',
+            backgroundColor: YOUTUBE_OVERLAY_UI.ivory,
             marginBottom: '80px'
         });
 
@@ -2414,13 +2456,7 @@
         });
 
         if (controlBar) {
-            Object.assign(controlBar.style, {
-                position: 'fixed',
-                bottom: '0',
-                left: '0',
-                right: '0',
-                zIndex: '114514'
-            });
+            styleControlBar(controlBar);
         }
 
         const subtitleContainer = createSubtitleContainer();
@@ -2432,7 +2468,7 @@
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: '#f5f5f5',
+            backgroundColor: YOUTUBE_OVERLAY_UI.warmSand,
             marginBottom: '80px'
         });
 
@@ -2453,13 +2489,7 @@
         });
 
         if (controlBar) {
-            Object.assign(controlBar.style, {
-                position: 'fixed',
-                bottom: '0',
-                left: '0',
-                right: '0',
-                zIndex: '114514'
-            });
+            styleControlBar(controlBar);
         }
 
         const subtitleListContainer = createSubtitleListContainer();
@@ -2470,7 +2500,7 @@
             overflow: 'auto',
             padding: '15px',
             boxSizing: 'border-box',
-            backgroundColor: '#f9f9f9',
+            backgroundColor: YOUTUBE_OVERLAY_UI.ivory,
             marginBottom: '80px'
         });
 
@@ -2484,10 +2514,10 @@
         subtitleText.id = 'overlay-subtitle-text';
         Object.assign(subtitleText.style, {
             fontSize: '24px',
-            fontFamily: '"Fanwood", "LXGWWenKai", "PingFang SC", "Segoe UI Variable Display", "Segoe UI", Helvetica, "Microsoft YaHei", "Apple Color Emoji", Arial, sans-serif',
+            fontFamily: 'Georgia, Times New Roman, serif',
             lineHeight: '1.6',
             textAlign: 'center',
-            color: '#333333'
+            color: YOUTUBE_OVERLAY_UI.charcoal
         });
         container.appendChild(subtitleText);
         return container;
@@ -2537,30 +2567,50 @@
                 item.dataset.startTime = sentence.startTime;
                 item.dataset.endTime = sentence.endTime;
                 Object.assign(item.style, {
-                    padding: '10px',
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #e0e0e0',
-                    borderRadius: '5px',
-                    transition: 'all 0.2s ease',
+                    padding: '12px 14px',
+                    backgroundColor: YOUTUBE_OVERLAY_UI.ivory,
+                    border: '1px solid ' + YOUTUBE_OVERLAY_UI.borderCream,
+                    borderRadius: '12px',
+                    boxShadow: '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.borderCream,
+                    transition: 'background 180ms ease, border-color 180ms ease, box-shadow 180ms ease',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '10px'
                 });
 
                 const playBtn = document.createElement('button');
-                playBtn.innerHTML = '▶️';
+                playBtn.innerHTML = youtubeOverlayIcon('play', 14);
+                playBtn.setAttribute('aria-label', 'Play subtitle from here');
+                playBtn.title = 'Play from here';
                 Object.assign(playBtn.style, {
-                    width: '30px',
-                    height: '30px',
-                    borderRadius: '50%',
+                    width: '34px',
+                    height: '34px',
+                    borderRadius: '10px',
                     border: 'none',
-                    backgroundColor: '#4CAF50',
-                    color: '#ffffff',
+                    backgroundColor: YOUTUBE_OVERLAY_UI.warmSand,
+                    color: YOUTUBE_OVERLAY_UI.charcoal,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '12px'
+                    padding: '0',
+                    boxShadow: '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.ringWarm,
+                    transition: 'transform 160ms ease, background 160ms ease, color 160ms ease, box-shadow 160ms ease',
+                    flex: '0 0 34px'
+                });
+
+                playBtn.addEventListener('mouseenter', () => {
+                    playBtn.style.transform = 'translateY(-1px)';
+                    playBtn.style.backgroundColor = YOUTUBE_OVERLAY_UI.terracotta;
+                    playBtn.style.color = YOUTUBE_OVERLAY_UI.ivory;
+                    playBtn.style.boxShadow = '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.terracotta + ', 0 8px 18px rgba(201, 100, 66, 0.2)';
+                });
+
+                playBtn.addEventListener('mouseleave', () => {
+                    playBtn.style.transform = 'translateY(0)';
+                    playBtn.style.backgroundColor = YOUTUBE_OVERLAY_UI.warmSand;
+                    playBtn.style.color = YOUTUBE_OVERLAY_UI.charcoal;
+                    playBtn.style.boxShadow = '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.ringWarm;
                 });
 
                 playBtn.addEventListener('click', (e) => {
@@ -2574,8 +2624,8 @@
                 Object.assign(text.style, {
                     flex: '1',
                     fontSize: '14px',
-                    lineHeight: '1.5',
-                    color: '#333333'
+                    lineHeight: '1.55',
+                    color: YOUTUBE_OVERLAY_UI.charcoal
                 });
 
                 item.appendChild(playBtn);
@@ -2593,7 +2643,9 @@
 
         subtitleListItems.forEach(({ element, sentence }) => {
             const isActive = currentTime >= sentence.startTime && currentTime <= sentence.endTime;
-            element.style.backgroundColor = isActive ? '#e3f2fd' : '#ffffff';
+            element.style.backgroundColor = isActive ? '#fff7f1' : YOUTUBE_OVERLAY_UI.ivory;
+            element.style.borderColor = isActive ? YOUTUBE_OVERLAY_UI.terracotta : YOUTUBE_OVERLAY_UI.borderCream;
+            element.style.boxShadow = isActive ? '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.terracotta + ', 0 8px 22px rgba(201, 100, 66, 0.12)' : '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.borderCream;
 
             if (isActive) {
                 element.scrollIntoView({ behavior: 'smooth', block: 'center' });
