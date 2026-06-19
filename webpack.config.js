@@ -241,6 +241,7 @@ module.exports = {
         { from: 'src/utils/lingqBlocker.js', to: 'src/utils/lingqBlocker.js' ,info: { minimized: true }},
         { from: 'src/plugin/youtubeVideoOverlay.js', to: 'src/plugin/youtubeVideoOverlay.js' ,info: { minimized: true }},
         { from: 'src/plugin/min/*.js', to: 'src/plugin/min/[name][ext]' ,info: { minimized: true }},
+        { from: 'src/utils/language-detector/eld.extrasmall.global.js', to: 'src/utils/language-detector/eld.extrasmall.global.js' ,info: { minimized: true }},
         { from: 'src/plugin/pos-highlight.js', to: 'src/plugin/pos-highlight.js' ,info: { minimized: true }},
         
         // { from: 'src/options/options.js', to: 'src/options/options.js' ,info: { minimized: true }},
