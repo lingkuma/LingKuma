@@ -9665,7 +9665,9 @@ function isA4CoarsePointerDevice() {
 }
 
 function shouldUseA4TouchTapFlow(e) {
-  return isA4TouchPointerEvent(e) || isA4CoarsePointerDevice();
+  if (isA4TouchPointerEvent(e)) return true;
+  if (e && e.pointerType === 'mouse') return false;
+  return isA4CoarsePointerDevice();
 }
 
 function shouldIgnoreA4SyntheticMouseEvent(e) {
@@ -9677,7 +9679,11 @@ function shouldIgnoreA4SyntheticMouseEvent(e) {
     return true;
   }
 
-  return isA4CoarsePointerDevice();
+  return false;
+}
+
+function markA4TouchInteractionActive() {
+  a4TouchInteractionActive = true;
 }
 
 function getA4PointerDistance(startX, startY, endX, endY) {
@@ -9805,6 +9811,9 @@ document.addEventListener('pointerup', (e) => {
 }, true);
 
 document.addEventListener('pointercancel', resetA4PendingTouchTap, true);
+document.addEventListener('touchstart', markA4TouchInteractionActive, true);
+document.addEventListener('touchend', resetA4PendingTouchTap, true);
+document.addEventListener('touchcancel', resetA4PendingTouchTap, true);
 
 }
 

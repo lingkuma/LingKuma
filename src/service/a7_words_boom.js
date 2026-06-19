@@ -3851,7 +3851,9 @@ function isA7CoarsePointerDevice() {
 }
 
 function shouldUseA7TouchTapFlow(e) {
-  return isA7TouchPointerEvent(e) || isA7CoarsePointerDevice();
+  if (isA7TouchPointerEvent(e)) return true;
+  if (e && e.pointerType === 'mouse') return false;
+  return isA7CoarsePointerDevice();
 }
 
 function shouldIgnoreA7SyntheticMouseEvent(e) {
@@ -3863,7 +3865,11 @@ function shouldIgnoreA7SyntheticMouseEvent(e) {
     return true;
   }
 
-  return isA7CoarsePointerDevice();
+  return false;
+}
+
+function markA7TouchInteractionActive() {
+  a7TouchInteractionActive = true;
 }
 
 function getA7PointerDistance(startX, startY, endX, endY) {
@@ -4075,6 +4081,9 @@ document.addEventListener('pointerup', (e) => {
 }, true);
 
 document.addEventListener('pointercancel', resetA7PendingTouchTap, true);
+document.addEventListener('touchstart', markA7TouchInteractionActive, true);
+document.addEventListener('touchend', resetA7PendingTouchTap, true);
+document.addEventListener('touchcancel', resetA7PendingTouchTap, true);
 
 // 备用方案：使用传统方法查找单词和句子（当highlightManager不可用时）
 function findWordAndSentenceAtPositionFallback(x, y) {
