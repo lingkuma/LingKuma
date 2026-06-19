@@ -243,6 +243,10 @@
     applyCurrentPageTheme(nextIsDark);
     triggerButtonPulse(themeButtonWrap);
     saveCurrentPageTheme(nextIsDark);
+
+    if (event?.type === 'click' && event.detail > 0) {
+      themeButtonWrap.blur();
+    }
   }
 
   function toggleHighlight() {
@@ -826,6 +830,9 @@
       moved: false
     };
 
+    if (shadowRoot?.activeElement && shadowRoot.activeElement !== buttonWrap) {
+      shadowRoot.activeElement.blur();
+    }
     delete buttonWrap.dataset.collapseAfterClick;
     buttonWrap.setPointerCapture(event.pointerId);
     event.preventDefault();
