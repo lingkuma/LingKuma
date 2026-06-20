@@ -50,10 +50,12 @@
     };
   }
 
-  function getHostPosition(savedPosition) {
-    const host = location.hostname || 'local';
-    if (savedPosition && savedPosition.host === host && savedPosition.position) {
+  function getSharedPosition(savedPosition) {
+    if (savedPosition?.position) {
       return normalizePosition(savedPosition.position);
+    }
+    if (savedPosition && typeof savedPosition === 'object') {
+      return normalizePosition(savedPosition);
     }
     return getDefaultPosition();
   }
@@ -64,10 +66,7 @@
     }
 
     chrome.storage.local.set({
-      [POSITION_KEY]: {
-        host: location.hostname || 'local',
-        position: currentPosition
-      }
+      [POSITION_KEY]: currentPosition
     });
   }
 
@@ -1006,7 +1005,7 @@
     });
 
     initializeStars();
-    applyPosition(getHostPosition(savedPosition));
+    applyPosition(getSharedPosition(savedPosition));
     updateHighlightState(currentHighlightEnabled);
     const pageThemeIsDark = normalizePageThemeOverride(pageThemeOverride);
     updatePageThemeState(
@@ -1083,6 +1082,10 @@
       if (pageThemeIsDark !== null) {
         updatePageThemeState(pageThemeIsDark);
       }
+    }
+
+    if (changes[POSITION_KEY] && !pointerState) {
+      applyPosition(getSharedPosition(changes[POSITION_KEY].newValue));
     }
   });
 
