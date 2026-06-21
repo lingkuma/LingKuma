@@ -188,8 +188,8 @@ async function setPageOverride(tabId, value) {
 
 async function getHighlightControlState(tabId) {
   const result = await storageLocalGet({
-    [HIGHLIGHT_ENABLED_KEY]: true,
-    [HIGHLIGHT_SCOPE_KEY]: 'global',
+    [HIGHLIGHT_ENABLED_KEY]: false,
+    [HIGHLIGHT_SCOPE_KEY]: 'page',
     [HIGHLIGHT_PAGE_OVERRIDES_KEY]: {}
   });
   const scope = result[HIGHLIGHT_SCOPE_KEY] === 'page' ? 'page' : 'global';
@@ -2870,7 +2870,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   else if (message.action === 'getWordHighlightControlState') {
     const tabId = sender.tab?.id || message.tabId;
     if (!tabId) {
-      sendResponse({ scope: 'global', enabled: true, globalEnabled: true });
+      sendResponse({ scope: 'page', enabled: false, globalEnabled: false });
       return false;
     }
 
@@ -2878,7 +2878,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse(state);
     }).catch(error => {
       console.error('[background.js] get highlight control state failed:', error);
-      sendResponse({ scope: 'global', enabled: true, globalEnabled: true });
+      sendResponse({ scope: 'page', enabled: false, globalEnabled: false });
     });
 
     return true;

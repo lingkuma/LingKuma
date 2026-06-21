@@ -416,7 +416,7 @@ function initializeSettings() {
     // 设置默认值（如果不存在）
     const defaults = {
       isDarkTheme: true,
-      enablePlugin: true,
+      enablePlugin: false,
       enableWaifu: false,
       bionicEnabled: false,
       clipSubtitles: false,
@@ -500,8 +500,8 @@ function initializeSettings() {
       useOrionTTS: false, // 添加：Orion TTS默认关闭
 
       // 高亮语言类型默认值
-      wordHighlightFloatingButtonEnabled: true,
-      wordHighlightFloatingButtonScope: 'global',
+      wordHighlightFloatingButtonEnabled: false,
+      wordHighlightFloatingButtonScope: 'page',
       highlightChineseEnabled: false, // 中文默认不高亮
       highlightJapaneseEnabled: true, // 日语默认高亮
       autoDetectJapaneseKanji: true, // 智能识别日语汉字默认开启
@@ -713,25 +713,64 @@ window.addEventListener('orientationchange', function() {
 
 const enablePlugin = document.getElementById('enablePlugin');
 
-// 默认启用插件（如果没有设置，则默认 true）
-chrome.storage.local.get('enablePlugin', function(result) {
-  enablePlugin.checked = result.enablePlugin === undefined ? true : result.enablePlugin;
-});
+function getActivePopupTab(callback) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+        callback(tabs && tabs[0] ? tabs[0] : null);
+    });
+}
 
-// 监听变化
+function refreshWordHighlightControlState() {
+    getActivePopupTab(function(tab) {
+        chrome.runtime.sendMessage({
+            action: 'getWordHighlightControlState',
+            tabId: tab?.id
+        }, function(response) {
+            if (chrome.runtime.lastError || !response) {
+                chrome.storage.local.get({ enablePlugin: false }, function(result) {
+                    enablePlugin.checked = result.enablePlugin === true;
+                });
+                return;
+            }
+
+            enablePlugin.checked = response.enabled !== false;
+        });
+    });
+}
+
+refreshWordHighlightControlState();
+
 enablePlugin.addEventListener('change', function(e) {
     const isEnabled = e.target.checked;
-    chrome.runtime.sendMessage({
-        action: 'setGlobalWordHighlight',
-        enabled: isEnabled
-    }, function(response) {
-        if (chrome.runtime.lastError || response?.success === false) {
-            console.error('Failed to update global word highlight:', chrome.runtime.lastError?.message || response?.error);
+    getActivePopupTab(function(tab) {
+        if (!tab?.id) {
+            chrome.runtime.sendMessage({
+                action: 'setGlobalWordHighlight',
+                enabled: isEnabled
+            }, function(response) {
+                if (chrome.runtime.lastError || response?.success === false) {
+                    console.error('Failed to update word highlight:', chrome.runtime.lastError?.message || response?.error);
+                    refreshWordHighlightControlState();
+                }
+            });
+            return;
         }
+
+        chrome.runtime.sendMessage({
+            action: 'toggleWordHighlightFromFloatingButton',
+            tabId: tab.id,
+            enabled: isEnabled
+        }, function(response) {
+            if (chrome.runtime.lastError || response?.success === false) {
+                console.error('Failed to update word highlight:', chrome.runtime.lastError?.message || response?.error);
+                refreshWordHighlightControlState();
+                return;
+            }
+
+            enablePlugin.checked = response.enabled !== false;
+        });
     });
 });
 
-// 新增：高亮语言类型开关
 const highlightChinese = document.getElementById('highlightChinese');
 const highlightJapanese = document.getElementById('highlightJapanese');
 const wordHighlightFloatingButton = document.getElementById('wordHighlightFloatingButton');
@@ -754,9 +793,9 @@ chrome.storage.local.get([
     'highlightKoreanEnabled',
     'highlightAlphabeticEnabled'
 ], function(result) {
-    wordHighlightFloatingButton.checked = result.wordHighlightFloatingButtonEnabled === undefined ? true : result.wordHighlightFloatingButtonEnabled;
+    wordHighlightFloatingButton.checked = result.wordHighlightFloatingButtonEnabled === undefined ? false : result.wordHighlightFloatingButtonEnabled;
     if (wordHighlightFloatingButtonScope) {
-        wordHighlightFloatingButtonScope.value = result.wordHighlightFloatingButtonScope === 'page' ? 'page' : 'global';
+        wordHighlightFloatingButtonScope.value = result.wordHighlightFloatingButtonScope === 'global' ? 'global' : 'page';
     }
     highlightChinese.checked = result.highlightChineseEnabled === undefined ? false : result.highlightChineseEnabled;
     highlightJapanese.checked = result.highlightJapaneseEnabled === undefined ? true : result.highlightJapaneseEnabled;
@@ -774,7 +813,7 @@ wordHighlightFloatingButton.addEventListener('change', function(e) {
 
 if (wordHighlightFloatingButtonScope) {
     wordHighlightFloatingButtonScope.addEventListener('change', function(e) {
-        chrome.storage.local.set({ wordHighlightFloatingButtonScope: e.target.value === 'page' ? 'page' : 'global' });
+        chrome.storage.local.set({ wordHighlightFloatingButtonScope: e.target.value === 'global' ? 'global' : 'page' }, refreshWordHighlightControlState);
     });
 }
 

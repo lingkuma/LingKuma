@@ -253,8 +253,8 @@
   function refreshHighlightControlState() {
     chrome.runtime.sendMessage({ action: 'getWordHighlightControlState' }, (response) => {
       if (chrome.runtime.lastError || !response) {
-        chrome.storage.local.get({ [HIGHLIGHT_ENABLED_KEY]: true }, (result) => {
-          updateHighlightState(result[HIGHLIGHT_ENABLED_KEY] !== false);
+        chrome.storage.local.get({ [HIGHLIGHT_ENABLED_KEY]: false }, (result) => {
+          updateHighlightState(result[HIGHLIGHT_ENABLED_KEY] === true);
         });
         return;
       }
@@ -1061,8 +1061,8 @@
 
   function initializeFloatingButton() {
     chrome.storage.local.get({
-      [FLOATING_BUTTON_ENABLED_KEY]: true,
-      [HIGHLIGHT_ENABLED_KEY]: true,
+      [FLOATING_BUTTON_ENABLED_KEY]: false,
+      [HIGHLIGHT_ENABLED_KEY]: false,
       [POSITION_KEY]: null,
       [PAGE_THEME_OVERRIDES_KEY]: {}
     }, (result) => {
