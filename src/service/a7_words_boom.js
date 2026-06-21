@@ -22,6 +22,8 @@ let hoverDelayTimer = null; // 鼠标悬浮延迟计时器
 const HOVER_DELAY = 150; // 悬浮延迟时间（毫秒）
 let isInBlacklist = true; // 当前网站是否在黑名单中（默认为true，等待异步检查完成后更新）
 let isPluginEnabled = false; // 插件总开关状态（默认为true，等待异步检查完成后更新）
+let wordExplosionControlMessageSeen = false;
+let wordExplosionInitialized = false;
 let currentExplosionSentenceRange = null; // 当前爆炸句子的Range对象，用于高亮
 let explosionThemeMode = 'auto'; // 主题模式：'auto', 'light', 'dark'（跟随tooltip的tooltipThemeMode）
 let currentExplosionPosition = null; // 记录当前弹窗的定位信息：{ isAbove: boolean, sentenceRect: DOMRect }
@@ -66,6 +68,13 @@ let wordExplosionConfig = {
 
 // 初始化：加载配置
 function initWordExplosion() {
+  if (wordExplosionInitialized) {
+    console.log('[WordExplosion] already initialized, skip duplicate init');
+    return;
+  }
+
+  wordExplosionInitialized = true;
+
   chrome.storage.local.get([
     'enablePlugin', // 插件总开关
     'wordExplosionEnabled',
@@ -94,7 +103,9 @@ function initWordExplosion() {
     'highlightAlphabeticEnabled'
   ], (result) => {
     // 加载插件总开关状态
-    isPluginEnabled = result.enablePlugin
+    if (!wordExplosionControlMessageSeen) {
+      isPluginEnabled = result.enablePlugin !== false;
+    }
     wordExplosionConfig.enabled = result.wordExplosionEnabled !== undefined ? result.wordExplosionEnabled : true;
     wordExplosionConfig.triggerMode = result.wordExplosionTriggerMode || 'click';
     wordExplosionConfig.positionMode = result.wordExplosionPositionMode || 'auto';
@@ -166,11 +177,11 @@ function initWordExplosion() {
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'local') {
     // 监听插件总开关变化
-    if (changes.enablePlugin) {
-      isPluginEnabled = changes.enablePlugin.newValue;
+    if (changes.enablePlugin && !wordExplosionControlMessageSeen) {
+      isPluginEnabled = changes.enablePlugin.newValue !== false;
       if (!isPluginEnabled) {
         hideWordExplosion();
-        console.log('[WordExplosion] 插件已禁用，隐藏爆炸弹窗');
+        console.log('[WordExplosion] plugin disabled, hide word explosion');
       }
     }
     if (changes.wordExplosionEnabled) {
@@ -327,11 +338,37 @@ window.addEventListener('message', function(event) {
   }
 });
 
-// 添加消息监听器，用于接收主题更新消息
+function setWordExplosionRuntimeEnabled(enabled) {
+  wordExplosionControlMessageSeen = true;
+  isPluginEnabled = enabled === true;
+
+  if (!isPluginEnabled) {
+    hideWordExplosion();
+    removeExplosionSentenceHighlight();
+    resetA7PendingTouchTap();
+
+    if (wordExplosionDragging) {
+      stopDragWordExplosion();
+    }
+
+    console.log('[WordExplosion] highlight runtime disabled, pause word explosion');
+    return;
+  }
+
+  wordExplosionEnabled = wordExplosionConfig.enabled !== false;
+  console.log('[WordExplosion] highlight runtime enabled, resume word explosion');
+}
+
+// Runtime and theme message listener
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   try {
-    // 监听高亮模式切换消息（当用户通过胶囊按钮或popup切换高亮明暗模式时）
-    if (message.action === "updateHighlightTheme") {
+    if (message.action === "toggleHighlight") {
+      setWordExplosionRuntimeEnabled(message.enabled !== false);
+    }
+    else if (message.action === "teardownHighlightRuntime") {
+      setWordExplosionRuntimeEnabled(false);
+    }
+    else if (message.action === "updateHighlightTheme") {
       // 当高亮模式改变时，如果爆炸窗口处于auto模式，需要更新主题
       if (explosionThemeMode === 'auto' && wordExplosionEl) {
         console.log('[WordExplosion] 检测到高亮模式切换，更新爆炸窗口主题');
@@ -1364,6 +1401,11 @@ function showWordExplosion(sentence, sentenceRect = null, sentenceInfo = null) {
   });
   console.log('[WordExplosion] wordExplosionEnabled:', wordExplosionEnabled);
   
+  if (!isPluginEnabled) {
+    console.log('[WordExplosion] highlight runtime disabled, skip');
+    return;
+  }
+
   if (!wordExplosionEnabled) {
     console.log('[WordExplosion] wordExplosionEnabled 为 false，直接返回');
     return;
@@ -4748,6 +4790,10 @@ function triggerExplosionWordByWordHighlight(sentenceInfo, sentence, waitForTTS 
 
 // 创建 Shadow DOM 容器 - 使用保护机制
 function initExplosionShadowDOM() {
+  if (explosionShadowHost && explosionShadowRoot) {
+    return;
+  }
+
   // 创建自定义标签作为宿主元素
   explosionShadowHost = document.createElement('lingkuma-explosion-root');
   explosionShadowHost.id = 'lingkuma-explosion-host';
