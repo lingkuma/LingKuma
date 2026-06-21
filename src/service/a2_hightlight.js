@@ -2684,7 +2684,7 @@ if (window.location.hostname.includes('youtube.com')) {
       // 使用短延迟确保正常高亮完全完成
       setTimeout(() => {
         console.log("调用单词爆炸初始化函数");
-        window.initWordExplosionSystem();
+        window.initWordExplosionSystem({ manualActivation: true });
       }, 1);
     } else {
       console.log("单词爆炸函数尚未加载，延迟重试");
