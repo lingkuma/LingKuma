@@ -108,19 +108,29 @@ function initPlugin() {
   // 添加消息监听器，处理插件开关状态变化
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "toggleHighlight") {
-      console.log("收到高亮开关切换消息:", message.enabled);
+      console.log('Highlight toggle message:', message.enabled);
       if (message.enabled) {
-        console.log("收到高亮开关切换消息:", message.enabled);
-        // 重新应用高亮
+        console.log('Highlight toggle message:', message.enabled);
+        // Reapply highlight
         highlightAllWords();
-      } else {
-        // 只隐藏高亮，保留扫描缓存和观察器，便于再次开启时恢复
-        if (highlightManager) {
+      } else if (highlightManager) {
+        if (typeof highlightManager.destroy === 'function') {
+          highlightManager.destroy();
+        } else {
           highlightManager.highlightEnabled = false;
           highlightManager.removeAllHighlights();
-          console.log("高亮已隐藏，扫描缓存已保留");
         }
+        highlightManager = null;
+        console.log('Highlight runtime destroyed');
       }
+    } else if (message.action === "teardownHighlightRuntime" && highlightManager) {
+      if (typeof highlightManager.destroy === 'function') {
+        highlightManager.destroy();
+      } else {
+        highlightManager.highlightEnabled = false;
+        highlightManager.removeAllHighlights();
+      }
+      highlightManager = null;
     }
   });
 }

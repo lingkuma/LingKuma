@@ -17,6 +17,286 @@ let customPhrasesPendingRequests = [];
 // API 轮询索引
 let apiPollingIndex = 0;
 
+const HIGHLIGHT_ENABLED_KEY = 'enablePlugin';
+const HIGHLIGHT_SCOPE_KEY = 'wordHighlightFloatingButtonScope';
+const HIGHLIGHT_PAGE_OVERRIDES_KEY = 'wordHighlightPageTabOverrides';
+const HIGHLIGHT_RUNTIME_SENTINEL = '__lingkumaHighlightRuntimeLoaded';
+const HIGHLIGHT_RUNTIME_FILES = [
+  'src/utils/lingqBlocker.js',
+  'src/utils/cloudAPI.js',
+  'src/utils/dataAccessLayer.js',
+  'src/service/a0_afdian.js',
+  'src/service/jp/kuromoji.js',
+  'src/utils/evaluateExpression.js',
+  'src/utils/pdfDetection.js',
+  'src/utils/sentenseOoOo.js',
+  'src/plugin/bionic.js',
+  'src/utils/liquid-glass.js',
+  'src/plugin/readingRuler.js',
+  'src/plugin/clipSubtitles.js',
+  'src/plugin/waifu/waifu.js',
+  'src/plugin/youtubeCaptionGet.js',
+  'src/plugin/youtubeCaptionFix.js',
+  'src/plugin/youtubeVideoOverlay.js',
+  'src/plugin/min/compromise.js',
+  'src/plugin/min/de-compromise.min.js',
+  'src/utils/language-detector/eld.extrasmall.global.js',
+  'src/plugin/pos-highlight.js',
+  'src/service/a1_loadKnowWords.js',
+  'src/service/a2_hightlight.js',
+  'src/service/a3_aiFragen.js',
+  'src/service/a4_tooltip_new.js',
+  'src/service/a5_custom_word_selection.js',
+  'src/service/a6_custom_highlight.js',
+  'src/service/a7_words_boom.js',
+  'src/service/a7.1_sentence_navigator.js',
+  'src/plugin/tts.js',
+  'src/plugin/edge_tts.js',
+  'src/plugin/orion_tts.js',
+  'src/content.js'
+];
+
+const injectedHighlightTabs = new Set();
+
+function storageLocalGet(defaults) {
+  return new Promise(resolve => chrome.storage.local.get(defaults, resolve));
+}
+
+function storageLocalSet(values) {
+  return new Promise(resolve => chrome.storage.local.set(values, resolve));
+}
+
+function queryTabs(queryInfo) {
+  return new Promise(resolve => chrome.tabs.query(queryInfo, resolve));
+}
+
+function getTabById(tabId) {
+  return new Promise(resolve => chrome.tabs.get(tabId, tab => resolve(chrome.runtime.lastError ? null : tab)));
+}
+
+function sendMessageToTab(tabId, message) {
+  return new Promise(resolve => {
+    if (!tabId) {
+      resolve(false);
+      return;
+    }
+
+    chrome.tabs.sendMessage(tabId, message, () => {
+      resolve(!chrome.runtime.lastError);
+    });
+  });
+}
+
+function isInjectableTab(tab) {
+  if (!tab || !tab.id || !tab.url) {
+    return false;
+  }
+
+  try {
+    const protocol = new URL(tab.url).protocol;
+    return protocol === 'http:' || protocol === 'https:' || protocol === 'file:';
+  } catch (error) {
+    return false;
+  }
+}
+
+async function isHighlightRuntimeLoaded(tabId) {
+  if (injectedHighlightTabs.has(tabId)) {
+    return true;
+  }
+
+  if (!chrome.scripting?.executeScript) {
+    return false;
+  }
+
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: sentinel => globalThis[sentinel] === true,
+      args: [HIGHLIGHT_RUNTIME_SENTINEL]
+    });
+    const loaded = results?.some(result => result.result === true) === true;
+    if (loaded) {
+      injectedHighlightTabs.add(tabId);
+    }
+    return loaded;
+  } catch (error) {
+    return false;
+  }
+}
+
+async function markHighlightRuntimeLoaded(tabId) {
+  injectedHighlightTabs.add(tabId);
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId, allFrames: true },
+      func: sentinel => {
+        globalThis[sentinel] = true;
+      },
+      args: [HIGHLIGHT_RUNTIME_SENTINEL]
+    });
+  } catch (error) {
+    console.debug('[background.js] mark highlight runtime loaded failed:', error?.message || error);
+  }
+}
+
+async function injectHighlightRuntime(tabId) {
+  const tab = await getTabById(tabId);
+  if (!isInjectableTab(tab) || !chrome.scripting?.executeScript) {
+    return false;
+  }
+
+  if (await isHighlightRuntimeLoaded(tabId)) {
+    return true;
+  }
+
+  try {
+    if (chrome.scripting.insertCSS) {
+      await chrome.scripting.insertCSS({
+        target: { tabId, allFrames: true },
+        files: ['content.css']
+      });
+    }
+
+    await chrome.scripting.executeScript({
+      target: { tabId, allFrames: true },
+      files: HIGHLIGHT_RUNTIME_FILES
+    });
+
+    await markHighlightRuntimeLoaded(tabId);
+    return true;
+  } catch (error) {
+    console.debug('[background.js] inject highlight runtime skipped:', tab.url, error?.message || error);
+    return false;
+  }
+}
+
+async function getPageOverrides() {
+  const result = await storageLocalGet({ [HIGHLIGHT_PAGE_OVERRIDES_KEY]: {} });
+  return result[HIGHLIGHT_PAGE_OVERRIDES_KEY] || {};
+}
+
+async function setPageOverride(tabId, value) {
+  const overrides = await getPageOverrides();
+  if (value === true) {
+    overrides[String(tabId)] = true;
+  } else {
+    delete overrides[String(tabId)];
+  }
+  await storageLocalSet({ [HIGHLIGHT_PAGE_OVERRIDES_KEY]: overrides });
+}
+
+async function getHighlightControlState(tabId) {
+  const result = await storageLocalGet({
+    [HIGHLIGHT_ENABLED_KEY]: true,
+    [HIGHLIGHT_SCOPE_KEY]: 'global',
+    [HIGHLIGHT_PAGE_OVERRIDES_KEY]: {}
+  });
+  const scope = result[HIGHLIGHT_SCOPE_KEY] === 'page' ? 'page' : 'global';
+  const globalEnabled = result[HIGHLIGHT_ENABLED_KEY] !== false;
+  const pageEnabled = (result[HIGHLIGHT_PAGE_OVERRIDES_KEY] || {})[String(tabId)] === true;
+  const enabled = scope === 'page' ? pageEnabled : globalEnabled;
+
+  return { scope, enabled, globalEnabled };
+}
+
+async function teardownHighlightRuntime(tabId) {
+  await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: false });
+  await sendMessageToTab(tabId, { action: 'teardownHighlightRuntime' });
+}
+
+async function setPageHighlightEnabled(tabId, enabled) {
+  await setPageOverride(tabId, enabled === true);
+
+  if (enabled) {
+    await injectHighlightRuntime(tabId);
+    await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true });
+  } else {
+    await teardownHighlightRuntime(tabId);
+  }
+
+  return getHighlightControlState(tabId);
+}
+
+async function setGlobalHighlightEnabled(enabled) {
+  await storageLocalSet({ [HIGHLIGHT_ENABLED_KEY]: enabled === true });
+  await syncAllTabsHighlightRuntime();
+}
+
+async function setHighlightFromFloatingButton(tabId, enabled) {
+  const state = await getHighlightControlState(tabId);
+  if (state.scope === 'global') {
+    await setGlobalHighlightEnabled(enabled);
+    return getHighlightControlState(tabId);
+  }
+
+  return setPageHighlightEnabled(tabId, enabled);
+}
+
+async function syncTabHighlightRuntime(tabId) {
+  const tab = await getTabById(tabId);
+  if (!isInjectableTab(tab)) {
+    return;
+  }
+
+  const state = await getHighlightControlState(tabId);
+  if (state.enabled) {
+    await injectHighlightRuntime(tabId);
+    await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true });
+  } else {
+    await teardownHighlightRuntime(tabId);
+  }
+}
+
+async function syncAllTabsHighlightRuntime() {
+  const tabs = await queryTabs({});
+  for (const tab of tabs) {
+    if (tab.id) {
+      await syncTabHighlightRuntime(tab.id);
+    }
+  }
+}
+
+async function clearPageOverride(tabId) {
+  const overrides = await getPageOverrides();
+  if (Object.prototype.hasOwnProperty.call(overrides, String(tabId))) {
+    delete overrides[String(tabId)];
+    await storageLocalSet({ [HIGHLIGHT_PAGE_OVERRIDES_KEY]: overrides });
+  }
+}
+
+if (chrome.tabs?.onUpdated) {
+  chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+    if (changeInfo.status === 'loading') {
+      injectedHighlightTabs.delete(tabId);
+      clearPageOverride(tabId);
+      return;
+    }
+
+    if (changeInfo.status === 'complete') {
+      syncTabHighlightRuntime(tabId);
+    }
+  });
+}
+
+if (chrome.tabs?.onRemoved) {
+  chrome.tabs.onRemoved.addListener((tabId) => {
+    injectedHighlightTabs.delete(tabId);
+    clearPageOverride(tabId);
+  });
+}
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local') {
+    return;
+  }
+
+  if (changes[HIGHLIGHT_SCOPE_KEY]) {
+    syncAllTabsHighlightRuntime();
+  }
+});
+
+
 // ============================================
 // 云端数据库配置和 API
 // ============================================
@@ -2575,30 +2855,47 @@ async function handleAIRequest({ word, sentence, stream = false, messages, model
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("[background.js] 收到消息:", message);
 
-  if (message.action === 'broadcastToggleHighlight') {
+  if (message.action === 'broadcastToggleHighlight' || message.action === 'setGlobalWordHighlight') {
     const enabled = message.enabled !== false;
 
-    chrome.storage.local.set({ enablePlugin: enabled }, () => {
-      chrome.tabs.query({}, (tabs) => {
-        tabs.forEach((tab) => {
-          if (!tab.id) {
-            return;
-          }
+    setGlobalHighlightEnabled(enabled).then(() => {
+      sendResponse({ success: true, enabled });
+    }).catch(error => {
+      console.error('[background.js] set global highlight failed:', error);
+      sendResponse({ success: false, enabled, error: error?.message || String(error) });
+    });
 
-          try {
-            chrome.tabs.sendMessage(tab.id, {
-              action: "toggleHighlight",
-              enabled
-            }, () => {
-              void chrome.runtime.lastError;
-            });
-          } catch (error) {
-            console.debug("[background.js] toggleHighlight broadcast skipped:", error);
-          }
-        });
+    return true;
+  }
+  else if (message.action === 'getWordHighlightControlState') {
+    const tabId = sender.tab?.id || message.tabId;
+    if (!tabId) {
+      sendResponse({ scope: 'global', enabled: true, globalEnabled: true });
+      return false;
+    }
 
-        sendResponse({ success: true, enabled });
-      });
+    getHighlightControlState(tabId).then(state => {
+      sendResponse(state);
+    }).catch(error => {
+      console.error('[background.js] get highlight control state failed:', error);
+      sendResponse({ scope: 'global', enabled: true, globalEnabled: true });
+    });
+
+    return true;
+  }
+  else if (message.action === 'toggleWordHighlightFromFloatingButton') {
+    const tabId = sender.tab?.id || message.tabId;
+    if (!tabId) {
+      sendResponse({ success: false, error: 'missing tab id' });
+      return false;
+    }
+
+    const requestedEnabled = message.enabled === true;
+    setHighlightFromFloatingButton(tabId, requestedEnabled).then(state => {
+      sendResponse({ success: true, ...state });
+    }).catch(error => {
+      console.error('[background.js] floating highlight toggle failed:', error);
+      sendResponse({ success: false, error: error?.message || String(error) });
     });
 
     return true;
@@ -4794,6 +5091,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 initCloudConfig().then(() => {
   console.log('[CloudDB] Cloud config initialized on service worker startup');
 });
+
+syncAllTabsHighlightRuntime();
 
 // ============================================
 // WebSocket Header 修改规则（用于 Edge TTS）

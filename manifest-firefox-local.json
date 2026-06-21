@@ -20,6 +20,7 @@
     "sidePanel",
     "clipboardRead",
     "contextMenus",
+    "scripting",
     "declarativeNetRequest"
   ],
   "host_permissions": [
@@ -38,45 +39,10 @@
         "<all_urls>"
       ],
       "js": [
-        "src/utils/lingqBlocker.js",
-        "src/utils/cloudAPI.js",
-        "src/utils/dataAccessLayer.js",
-        "src/service/a0_afdian.js",
-        "src/service/jp/kuromoji.js",
-        "src/utils/evaluateExpression.js",
-        "src/utils/pdfDetection.js",
-        "src/utils/sentenseOoOo.js",
-        "src/plugin/bionic.js",
-        "src/utils/liquid-glass.js",
-        "src/plugin/readingRuler.js",
-        "src/plugin/clipSubtitles.js",
-        "src/plugin/waifu/waifu.js",
-        "src/plugin/youtubeCaptionGet.js",
-        "src/plugin/youtubeCaptionFix.js",
-        "src/plugin/youtubeVideoOverlay.js",
-        "src/plugin/min/compromise.js",
-        "src/plugin/min/de-compromise.min.js",
-        "src/utils/language-detector/eld.extrasmall.global.js",
-        "src/plugin/pos-highlight.js",
-        "src/service/a1_loadKnowWords.js",
-        "src/service/a2_hightlight.js",
-        "src/service/a3_aiFragen.js",
-        "src/service/a4_tooltip_new.js",
-        "src/service/a5_custom_word_selection.js",
-        "src/service/a6_custom_highlight.js",
-        "src/service/a7_words_boom.js",
-        "src/service/a7.1_sentence_navigator.js",
-        "src/utils/highlight_floating_button.js",
-        "src/plugin/tts.js",
-        "src/plugin/edge_tts.js",
-        "src/plugin/orion_tts.js",
-        "src/content.js"
+        "src/utils/highlight_floating_button.js"
       ],
-      "css": [
-        "content.css"
-      ],
-      "all_frames": true,
-      "match_about_blank": true,
+      "all_frames": false,
+      "match_about_blank": false,
       "run_at": "document_end"
     }
   ],

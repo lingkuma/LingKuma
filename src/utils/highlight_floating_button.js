@@ -5,6 +5,8 @@
 
   const FLOATING_BUTTON_ENABLED_KEY = 'wordHighlightFloatingButtonEnabled';
   const HIGHLIGHT_ENABLED_KEY = 'enablePlugin';
+  const HIGHLIGHT_SCOPE_KEY = 'wordHighlightFloatingButtonScope';
+  const PAGE_TAB_OVERRIDES_KEY = 'wordHighlightPageTabOverrides';
   const PAGE_THEME_OVERRIDES_KEY = 'highlightPageThemeOverrides';
   const POSITION_KEY = 'wordHighlightFloatingButtonPosition';
   const ROOT_ID = 'lingkuma-word-highlight-floating-root';
@@ -248,14 +250,35 @@
     }
   }
 
+  function refreshHighlightControlState() {
+    chrome.runtime.sendMessage({ action: 'getWordHighlightControlState' }, (response) => {
+      if (chrome.runtime.lastError || !response) {
+        chrome.storage.local.get({ [HIGHLIGHT_ENABLED_KEY]: true }, (result) => {
+          updateHighlightState(result[HIGHLIGHT_ENABLED_KEY] !== false);
+        });
+        return;
+      }
+
+      updateHighlightState(response.enabled !== false);
+    });
+  }
+
   function toggleHighlight() {
-    chrome.storage.local.get({ [HIGHLIGHT_ENABLED_KEY]: true }, (result) => {
-      const enabled = !(result[HIGHLIGHT_ENABLED_KEY] !== false);
-      updateHighlightState(enabled);
-      triggerButtonPulse(buttonWrap);
-      chrome.storage.local.set({ [HIGHLIGHT_ENABLED_KEY]: enabled }, () => {
-        broadcastHighlightState(enabled);
-      });
+    const enabled = !currentHighlightEnabled;
+    updateHighlightState(enabled);
+    triggerButtonPulse(buttonWrap);
+
+    chrome.runtime.sendMessage({
+      action: 'toggleWordHighlightFromFloatingButton',
+      enabled
+    }, (response) => {
+      if (chrome.runtime.lastError || response?.success === false) {
+        console.debug('[LingKuma] floating highlight toggle failed:', chrome.runtime.lastError?.message || response?.error);
+        refreshHighlightControlState();
+        return;
+      }
+
+      updateHighlightState(response.enabled !== false);
     });
   }
 
@@ -1052,6 +1075,7 @@
 
       if (result[FLOATING_BUTTON_ENABLED_KEY] !== false) {
         createButton(result[POSITION_KEY], pageThemeOverride);
+        refreshHighlightControlState();
       }
     });
   }
@@ -1061,8 +1085,8 @@
       return;
     }
 
-    if (changes[HIGHLIGHT_ENABLED_KEY]) {
-      updateHighlightState(changes[HIGHLIGHT_ENABLED_KEY].newValue !== false);
+    if (changes[HIGHLIGHT_ENABLED_KEY] || changes[HIGHLIGHT_SCOPE_KEY] || changes[PAGE_TAB_OVERRIDES_KEY]) {
+      refreshHighlightControlState();
     }
 
     if (changes[FLOATING_BUTTON_ENABLED_KEY]) {

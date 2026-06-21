@@ -176,7 +176,9 @@ function updateWordStatus(word, status, sentence, parent, originalWord, isCustom
 
 class ScopeObserver {
   constructor(tree) {
-    this.tree = tree; // 作用域树
+    this.tree = tree; // Scope tree
+    this.destroyed = false;
+    this.messageListener = null;
     this.walked = false; // 是否已完成初始扫描
     this.parent2Text2RawsAllUnknow = new Map(); // 存储所有文本节点的原始数据
     this.parent2Text2RawsAll = new Map(); // 存储所有文本节点的原始数据
@@ -205,6 +207,7 @@ class ScopeObserver {
 
     // 初始化暗色模式检测
     this.initDarkModeDetection().then(() => {
+      if (this.destroyed) return;
       // 在暗色模式检测完成后初始化其他组件
       this.handleIntersectingBound = this.handleIntersecting();
       this.mutOb = this.newMutOb();
@@ -215,16 +218,17 @@ class ScopeObserver {
     });
 
     // 添加消息监听器
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    this.messageListener = (message, sender, sendResponse) => {
       if (message.action === "toggleHighlight") {
         if (message.enabled) {
           // A1/highlightAllWords 会先刷新词库状态，再调用 resumeHighlighting。
           // 这里不要抢先重绘，否则 offscreen 节点会使用旧缓存落到默认蓝色。
           return;
         } else {
-          this.highlightEnabled = false;
-          this.removeAllHighlights();
+          this.destroy();
         }
+      } else if (message.action === "teardownHighlightRuntime") {
+        this.destroy();
       } else if (message.action === "redetectPageLanguage") {
         // 重新加载设置并检测页面语言
         chrome.storage.local.get(['autoDetectJapaneseKanji'], (result) => {
@@ -269,7 +273,8 @@ class ScopeObserver {
           this.reapplyHighlights();
         }
       }
-    });
+    };
+    chrome.runtime.onMessage.addListener(this.messageListener);
 
     this.ignoredElements = new Set(); // 添加忽略元素集合
 
@@ -572,6 +577,7 @@ class ScopeObserver {
 
   // 提取扫描文档的逻辑为独立方法
   startDocumentScan() {
+    if (this.destroyed) return;
     // 确保在获取设置之后再执行扫描和观察
     this.scanDocument();
     this.mutObserve(); // 开始观察DOM变化
@@ -584,6 +590,7 @@ class ScopeObserver {
 
   // 扫描文档
   scanDocument() {
+    if (this.destroyed) return;
     console.log("扫描文档中的文本节点...");
 
     const scope = this.tree.scope;
@@ -665,6 +672,7 @@ class ScopeObserver {
 
   // 分块处理文本节点
   async processTextNodesInChunks(nodes, callback) {
+    if (this.destroyed) return;
     if (!nodes || nodes.length === 0) {
       if (callback) callback();
       return;
@@ -815,6 +823,7 @@ class ScopeObserver {
 
     // 使用RAF代替setTimeout
     const processChunk = () => {
+      if (this.destroyed) return;
       const start = index;
       const end = Math.min(index + chunkSize, nodes.length);
 
@@ -1878,6 +1887,7 @@ if (window.location.hostname.includes('youtube.com')) {
     let pendingMutations = [];
 
     return new MutationObserver(mutations => {
+      if (this.destroyed) return;
       // 收集新增的文本节点，避免重复处理
       const newTextNodes = new Set();
       const removedNodes = new Set();
@@ -2707,6 +2717,53 @@ if (window.location.hostname.includes('youtube.com')) {
 
   // 新增方法：移除本插件的单词高亮
   // 只移除主单词高亮的 CSS Highlight groups，不清空全局 CSS.highlights
+  destroy() {
+    if (this.destroyed) {
+      return;
+    }
+
+    this.destroyed = true;
+    this.highlightEnabled = false;
+
+    if (this.messageListener) {
+      try {
+        chrome.runtime.onMessage.removeListener(this.messageListener);
+      } catch (error) {
+        console.debug('[LingKuma] remove highlight listener during destroy failed:', error);
+      }
+      this.messageListener = null;
+    }
+
+    try {
+      this.removeAllHighlights();
+    } catch (error) {
+      console.debug('[LingKuma] remove highlights during destroy failed:', error);
+    }
+
+    try {
+      if (this.mutOb) {
+        this.mutOb.disconnect();
+      }
+      if (this.hlParentSecOb) {
+        this.hlParentSecOb.disconnect();
+      }
+    } catch (error) {
+      console.debug('[LingKuma] disconnect observers during destroy failed:', error);
+    }
+
+    this.parent2Text2RawsAllUnknow.clear();
+    this.parent2Text2RawsAll.clear();
+    this.parent2Text2RangesView.clear();
+    this.textCache.clear();
+    this.ignoredElements.clear();
+    this.wordDetailsFromDB = {};
+    this.handleIntersectingBound = null;
+    this.mutOb = null;
+    this.hlParentSecOb = null;
+    this.walked = false;
+    this.mutPairFlag = 0;
+  }
+
   removeAllHighlights() {
     console.log("移除单词高亮...");
     try {

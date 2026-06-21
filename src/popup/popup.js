@@ -501,6 +501,7 @@ function initializeSettings() {
 
       // 高亮语言类型默认值
       wordHighlightFloatingButtonEnabled: true,
+      wordHighlightFloatingButtonScope: 'global',
       highlightChineseEnabled: false, // 中文默认不高亮
       highlightJapaneseEnabled: true, // 日语默认高亮
       autoDetectJapaneseKanji: true, // 智能识别日语汉字默认开启
@@ -720,16 +721,13 @@ chrome.storage.local.get('enablePlugin', function(result) {
 // 监听变化
 enablePlugin.addEventListener('change', function(e) {
     const isEnabled = e.target.checked;
-    chrome.storage.local.set({ enablePlugin: isEnabled });
-
-    // 向所有标签页发送开关状态更新消息
-    chrome.tabs.query({}, function(tabs) {
-        tabs.forEach(tab => {
-            chrome.tabs.sendMessage(tab.id, {
-                action: "toggleHighlight",
-                enabled: isEnabled
-            });
-        });
+    chrome.runtime.sendMessage({
+        action: 'setGlobalWordHighlight',
+        enabled: isEnabled
+    }, function(response) {
+        if (chrome.runtime.lastError || response?.success === false) {
+            console.error('Failed to update global word highlight:', chrome.runtime.lastError?.message || response?.error);
+        }
     });
 });
 
@@ -737,6 +735,7 @@ enablePlugin.addEventListener('change', function(e) {
 const highlightChinese = document.getElementById('highlightChinese');
 const highlightJapanese = document.getElementById('highlightJapanese');
 const wordHighlightFloatingButton = document.getElementById('wordHighlightFloatingButton');
+const wordHighlightFloatingButtonScope = document.getElementById('wordHighlightFloatingButtonScope');
 const autoDetectJapaneseKanji = document.getElementById('autoDetectJapaneseKanji');
 const autoLoadKuromojiForJapanese = document.getElementById('autoLoadKuromojiForJapanese');
 const useKuromojiTokenizer = document.getElementById('useKuromojiTokenizer');
@@ -746,6 +745,7 @@ const highlightAlphabetic = document.getElementById('highlightAlphabetic');
 // 加载状态 (中文默认不高亮，其他语言默认高亮)
 chrome.storage.local.get([
     'wordHighlightFloatingButtonEnabled',
+    'wordHighlightFloatingButtonScope',
     'highlightChineseEnabled',
     'highlightJapaneseEnabled',
     'autoDetectJapaneseKanji',
@@ -755,6 +755,9 @@ chrome.storage.local.get([
     'highlightAlphabeticEnabled'
 ], function(result) {
     wordHighlightFloatingButton.checked = result.wordHighlightFloatingButtonEnabled === undefined ? true : result.wordHighlightFloatingButtonEnabled;
+    if (wordHighlightFloatingButtonScope) {
+        wordHighlightFloatingButtonScope.value = result.wordHighlightFloatingButtonScope === 'page' ? 'page' : 'global';
+    }
     highlightChinese.checked = result.highlightChineseEnabled === undefined ? false : result.highlightChineseEnabled;
     highlightJapanese.checked = result.highlightJapaneseEnabled === undefined ? true : result.highlightJapaneseEnabled;
     autoDetectJapaneseKanji.checked = result.autoDetectJapaneseKanji === undefined ? true : result.autoDetectJapaneseKanji;
@@ -768,6 +771,12 @@ chrome.storage.local.get([
 wordHighlightFloatingButton.addEventListener('change', function(e) {
     chrome.storage.local.set({ wordHighlightFloatingButtonEnabled: e.target.checked });
 });
+
+if (wordHighlightFloatingButtonScope) {
+    wordHighlightFloatingButtonScope.addEventListener('change', function(e) {
+        chrome.storage.local.set({ wordHighlightFloatingButtonScope: e.target.value === 'page' ? 'page' : 'global' });
+    });
+}
 
 highlightChinese.addEventListener('change', function(e) {
     chrome.storage.local.set({ highlightChineseEnabled: e.target.checked });
