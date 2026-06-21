@@ -100,6 +100,24 @@ function isInjectableTab(tab) {
   }
 }
 
+function getHighlightPageKeyFromUrl(url) {
+  if (!url) {
+    return null;
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    return (parsedUrl.hostname || parsedUrl.host || parsedUrl.href).toLowerCase();
+  } catch (error) {
+    return null;
+  }
+}
+
+async function getHighlightPageKey(tabId) {
+  const tab = await getTabById(tabId);
+  return getHighlightPageKeyFromUrl(tab?.url);
+}
+
 async function isHighlightRuntimeLoaded(tabId) {
   if (injectedHighlightTabs.has(tabId)) {
     return true;
@@ -178,10 +196,14 @@ async function getPageOverrides() {
 
 async function setPageOverride(tabId, value) {
   const overrides = await getPageOverrides();
+  const pageKey = await getHighlightPageKey(tabId);
+  const overrideKey = pageKey || String(tabId);
+  delete overrides[String(tabId)];
+
   if (value === true) {
-    overrides[String(tabId)] = true;
+    overrides[overrideKey] = true;
   } else {
-    delete overrides[String(tabId)];
+    delete overrides[overrideKey];
   }
   await storageLocalSet({ [HIGHLIGHT_PAGE_OVERRIDES_KEY]: overrides });
 }
@@ -194,7 +216,11 @@ async function getHighlightControlState(tabId) {
   });
   const scope = result[HIGHLIGHT_SCOPE_KEY] === 'page' ? 'page' : 'global';
   const globalEnabled = result[HIGHLIGHT_ENABLED_KEY] !== false;
-  const pageEnabled = (result[HIGHLIGHT_PAGE_OVERRIDES_KEY] || {})[String(tabId)] === true;
+  const pageKey = await getHighlightPageKey(tabId);
+  const pageOverrides = result[HIGHLIGHT_PAGE_OVERRIDES_KEY] || {};
+  const pageEnabled = pageKey && Object.prototype.hasOwnProperty.call(pageOverrides, pageKey)
+    ? pageOverrides[pageKey] === true
+    : pageOverrides[String(tabId)] === true;
   const enabled = scope === 'page' ? pageEnabled : globalEnabled;
 
   return { scope, enabled, globalEnabled };
@@ -257,7 +283,7 @@ async function syncAllTabsHighlightRuntime() {
   }
 }
 
-async function clearPageOverride(tabId) {
+async function clearLegacyPageOverride(tabId) {
   const overrides = await getPageOverrides();
   if (Object.prototype.hasOwnProperty.call(overrides, String(tabId))) {
     delete overrides[String(tabId)];
@@ -269,7 +295,7 @@ if (chrome.tabs?.onUpdated) {
   chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
     if (changeInfo.status === 'loading') {
       injectedHighlightTabs.delete(tabId);
-      clearPageOverride(tabId);
+      clearLegacyPageOverride(tabId);
       return;
     }
 
@@ -282,7 +308,7 @@ if (chrome.tabs?.onUpdated) {
 if (chrome.tabs?.onRemoved) {
   chrome.tabs.onRemoved.addListener((tabId) => {
     injectedHighlightTabs.delete(tabId);
-    clearPageOverride(tabId);
+    clearLegacyPageOverride(tabId);
   });
 }
 
@@ -291,7 +317,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     return;
   }
 
-  if (changes[HIGHLIGHT_SCOPE_KEY]) {
+  if (changes[HIGHLIGHT_SCOPE_KEY] || changes[HIGHLIGHT_PAGE_OVERRIDES_KEY]) {
     syncAllTabsHighlightRuntime();
   }
 });
