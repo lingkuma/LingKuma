@@ -36,7 +36,7 @@
     ],
     "all_frames": false,
     "match_about_blank": false,
-    "run_at": "document_end"
+    "run_at": "document_start"
 
   }],
   "action": {

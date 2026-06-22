@@ -57,6 +57,7 @@ const HIGHLIGHT_RUNTIME_FILES = [
 ];
 
 const injectedHighlightTabs = new Set();
+const injectingHighlightTabs = new Map();
 
 function storageLocalGet(defaults) {
   return new Promise(resolve => chrome.storage.local.get(defaults, resolve));
@@ -168,25 +169,43 @@ async function injectHighlightRuntime(tabId) {
     return true;
   }
 
-  try {
-    if (chrome.scripting.insertCSS) {
-      await chrome.scripting.insertCSS({
-        target: { tabId, allFrames: true },
-        files: ['content.css']
-      });
-    }
-
-    await chrome.scripting.executeScript({
-      target: { tabId, allFrames: true },
-      files: HIGHLIGHT_RUNTIME_FILES
-    });
-
-    await markHighlightRuntimeLoaded(tabId);
-    return true;
-  } catch (error) {
-    console.debug('[background.js] inject highlight runtime skipped:', tab.url, error?.message || error);
-    return false;
+  const pendingInjection = injectingHighlightTabs.get(tabId);
+  if (pendingInjection) {
+    return pendingInjection;
   }
+
+  const injectionPromise = (async () => {
+    try {
+      if (await isHighlightRuntimeLoaded(tabId)) {
+        return true;
+      }
+
+      if (chrome.scripting.insertCSS) {
+        await chrome.scripting.insertCSS({
+          target: { tabId, allFrames: true },
+          files: ['content.css']
+        });
+      }
+
+      await chrome.scripting.executeScript({
+        target: { tabId, allFrames: true },
+        files: HIGHLIGHT_RUNTIME_FILES
+      });
+
+      await markHighlightRuntimeLoaded(tabId);
+      return true;
+    } catch (error) {
+      console.debug('[background.js] inject highlight runtime skipped:', tab.url, error?.message || error);
+      return false;
+    } finally {
+      if (injectingHighlightTabs.get(tabId) === injectionPromise) {
+        injectingHighlightTabs.delete(tabId);
+      }
+    }
+  })();
+
+  injectingHighlightTabs.set(tabId, injectionPromise);
+  return injectionPromise;
 }
 
 async function getPageOverrides() {
@@ -250,7 +269,7 @@ async function setPageHighlightEnabled(tabId, enabled) {
 
 async function setGlobalHighlightEnabled(enabled) {
   await storageLocalSet({ [HIGHLIGHT_ENABLED_KEY]: enabled === true });
-  await syncAllTabsHighlightRuntime();
+  await syncAllTabsHighlightRuntime({ forceActivate: enabled === true });
 }
 
 async function setHighlightFromFloatingButton(tabId, enabled) {
@@ -263,7 +282,7 @@ async function setHighlightFromFloatingButton(tabId, enabled) {
   return setPageHighlightEnabled(tabId, enabled);
 }
 
-async function syncTabHighlightRuntime(tabId) {
+async function syncTabHighlightRuntime(tabId, options = {}) {
   const tab = await getTabById(tabId);
   if (!isInjectableTab(tab)) {
     return;
@@ -271,18 +290,21 @@ async function syncTabHighlightRuntime(tabId) {
 
   const state = await getHighlightControlState(tabId);
   if (state.enabled) {
-    await injectHighlightRuntime(tabId);
-    await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true });
+    const wasLoaded = await isHighlightRuntimeLoaded(tabId);
+    const loaded = await injectHighlightRuntime(tabId);
+    if (loaded && options.forceActivate === true && wasLoaded) {
+      await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true });
+    }
   } else {
     await pauseHighlightRuntime(tabId);
   }
 }
 
-async function syncAllTabsHighlightRuntime() {
+async function syncAllTabsHighlightRuntime(options = {}) {
   const tabs = await queryTabs({});
   for (const tab of tabs) {
     if (tab.id) {
-      await syncTabHighlightRuntime(tab.id);
+      await syncTabHighlightRuntime(tab.id, options);
     }
   }
 }
@@ -299,6 +321,7 @@ if (chrome.tabs?.onUpdated) {
   chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
     if (changeInfo.status === 'loading') {
       injectedHighlightTabs.delete(tabId);
+      injectingHighlightTabs.delete(tabId);
       clearLegacyPageOverride(tabId);
       return;
     }
@@ -312,6 +335,7 @@ if (chrome.tabs?.onUpdated) {
 if (chrome.tabs?.onRemoved) {
   chrome.tabs.onRemoved.addListener((tabId) => {
     injectedHighlightTabs.delete(tabId);
+    injectingHighlightTabs.delete(tabId);
     clearLegacyPageOverride(tabId);
   });
 }
@@ -2909,6 +2933,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }).catch(error => {
       console.error('[background.js] get highlight control state failed:', error);
       sendResponse({ scope: 'page', enabled: false, globalEnabled: false });
+    });
+
+    return true;
+  }
+  else if (message.action === 'ensureWordHighlightRuntime') {
+    const tabId = sender.tab?.id || message.tabId;
+    if (!tabId) {
+      sendResponse({ success: false, error: 'missing tab id' });
+      return false;
+    }
+
+    syncTabHighlightRuntime(tabId).then(() => getHighlightControlState(tabId)).then(state => {
+      sendResponse({ success: true, ...state });
+    }).catch(error => {
+      console.error('[background.js] ensure highlight runtime failed:', error);
+      sendResponse({ success: false, error: error?.message || String(error) });
     });
 
     return true;

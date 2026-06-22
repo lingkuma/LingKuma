@@ -263,6 +263,18 @@
     });
   }
 
+  function requestHighlightRuntimeSync() {
+    chrome.runtime.sendMessage({ action: 'ensureWordHighlightRuntime' }, (response) => {
+      if (chrome.runtime.lastError || response?.success === false) {
+        console.debug('[LingKuma] ensure highlight runtime skipped:', chrome.runtime.lastError?.message || response?.error);
+        return;
+      }
+
+      if (typeof response.enabled === 'boolean') {
+        updateHighlightState(response.enabled !== false);
+      }
+    });
+  }
   function toggleHighlight() {
     const enabled = !currentHighlightEnabled;
     updateHighlightState(enabled);
@@ -1012,7 +1024,13 @@
     themeSlot.append(themeButtonWrap);
     buttonStack.append(highlightSlot, themeSlot);
     shadowRoot.append(createStyles(), buttonStack);
-    document.documentElement.appendChild(rootHost);
+
+    const mountRoot = document.documentElement || document.body;
+    if (!mountRoot) {
+      document.addEventListener('DOMContentLoaded', () => createButton(savedPosition, pageThemeOverride), { once: true });
+      return;
+    }
+    mountRoot.appendChild(rootHost);
 
     buttonWrap.addEventListener('pointerdown', handlePointerDown);
     buttonWrap.addEventListener('pointermove', handlePointerMove);
@@ -1060,6 +1078,8 @@
   }
 
   function initializeFloatingButton() {
+    requestHighlightRuntimeSync();
+
     chrome.storage.local.get({
       [FLOATING_BUTTON_ENABLED_KEY]: false,
       [HIGHLIGHT_ENABLED_KEY]: false,
