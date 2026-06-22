@@ -2843,7 +2843,7 @@ if (window.location.hostname.includes('youtube.com')) {
         globalDarkMode = false;
       } else {
         // 自动检测暗色模式
-        const isDarkModeValue = isDarkMode();
+        const isDarkModeValue = detectPageDarkModeForHighlight();
         this.isDarkMode = isDarkModeValue;
         console.log("themeMode3 自动isDarkMode，获取的值：", isDarkModeValue);
         globalDarkMode = isDarkModeValue;
@@ -2860,7 +2860,7 @@ if (window.location.hostname.includes('youtube.com')) {
       } else if (themeMode == 1) {
         this.isDarkMode = false;
       } else {
-        this.isDarkMode = isDarkMode();
+        this.isDarkMode = detectPageDarkModeForHighlight();
       }
       console.log("iframe独立检测暗色模式:", this.isDarkMode);
     }
@@ -3096,6 +3096,80 @@ function highlightAllWords() {
 
 
 
+
+// 解析 CSS 颜色，用于高亮主题自动检测
+function parseCssRgbColor(color) {
+  const parts = String(color || '').match(/\d+(\.\d+)?/g);
+  if (!parts || parts.length < 3) {
+    return null;
+  }
+
+  return parts.slice(0, 3).map(Number);
+}
+
+function getColorBrightness(color) {
+  const rgb = parseCssRgbColor(color);
+  if (!rgb) {
+    return null;
+  }
+
+  const [r, g, b] = rgb;
+  return (r * 299 + g * 587 + b * 114) / 1000;
+}
+
+function detectPageDarkModeForHighlight() {
+  if (typeof isDarkMode === 'function') {
+    return isDarkMode();
+  }
+
+  const root = document.body || document.documentElement;
+  if (root) {
+    const textElements = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+    let count = 0;
+
+    while (walker.nextNode() && count < 100) {
+      const text = walker.currentNode.textContent.trim();
+      const parentElement = walker.currentNode.parentElement;
+      if (!text || !parentElement) {
+        continue;
+      }
+
+      const color = window.getComputedStyle(parentElement).color;
+      const brightness = getColorBrightness(color);
+      if (brightness === null) {
+        continue;
+      }
+
+      textElements.push({
+        text,
+        color,
+        isDark: brightness < 128
+      });
+      count++;
+    }
+
+    if (textElements.length > 0) {
+      const darkCount = textElements.filter(element => element.isDark).length;
+      const lightCount = textElements.length - darkCount;
+
+      console.log("lightCount:", lightCount, "darkCount:", darkCount);
+      console.log("是黑模式嘛？：", lightCount >= darkCount);
+      return lightCount >= darkCount;
+    }
+
+    const backgroundTargets = [document.body, document.documentElement].filter(Boolean);
+    for (const target of backgroundTargets) {
+      const backgroundColor = window.getComputedStyle(target).backgroundColor;
+      const brightness = getColorBrightness(backgroundColor);
+      if (brightness !== null) {
+        return brightness < 128;
+      }
+    }
+  }
+
+  return Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+}
 
 // 检查当前网站是否在高亮黑白名单中
 function checkSiteInThemeLists() {
