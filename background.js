@@ -4966,10 +4966,10 @@ chrome.runtime.onInstalled.addListener((details) => {
   });
 
 
-  // 创建"More"父菜单
+  // Create reload menu item
   chrome.contextMenus.create({
-    id: "moreMenu",
-    title: "More",
+    id: "reloadLingKuma",
+    title: "Reload LingKuma",
     contexts: ["action"] // 只在插件图标上显示
   });
 
@@ -4977,7 +4977,7 @@ chrome.runtime.onInstalled.addListener((details) => {
   chrome.contextMenus.create({
     id: "openLingkuma",
     title: "Help",
-    parentId: "moreMenu", // 设置父菜单
+    parentId: "kumaToolsMenu", // 设置父菜单
 
     contexts: ["action"] // 只在插件图标上显示
   });
@@ -4987,7 +4987,7 @@ chrome.runtime.onInstalled.addListener((details) => {
   chrome.contextMenus.create({
     id: "openLingkumaBlog",
     title: "blog",
-    parentId: "moreMenu", // 设置父菜单
+    parentId: "kumaToolsMenu", // 设置父菜单
     contexts: ["action"] // 只在插件图标上显示
   });
 
@@ -5112,6 +5112,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     chrome.tabs.create({
       url: "https://lingkuma.org/"
     });
+  } else if (info.menuItemId === "reloadLingKuma") {
+    chrome.runtime.reload();
   } else if (info.menuItemId === "openClipboard") { // Clipboard
     chrome.tabs.create({
       url: "https://clipboard.lingkuma.org/"
