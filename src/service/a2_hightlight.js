@@ -1,8 +1,12 @@
 // 在类顶部添加日语分词器引用
 let JapaneseTokenizer = null;
 
+function isOrionIOSRuntime() {
+  return typeof window !== 'undefined' && window.orion_isIOS === true;
+}
+
 // 添加iOS设备检测
-// orion_isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+// window.orion_isIOS is provided later by orion_tts.js; default to false before it loads.
 
 // =======================
 // 带重试机制的 sendMessage 包装函数
@@ -252,10 +256,10 @@ class ScopeObserver {
 
         // 判断是否需要加载kuromoji
         // iOS设备永远不加载kuromoji
-        const shouldLoadKuromoji = !orion_isIOS &&
+        const shouldLoadKuromoji = !isOrionIOSRuntime() &&
           (this.useKuromojiTokenizer || (this.autoLoadKuromojiForJapanese && this.isJapaneseDominantPage));
 
-        if (orion_isIOS) {
+        if (isOrionIOSRuntime()) {
           console.log("iOS设备不支持kuromoji，使用Intl.Segmenter");
         }
 
@@ -515,14 +519,14 @@ class ScopeObserver {
       // 1. iOS设备：永远不加载kuromoji
       // 2. 全局使用kuromoji：所有页面都加载
       // 3. 智能加载kuromoji：仅日语页面加载
-      const needKuromoji = !orion_isIOS && this.highlightJapaneseEnabled &&
+      const needKuromoji = !isOrionIOSRuntime() && this.highlightJapaneseEnabled &&
         (this.useKuromojiTokenizer || (this.autoLoadKuromojiForJapanese && this.isJapaneseDominantPage));
 
       if (needKuromoji) {
         const loadReason = this.useKuromojiTokenizer ? "全局使用kuromoji" :
           (this.autoLoadKuromojiForJapanese && this.isJapaneseDominantPage ? "检测到日语页面，智能加载kuromoji" : "未知原因");
         console.log(`[initWalk] ${loadReason}，等待页面加载完成后再初始化...`);
-        console.log(`[initWalk] iOS设备检测: ${orion_isIOS ? 'iOS设备，不加载kuromoji' : '非iOS设备'}`);
+        console.log(`[initWalk] iOS设备检测: ${isOrionIOSRuntime() ? 'iOS设备，不加载kuromoji' : '非iOS设备'}`);
 
         // 先等待页面加载完成，避免kuromoji阻塞原始网页加载
         this.waitForPageLoad().then(() => {
@@ -565,7 +569,7 @@ class ScopeObserver {
         });
       } else {
         // 不需要kuromoji，直接开始扫描（无延迟）
-        const skipReason = orion_isIOS ? "iOS设备不支持kuromoji" :
+        const skipReason = isOrionIOSRuntime() ? "iOS设备不支持kuromoji" :
           (!this.highlightJapaneseEnabled ? "日语高亮未启用" :
           (!this.useKuromojiTokenizer && !this.autoLoadKuromojiForJapanese ? "kuromoji功能未启用" :
           (!this.isJapaneseDominantPage ? "非日语页面" : "未知原因")));
@@ -694,7 +698,7 @@ class ScopeObserver {
       // 判断文本类型并使用对应的分词方式
       if (this.isJapaneseText(text)) {
         // 日语文本处理
-        if (orion_isIOS) {
+        if (isOrionIOSRuntime()) {
           // iOS设备使用Intl.Segmenter
           const segmenter = new Intl.Segmenter("ja", { granularity: "word" });
           const segments = segmenter.segment(text);
@@ -1020,8 +1024,8 @@ if (window.location.hostname.includes('youtube.com')) {
           this.processIntlSegmenterText(textNode, parent, text);
         }
         // 根据iOS设备判断使用不同的分词方法
-        else if (orion_isIOS) {
-          console.log(orion_isIOS," 这是iOS设备,使用Intl.Segmenter进行日语分词" );
+        else if (isOrionIOSRuntime()) {
+          console.log(isOrionIOSRuntime()," 这是iOS设备,使用Intl.Segmenter进行日语分词" );
           // iOS设备使用Intl.Segmenter进行日语分词
           this.processIntlSegmenterText(textNode, parent, text);
         } else if (this.useKuromojiTokenizer) {
@@ -2122,7 +2126,7 @@ if (window.location.hostname.includes('youtube.com')) {
       // 判断文本类型并使用对应的分词方式
       if (this.isJapaneseText(text)) {
         // 日语文本处理
-        if (orion_isIOS) {
+        if (isOrionIOSRuntime()) {
           // iOS设备使用Intl.Segmenter
           const segmenter = new Intl.Segmenter("ja", { granularity: "word" });
           const segments = segmenter.segment(text);

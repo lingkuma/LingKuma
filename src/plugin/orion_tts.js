@@ -19,6 +19,7 @@ let orion_isIOS = false; // 默认值设为false
 (async function initOrionTTS() {
     try {
         orion_isIOS = await getOrionTTSEnabled();
+        window.orion_isIOS = orion_isIOS;
         console.log('Orion TTS初始化完成，状态:', orion_isIOS);
     } catch (error) {
         console.error('Orion TTS初始化失败:', error);

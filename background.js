@@ -42,8 +42,6 @@ const HIGHLIGHT_RUNTIME_FILES = [
   'src/plugin/min/de-compromise.min.js',
   'src/utils/language-detector/eld.extrasmall.global.js',
   'src/plugin/pos-highlight.js',
-  'src/service/a1_loadKnowWords.js',
-  'src/service/a2_hightlight.js',
   'src/service/a3_aiFragen.js',
   'src/service/a4_tooltip_new.js',
   'src/service/a5_custom_word_selection.js',
@@ -178,13 +176,6 @@ async function injectHighlightRuntime(tabId) {
     try {
       if (await isHighlightRuntimeLoaded(tabId)) {
         return true;
-      }
-
-      if (chrome.scripting.insertCSS) {
-        await chrome.scripting.insertCSS({
-          target: { tabId, allFrames: true },
-          files: ['content.css']
-        });
       }
 
       await chrome.scripting.executeScript({

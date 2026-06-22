@@ -58,6 +58,8 @@ chrome.storage.local.get([
   'highlightKoreanEnabled',
   'highlightAlphabeticEnabled',
   'enablePlugin',
+  'wordHighlightFloatingButtonScope',
+  'wordHighlightPageTabOverrides',
   'pluginBlacklistWebsites'
 ], function(result) {
   // 设置高亮语言开关
@@ -67,7 +69,7 @@ chrome.storage.local.get([
   highlightAlphabeticEnabled = result.highlightAlphabeticEnabled || true;
 
   // 检查插件是否启用
-  if (result.enablePlugin === false) {
+  if (!getInitialHighlightEnabled(result)) {
     console.log("插件已被禁用，清理资源");
     if (highlightManager) {
       highlightManager.highlightEnabled = false;
@@ -102,6 +104,29 @@ chrome.storage.local.get([
 //监听插件开关状态变化
 initPlugin();
 
+function getInitialHighlightEnabled(result) {
+  const scope = result.wordHighlightFloatingButtonScope === 'page' ? 'page' : 'global';
+  if (scope !== 'page') {
+    return result.enablePlugin !== false;
+  }
+
+  const pageKey = getHighlightPageKeyForCurrentPage();
+  const overrides = result.wordHighlightPageTabOverrides || {};
+  if (!pageKey) {
+    return false;
+  }
+
+  return Object.prototype.hasOwnProperty.call(overrides, pageKey) && overrides[pageKey] === true;
+}
+
+function getHighlightPageKeyForCurrentPage() {
+  try {
+    const parsedUrl = new URL(window.location.href);
+    return (parsedUrl.hostname || parsedUrl.host || parsedUrl.href).toLowerCase();
+  } catch (error) {
+    return null;
+  }
+}
 function initPlugin() {
   console.log("插件功能初始化中...");
   
