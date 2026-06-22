@@ -1,7 +1,8 @@
 {
   "scripts": {
     "build": "webpack --config webpack.config.js",
-    "watch": "webpack --watch --config webpack.config.js"
+    "watch": "webpack --watch --config webpack.config.js",
+    "pack": "npm run build && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/pack-crx.ps1"
   },
   "devDependencies": {
     "clean-webpack-plugin": "^4.0.0",
