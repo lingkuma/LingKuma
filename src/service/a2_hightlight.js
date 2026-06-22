@@ -225,7 +225,7 @@ class ScopeObserver {
           // 这里不要抢先重绘，否则 offscreen 节点会使用旧缓存落到默认蓝色。
           return;
         } else {
-          this.destroy();
+          this.pauseHighlighting();
         }
       } else if (message.action === "teardownHighlightRuntime") {
         this.destroy();
@@ -2713,6 +2713,15 @@ if (window.location.hostname.includes('youtube.com')) {
         this.initCustomHighlightSystem();
       }, 500);
     }
+  }
+
+  pauseHighlighting() {
+    if (this.destroyed) {
+      return;
+    }
+
+    this.highlightEnabled = false;
+    this.removeAllHighlights();
   }
 
   // 新增方法：移除本插件的单词高亮

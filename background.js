@@ -231,6 +231,10 @@ async function teardownHighlightRuntime(tabId) {
   await sendMessageToTab(tabId, { action: 'teardownHighlightRuntime' });
 }
 
+async function pauseHighlightRuntime(tabId) {
+  await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: false });
+}
+
 async function setPageHighlightEnabled(tabId, enabled) {
   await setPageOverride(tabId, enabled === true);
 
@@ -238,7 +242,7 @@ async function setPageHighlightEnabled(tabId, enabled) {
     await injectHighlightRuntime(tabId);
     await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true });
   } else {
-    await teardownHighlightRuntime(tabId);
+    await pauseHighlightRuntime(tabId);
   }
 
   return getHighlightControlState(tabId);
@@ -270,7 +274,7 @@ async function syncTabHighlightRuntime(tabId) {
     await injectHighlightRuntime(tabId);
     await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true });
   } else {
-    await teardownHighlightRuntime(tabId);
+    await pauseHighlightRuntime(tabId);
   }
 }
 

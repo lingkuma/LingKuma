@@ -114,14 +114,11 @@ function initPlugin() {
         // Reapply highlight
         highlightAllWords();
       } else if (highlightManager) {
-        if (typeof highlightManager.destroy === 'function') {
-          highlightManager.destroy();
-        } else {
-          highlightManager.highlightEnabled = false;
+        highlightManager.highlightEnabled = false;
+        if (typeof highlightManager.removeAllHighlights === 'function') {
           highlightManager.removeAllHighlights();
         }
-        highlightManager = null;
-        console.log('Highlight runtime destroyed');
+        console.log('Highlight runtime paused');
       }
     } else if (message.action === "teardownHighlightRuntime" && highlightManager) {
       if (typeof highlightManager.destroy === 'function') {
