@@ -1,4 +1,12 @@
 # 最新更新介绍：
+
+1. ## 悬浮按钮
+
+每个页面高亮状态独立，并默认关闭以
+![](https://res.cloudinary.com/dux7dnl5b/image/upload/v1782477615/sbcj9hbt5pqulxziqple.gif)
+
+1. ## 性能优化
+
 1. ## 快捷句子切换
     - ![](https://res.cloudinary.com/dux7dnl5b/image/upload/v1774013421/rylo0csquo2c8z16gtnv.gif)
 2. ## 词性高亮
