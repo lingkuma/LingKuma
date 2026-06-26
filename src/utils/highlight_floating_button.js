@@ -1081,7 +1081,7 @@
     requestHighlightRuntimeSync();
 
     chrome.storage.local.get({
-      [FLOATING_BUTTON_ENABLED_KEY]: false,
+      [FLOATING_BUTTON_ENABLED_KEY]: true,
       [HIGHLIGHT_ENABLED_KEY]: false,
       [POSITION_KEY]: null,
       [PAGE_THEME_OVERRIDES_KEY]: {}

@@ -500,7 +500,7 @@ function initializeSettings() {
       useOrionTTS: false, // 添加：Orion TTS默认关闭
 
       // 高亮语言类型默认值
-      wordHighlightFloatingButtonEnabled: false,
+      wordHighlightFloatingButtonEnabled: true,
       wordHighlightFloatingButtonScope: 'page',
       highlightChineseEnabled: false, // 中文默认不高亮
       highlightJapaneseEnabled: true, // 日语默认高亮
@@ -793,7 +793,7 @@ chrome.storage.local.get([
     'highlightKoreanEnabled',
     'highlightAlphabeticEnabled'
 ], function(result) {
-    wordHighlightFloatingButton.checked = result.wordHighlightFloatingButtonEnabled === undefined ? false : result.wordHighlightFloatingButtonEnabled;
+    wordHighlightFloatingButton.checked = result.wordHighlightFloatingButtonEnabled === undefined ? true : result.wordHighlightFloatingButtonEnabled;
     if (wordHighlightFloatingButtonScope) {
         wordHighlightFloatingButtonScope.value = result.wordHighlightFloatingButtonScope === 'global' ? 'global' : 'page';
     }
