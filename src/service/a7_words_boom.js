@@ -4558,13 +4558,61 @@ function getSentenceRect(sentence, foundInfo) {
   }
 }
 
-function getWordExplosionPageKeyForCurrentPage() {
+function getWordExplosionPageKeyFromUrl(url) {
+  if (!url) {
+    return null;
+  }
+
   try {
-    const parsedUrl = new URL(window.location.href);
+    const parsedUrl = new URL(url);
     return (parsedUrl.hostname || parsedUrl.host || parsedUrl.href).toLowerCase();
   } catch (error) {
     return null;
   }
+}
+
+function getWordExplosionFrameOwnerPageKey() {
+  const candidateUrls = [];
+
+  if (window.self !== window.top) {
+    try {
+      if (window.top.location.href) {
+        candidateUrls.push(window.top.location.href);
+      }
+    } catch (error) {
+      // Cross-origin iframe: fall back to referrer or ancestorOrigins below.
+    }
+
+    if (document.referrer) {
+      candidateUrls.push(document.referrer);
+    }
+
+    try {
+      const ancestors = window.location.ancestorOrigins;
+      if (ancestors && ancestors.length) {
+        for (let i = ancestors.length - 1; i >= 0; i--) {
+          candidateUrls.push(ancestors[i]);
+        }
+      }
+    } catch (error) {
+      // ancestorOrigins is not available in every browser.
+    }
+  }
+
+  candidateUrls.push(window.location.href);
+
+  for (const url of candidateUrls) {
+    const pageKey = getWordExplosionPageKeyFromUrl(url);
+    if (pageKey) {
+      return pageKey;
+    }
+  }
+
+  return null;
+}
+
+function getWordExplosionPageKeyForCurrentPage() {
+  return getWordExplosionFrameOwnerPageKey();
 }
 
 function isWordExplosionHighlightEnabledForCurrentPage(result) {

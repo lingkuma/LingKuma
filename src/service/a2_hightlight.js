@@ -199,6 +199,7 @@ class ScopeObserver {
     this.customHighlightInitTimer = null;
     this.customHighlightInitRetries = 0;
     this.customHighlightInitStarted = false;
+    this.companionRuntimeEnsureRequested = false;
     // this.wordStatusCache = new Map();           // 单词状态缓存
 
     // 添加高亮开关成员变量，并设置默认值
@@ -2701,6 +2702,23 @@ if (window.location.hostname.includes('youtube.com')) {
     this.initCustomHighlightSystem();
   }
 
+  ensureCompanionHighlightRuntimeInjected() {
+    if (this.companionRuntimeEnsureRequested) {
+      return;
+    }
+    this.companionRuntimeEnsureRequested = true;
+
+    try {
+      chrome.runtime.sendMessage({ action: 'ensureWordHighlightRuntime' }, () => {
+        if (chrome.runtime.lastError) {
+          console.debug('[LingKuma] ensure companion runtime failed:', chrome.runtime.lastError.message);
+        }
+      });
+    } catch (error) {
+      console.debug('[LingKuma] ensure companion runtime failed:', error?.message || error);
+    }
+  }
+
   // 在正常单词高亮完成后启动单词爆炸功能
   initWordExplosionAfterNormalHighlight() {
     if (this.destroyed || this.wordExplosionInitStarted) {
@@ -2737,6 +2755,7 @@ if (window.location.hostname.includes('youtube.com')) {
 
     if (this.wordExplosionInitRetries === 0) {
       console.log("单词爆炸函数尚未加载，等待动态脚本注入");
+      this.ensureCompanionHighlightRuntimeInjected();
     }
 
     this.wordExplosionInitRetries++;
@@ -2782,6 +2801,7 @@ if (window.location.hostname.includes('youtube.com')) {
 
     if (this.customHighlightInitRetries === 0) {
       console.log("词组高亮函数尚未加载，等待动态脚本注入");
+      this.ensureCompanionHighlightRuntimeInjected();
     }
 
     this.customHighlightInitRetries++;

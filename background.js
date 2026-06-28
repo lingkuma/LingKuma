@@ -117,36 +117,54 @@ async function getHighlightPageKey(tabId) {
   return getHighlightPageKeyFromUrl(tab?.url);
 }
 
-async function isHighlightRuntimeLoaded(tabId) {
-  if (injectedHighlightTabs.has(tabId)) {
-    return true;
-  }
-
+async function getHighlightRuntimeMissingFrameIds(tabId) {
   if (!chrome.scripting?.executeScript) {
-    return false;
+    return null;
   }
 
   try {
     const results = await chrome.scripting.executeScript({
-      target: { tabId },
+      target: { tabId, allFrames: true },
       func: sentinel => globalThis[sentinel] === true,
       args: [HIGHLIGHT_RUNTIME_SENTINEL]
     });
-    const loaded = results?.some(result => result.result === true) === true;
-    if (loaded) {
-      injectedHighlightTabs.add(tabId);
+
+    if (!Array.isArray(results) || results.length === 0) {
+      injectedHighlightTabs.delete(tabId);
+      return null;
     }
-    return loaded;
+
+    const missingFrameIds = [];
+    for (const result of results) {
+      if (result?.result !== true && Number.isInteger(result.frameId)) {
+        missingFrameIds.push(result.frameId);
+      }
+    }
+
+    if (missingFrameIds.length === 0) {
+      injectedHighlightTabs.add(tabId);
+    } else {
+      injectedHighlightTabs.delete(tabId);
+    }
+
+    return missingFrameIds;
   } catch (error) {
-    return false;
+    injectedHighlightTabs.delete(tabId);
+    return null;
   }
 }
 
-async function markHighlightRuntimeLoaded(tabId) {
-  injectedHighlightTabs.add(tabId);
+async function isHighlightRuntimeLoaded(tabId) {
+  const missingFrameIds = await getHighlightRuntimeMissingFrameIds(tabId);
+  return Array.isArray(missingFrameIds) && missingFrameIds.length === 0;
+}
+
+async function markHighlightRuntimeLoaded(tabId, frameIds = null) {
   try {
     await chrome.scripting.executeScript({
-      target: { tabId, allFrames: true },
+      target: Array.isArray(frameIds) && frameIds.length > 0
+        ? { tabId, frameIds }
+        : { tabId, allFrames: true },
       func: sentinel => {
         globalThis[sentinel] = true;
       },
@@ -163,10 +181,6 @@ async function injectHighlightRuntime(tabId) {
     return false;
   }
 
-  if (await isHighlightRuntimeLoaded(tabId)) {
-    return true;
-  }
-
   const pendingInjection = injectingHighlightTabs.get(tabId);
   if (pendingInjection) {
     return pendingInjection;
@@ -174,16 +188,24 @@ async function injectHighlightRuntime(tabId) {
 
   const injectionPromise = (async () => {
     try {
-      if (await isHighlightRuntimeLoaded(tabId)) {
+      const missingFrameIds = await getHighlightRuntimeMissingFrameIds(tabId);
+      if (Array.isArray(missingFrameIds) && missingFrameIds.length === 0) {
         return true;
       }
 
+      const target = Array.isArray(missingFrameIds) && missingFrameIds.length > 0
+        ? { tabId, frameIds: missingFrameIds }
+        : { tabId, allFrames: true };
+
       await chrome.scripting.executeScript({
-        target: { tabId, allFrames: true },
+        target,
         files: HIGHLIGHT_RUNTIME_FILES
       });
 
-      await markHighlightRuntimeLoaded(tabId);
+      await markHighlightRuntimeLoaded(
+        tabId,
+        Array.isArray(missingFrameIds) && missingFrameIds.length > 0 ? missingFrameIds : null
+      );
       return true;
     } catch (error) {
       console.debug('[background.js] inject highlight runtime skipped:', tab.url, error?.message || error);
