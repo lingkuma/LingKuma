@@ -31,24 +31,93 @@
   let currentPageThemeIsDark = false;
   let currentPosition = null;
   let pointerState = null;
+  const SUPPORTED_DOCKS = ['left', 'right', 'top', 'bottom', 'none'];
+
+  function clampNumber(value, min, max, fallback = min) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) {
+      return fallback;
+    }
+    return Math.min(Math.max(number, min), max);
+  }
+
+  function getPositionBounds() {
+    return {
+      maxX: Math.max(0, window.innerWidth - BUTTON_WIDTH),
+      maxY: Math.max(0, window.innerHeight - BUTTON_FRAME_HEIGHT)
+    };
+  }
+
+  function coordinateToRatio(coordinate, max) {
+    if (max <= 0) {
+      return 0;
+    }
+    return clampNumber(coordinate / max, 0, 1, 0);
+  }
+
+  function ratioToCoordinate(ratio, max, fallback = 0) {
+    return Math.round(clampNumber(ratio, 0, 1, coordinateToRatio(fallback, max)) * max);
+  }
+
+  function normalizeDock(dock) {
+    return SUPPORTED_DOCKS.includes(dock) ? dock : 'none';
+  }
 
   function getDefaultPosition() {
+    const { maxX, maxY } = getPositionBounds();
+    const x = Math.min(18, maxX);
+    const y = Math.min(Math.max(80, Math.round(maxY * 0.45)), maxY);
+
     return {
-      x: 18,
-      y: Math.max(80, Math.round((window.innerHeight - BUTTON_FRAME_HEIGHT) * 0.45)),
+      x,
+      y,
+      xRatio: coordinateToRatio(x, maxX),
+      yRatio: coordinateToRatio(y, maxY),
       dock: 'none'
     };
   }
 
   function normalizePosition(position) {
+    const source = position && typeof position === 'object' ? position : {};
     const fallback = getDefaultPosition();
-    const maxX = Math.max(0, window.innerWidth - BUTTON_WIDTH);
-    const maxY = Math.max(0, window.innerHeight - BUTTON_FRAME_HEIGHT);
+    const { maxX, maxY } = getPositionBounds();
+    const hasXRatio = Number.isFinite(Number(source.xRatio));
+    const hasYRatio = Number.isFinite(Number(source.yRatio));
+    const dock = normalizeDock(source.dock);
+    let x = hasXRatio
+      ? ratioToCoordinate(source.xRatio, maxX, fallback.x)
+      : Math.round(clampNumber(source.x, 0, maxX, fallback.x));
+    let y = hasYRatio
+      ? ratioToCoordinate(source.yRatio, maxY, fallback.y)
+      : Math.round(clampNumber(source.y, 0, maxY, fallback.y));
+
+    let xRatio = hasXRatio
+      ? clampNumber(source.xRatio, 0, 1, coordinateToRatio(x, maxX))
+      : coordinateToRatio(x, maxX);
+    let yRatio = hasYRatio
+      ? clampNumber(source.yRatio, 0, 1, coordinateToRatio(y, maxY))
+      : coordinateToRatio(y, maxY);
+
+    if (dock === 'left') {
+      x = 0;
+      xRatio = 0;
+    } else if (dock === 'right') {
+      x = maxX;
+      xRatio = 1;
+    } else if (dock === 'top') {
+      y = 0;
+      yRatio = 0;
+    } else if (dock === 'bottom') {
+      y = maxY;
+      yRatio = 1;
+    }
 
     return {
-      x: Math.min(Math.max(Number(position?.x ?? fallback.x), 0), maxX),
-      y: Math.min(Math.max(Number(position?.y ?? fallback.y), 0), maxY),
-      dock: ['left', 'right', 'top', 'bottom', 'none'].includes(position?.dock) ? position.dock : 'none'
+      x,
+      y,
+      xRatio,
+      yRatio,
+      dock
     };
   }
 
@@ -67,8 +136,13 @@
       return;
     }
 
+    const normalizedPosition = normalizePosition(currentPosition);
     chrome.storage.local.set({
-      [POSITION_KEY]: currentPosition
+      [POSITION_KEY]: {
+        xRatio: normalizedPosition.xRatio,
+        yRatio: normalizedPosition.yRatio,
+        dock: normalizedPosition.dock
+      }
     });
   }
 
@@ -84,21 +158,20 @@
   }
 
   function snapToEdge(position) {
-    const maxX = Math.max(0, window.innerWidth - BUTTON_WIDTH);
-    const maxY = Math.max(0, window.innerHeight - BUTTON_FRAME_HEIGHT);
+    const { maxX, maxY } = getPositionBounds();
+    const nextPosition = normalizePosition(position);
     const distances = [
-      { edge: 'left', value: position.x },
-      { edge: 'right', value: maxX - position.x },
-      { edge: 'top', value: position.y },
-      { edge: 'bottom', value: maxY - position.y }
+      { edge: 'left', value: nextPosition.x },
+      { edge: 'right', value: maxX - nextPosition.x },
+      { edge: 'top', value: nextPosition.y },
+      { edge: 'bottom', value: maxY - nextPosition.y }
     ].sort((a, b) => a.value - b.value);
 
     const closest = distances[0];
-    const nextPosition = normalizePosition(position);
 
     if (closest.value > EDGE_THRESHOLD) {
       nextPosition.dock = 'none';
-      return nextPosition;
+      return normalizePosition(nextPosition);
     }
 
     nextPosition.dock = closest.edge;
@@ -112,7 +185,7 @@
       nextPosition.y = maxY;
     }
 
-    return nextPosition;
+    return normalizePosition(nextPosition);
   }
 
   function updateHighlightState(enabled) {
@@ -892,14 +965,13 @@
       return;
     }
 
-    const maxX = Math.max(0, window.innerWidth - BUTTON_WIDTH);
-    const maxY = Math.max(0, window.innerHeight - BUTTON_FRAME_HEIGHT);
-    const x = Math.min(Math.max(event.clientX - pointerState.offsetX, 0), maxX);
-    const y = Math.min(Math.max(event.clientY - pointerState.offsetY, 0), maxY);
+    const { maxX, maxY } = getPositionBounds();
+    const x = Math.round(clampNumber(event.clientX - pointerState.offsetX, 0, maxX));
+    const y = Math.round(clampNumber(event.clientY - pointerState.offsetY, 0, maxY));
 
-    currentPosition = { x, y, dock: 'none' };
-    buttonStack.style.left = `${x}px`;
-    buttonStack.style.top = `${y}px`;
+    currentPosition = normalizePosition({ x, y, dock: 'none' });
+    buttonStack.style.left = `${currentPosition.x}px`;
+    buttonStack.style.top = `${currentPosition.y}px`;
     buttonStack.dataset.dock = 'none';
     event.preventDefault();
   }
@@ -1138,7 +1210,6 @@
       return;
     }
     applyPosition(currentPosition);
-    savePosition();
   });
 
   initializeFloatingButton();
