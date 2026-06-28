@@ -4452,6 +4452,31 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  function mountOhMyGptAccountInApiSettings() {
+    const legacyPanel = document.getElementById('panel-subscription-ohmygpt');
+    const authMount = document.getElementById('ohmygptAuthMount');
+    const donateMount = document.getElementById('ohmygptDonateMount');
+
+    if (!legacyPanel) return;
+
+    const legacySections = Array.from(legacyPanel.children).filter(child => child.classList && child.classList.contains('settings-section'));
+    const introNote = Array.from(legacyPanel.children).find(child => child.classList && child.classList.contains('multilingual-note'));
+    const authSection = legacySections[0];
+    const donateSection = legacySections[1];
+
+    if (authMount && !authMount.dataset.mounted) {
+      if (introNote) authMount.appendChild(introNote);
+      if (authSection) authMount.appendChild(authSection);
+      authMount.dataset.mounted = 'true';
+    }
+
+    if (donateMount && donateSection && !donateMount.dataset.mounted) {
+      donateMount.appendChild(donateSection);
+      donateMount.dataset.mounted = 'true';
+    }
+  }
+
+  mountOhMyGptAccountInApiSettings();
 // 加载用户保存的 API 配置数据  //初始化
 chrome.storage.local.get('aiConfig', function(result) {
   if (result.aiConfig) {
@@ -4988,16 +5013,18 @@ if (document.readyState === 'loading') {
 function updateApiChannelUI(channel) {
   const customApiSettings = document.getElementById('customApiSettings');
   const ohmygptSettings = document.getElementById('ohmygptSettings');
+  const ohmygptAuthDetails = document.getElementById('ohmygptAuthDetails');
   
   if (channel === 'ohmygpt') {
     if (customApiSettings) customApiSettings.style.display = 'none';
     if (ohmygptSettings) ohmygptSettings.style.display = 'flex';
+    if (ohmygptAuthDetails) ohmygptAuthDetails.style.display = 'block';
   } else {
     if (customApiSettings) customApiSettings.style.display = 'block';
     if (ohmygptSettings) ohmygptSettings.style.display = 'none';
+    if (ohmygptAuthDetails) ohmygptAuthDetails.style.display = 'none';
   }
 }
-
 // 监听AI渠道切换
 document.querySelectorAll('input[name="aiChannel"]').forEach(radio => {
   radio.addEventListener('change', function() {
@@ -5727,39 +5754,6 @@ document.getElementById('menu-wordlist').addEventListener('click', function() {
   }
 });
 
-// 处理订阅管理菜单项
-document.getElementById('menu-subscription').addEventListener('click', function() {
-  const submenu = document.getElementById('submenu-subscription');
-  this.classList.toggle('active');
-
-  if (this.classList.contains('active')) {
-    // submenu.style.maxHeight = submenu.scrollHeight + 'px';
-    this.querySelector('.arrow').innerHTML = '▶';
-
-    // 默认打开爱发电账号面板
-    setTimeout(() => {
-      // switchTab('panel-subscription-afdian');
-      switchTab('panel-subscription-ohmygpt');
-
-      const currentUserId = document.getElementById('ohmygptUserId').value;
-      if (currentUserId) {
-          fetchAndDisplayOhMyGptExpiryDate(currentUserId);
-      }
-
-
-    }, 100);
-
-
-  } else {
-    // submenu.style.maxHeight = '0'; //注意是Button，不是div
-    this.querySelector('.arrow').innerHTML = '▼';
-
-
-
-
-  }
-});
-
 // 处理EPUB文本修复菜单项
 document.getElementById('menu-epub').addEventListener('click', function() {
   const submenu = document.getElementById('submenu-epub');
@@ -5780,18 +5774,6 @@ document.getElementById('menu-epub').addEventListener('click', function() {
 document.getElementById('tab-epub').addEventListener('click', () => switchTab('panel-epub'));
 document.getElementById('tab-epub-telegraph').addEventListener('click', () => switchTab('panel-epub-telegraph'));
 document.getElementById('tab-epub-roman-clean').addEventListener('click', () => switchTab('panel-epub-roman-clean'));
-
-// 绑定订阅管理子菜单项点击事件
-document.getElementById('tab-subscription-afdian').addEventListener('click', () => switchTab('panel-subscription-afdian'));
-// document.getElementById('tab-subscription-kuma').addEventListener('click', () => switchTab('panel-subscription-kuma'));
-document.getElementById('tab-subscription-ohmygpt').addEventListener('click', () => {
-      switchTab('panel-subscription-ohmygpt');
-      // 切换到 OhMyGpt 面板时，如果已有 User ID，则尝试刷新到期时间
-      // const currentUserId = document.getElementById('ohmygptUserId').value;
-      // if (currentUserId) {
-      //     fetchAndDisplayOhMyGptExpiryDate(currentUserId);
-      // }
-  });
 
 // 页面加载时初始化单词列表（默认请求本周数据）
 // 注释掉自动加载，改为等待用户手动筛选
@@ -6039,18 +6021,6 @@ window.onload = function() {
   document.getElementById('tab-table').addEventListener('click', () => switchTab('panel-table'));
   document.getElementById('tab-word-stats').addEventListener('click', () => switchTab('panel-word-stats'));
 
-  // 绑定订阅管理子菜单项点击事件
-  document.getElementById('tab-subscription-afdian').addEventListener('click', () => switchTab('panel-subscription-afdian'));
-  // document.getElementById('tab-subscription-kuma').addEventListener('click', () => switchTab('panel-subscription-kuma'));
-  document.getElementById('tab-subscription-ohmygpt').addEventListener('click', () => {
-      switchTab('panel-subscription-ohmygpt');
-      // 切换到 OhMyGpt 面板时，如果已有 User ID，则尝试刷新到期时间
-      const currentUserId = document.getElementById('ohmygptUserId').value;
-      if (currentUserId) {
-          fetchAndDisplayOhMyGptExpiryDate(currentUserId);
-      }
-  });
-
   // 加载背景设置
   loadBackgroundSettings().then(() => {
     console.log("背景设置已加载");
@@ -6213,7 +6183,7 @@ function switchTab(panelId) {
 function findParentMenuButtonForPanel(panelId) {
     if (panelId.startsWith('panel-api-')) return document.getElementById('menu-api');
     if (panelId.startsWith('panel-tts-')) return document.getElementById('menu-tts');
-    if (panelId.startsWith('panel-subscription-')) return document.getElementById('menu-subscription');
+    if (panelId.startsWith('panel-subscription-')) return null;
     if (panelId.startsWith('panel-word-') || panelId === 'panel-table' || panelId === 'panel-cloud-wordlist') return document.getElementById('menu-wordlist');
     // 新增：数据库操作菜单的面板
     if (panelId === 'panel-cloud-db' || panelId === 'panel-webdav' || panelId === 'panel-word-operations' || panelId === 'panel-import' || panelId === 'panel-backup') {
@@ -6242,7 +6212,7 @@ tabButtons.forEach(button => {
         // 暂时保留之前的逻辑，只在非激活时折叠
     });
      // 将带子菜单的主按钮箭头重置
-    document.querySelectorAll('#menu-database .arrow, #menu-api .arrow, #menu-tts .arrow, #menu-subscription .arrow, #menu-wordlist .arrow, #menu-epub .arrow').forEach(arrow => arrow.innerHTML = '▶');
+    document.querySelectorAll('#menu-database .arrow, #menu-api .arrow, #menu-tts .arrow, #menu-wordlist .arrow, #menu-epub .arrow').forEach(arrow => arrow.innerHTML = '▶');
      // 折叠所有子菜单
     //  document.querySelectorAll('.submenu').forEach(submenu => submenu.style.maxHeight = '0');
 
@@ -6963,11 +6933,17 @@ function switchTab(panelId) {
   }
 
   // 显示选中的面板
-  document.getElementById(panelId).classList.remove('hidden');
+  const targetPanel = document.getElementById(panelId);
+  if (targetPanel) {
+    targetPanel.classList.remove('hidden');
+  }
 
   // 为对应的按钮添加active样式
   const buttonId = panelId.replace('panel-', 'tab-');
-  document.getElementById(buttonId).classList.add('active');
+  const targetButton = document.getElementById(buttonId);
+  if (targetButton) {
+    targetButton.classList.add('active');
+  }
 }
 
 // 添加消息监听器，接收来自popup页面的语言变化通知

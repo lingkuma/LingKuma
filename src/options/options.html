@@ -825,6 +825,14 @@
       margin-bottom: 12px;
       display: block;
     }
+    .ohmygpt-auth-summary {
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.5;
+      padding: 4px 0;
+    }
 
     /* 主题切换按钮样式 */
     .theme-button {
@@ -2330,22 +2338,6 @@
       <button id="tab-custom-capsules" data-i18n="customCapsules">自定义胶囊</button>
       <button id="tab-known-sentence-animation" data-i18n="knownSentenceAnimation">已知句子动效</button>
     </div>
-
-
-    <!-- 新增：订阅管理菜单项 -->
-    <button id="menu-subscription" class="menu-item" >
-      <span data-i18n="subscriptionManagement">第三方登录</span>
-      <span class="arrow">▶</span>
-    </button> 
-
-    <div id="submenu-subscription" class="submenu">
-      <!-- <button id="tab-subscription-kuma" class="submenu-item" data-i18n="kumaAccount">Kuma账号(建设中)</button> -->
-      <button id="tab-subscription-ohmygpt" class="submenu-item" data-i18n="ohmygptAccount">OhMyGPT AI Platform (Stripe)</button>
-      <!-- 废弃隐藏 -->
-      <button id="tab-subscription-afdian" class="submenu-item" data-i18n="afdianAccount" style="display: none;">爱发电</button>
-    </div>
-
-
     <!-- EPUB 文本修复菜单项及子菜单 -->
     <button class="menu-item" id="menu-epub">
       <span data-i18n="epubTextFix">EPUB 文本修复</span>
@@ -3873,6 +3865,12 @@
 
 
 
+      <details id="ohmygptAuthDetails" class="settings-section" style="padding: 14px 16px; border-radius: 5px; margin-bottom: 15px;">
+        <summary class="ohmygpt-auth-summary">OhMyGpt 授权登录 / Login</summary>
+        <div id="ohmygptAuthMount" style="margin-top: 12px;"></div>
+      </details>
+
+
 <!-- 各个AI APi平台 -->
 
     
@@ -3969,7 +3967,7 @@ max_tokens=4096" style="width: 100%; padding: 8px; min-height: 80px; resize: ver
 
 
   <!-- OhMyGpt 设置 - 新的布局容器 -->
-  <div id="ohmygptSettings" class="settings-section" style="padding: 10px;  border-radius: 5px; margin-top: 15px; display: flex; gap: 20px; ">
+  <div id="ohmygptSettings" class="settings-section" style="padding: 10px;  border-radius: 5px; margin-top: 15px; display: flex; flex-wrap: wrap; gap: 20px; ">
 
     <!-- 左列: OhMyGpt 模型 -->
     <div style="flex: 1;"> <!-- 让左列占据可用空间 -->
@@ -4035,6 +4033,8 @@ max_tokens=4096" style="width: 100%; padding: 8px; min-height: 80px; resize: ver
     </div>
     <span class="save-status" style="display: none; color: green; font-size: 12px; margin-top: 5px;">Automatic save complete.</span>
   </div>
+
+  <div id="ohmygptDonateMount" style="flex: 0 0 100%; margin-top: 15px;"></div>
 
 
   </div>
