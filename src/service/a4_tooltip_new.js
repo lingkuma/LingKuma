@@ -5740,7 +5740,47 @@ function getStorageValue(key) {
 
 // 使用async/await重构handleMouseMoveForTooltip函数
 // isOffscreen 是否清空当前tooltip
-async function handleMouseMoveForTooltip(e,isOffscreen = false) {
+function isA4UsableRange(range) {
+  return range &&
+         range.startContainer &&
+         range.endContainer &&
+         document.contains(range.startContainer) &&
+         document.contains(range.endContainer);
+}
+
+function isA4RangeInsideRange(innerRange, outerRange) {
+  if (!isA4UsableRange(innerRange) || !isA4UsableRange(outerRange)) {
+    return false;
+  }
+
+  try {
+    const startsInside = outerRange.compareBoundaryPoints(Range.START_TO_START, innerRange) <= 0;
+    const endsInside = outerRange.compareBoundaryPoints(Range.END_TO_END, innerRange) >= 0;
+    return startsInside && endsInside;
+  } catch (error) {
+    console.warn('[A4] 比较点击单词和爆炸句子Range失败:', error);
+    return false;
+  }
+}
+
+function isA4WordInActivationExplosionSentence(hoveredDetail, activationContext = {}) {
+  if (!hoveredDetail || !hoveredDetail.word) {
+    return false;
+  }
+
+  if (isA4UsableRange(activationContext.explosionRangeAtActivation)) {
+    return isA4RangeInsideRange(hoveredDetail.range, activationContext.explosionRangeAtActivation);
+  }
+
+  const sentence = activationContext.explosionSentenceAtActivation;
+  if (!sentence) {
+    return false;
+  }
+
+  return sentence.toLowerCase().includes(hoveredDetail.word.toLowerCase());
+}
+
+async function handleMouseMoveForTooltip(e,isOffscreen = false, activationContext = {}) {
   // 防止重复创建tooltip
   if (tooltipCreationInProgress) {
     console.log("Tooltip创建正在进行中，跳过重复请求");
@@ -6013,7 +6053,13 @@ if (hoveredDetail) {
                                   typeof isWordInCurrentExplosionSentence === 'function';
 
     if (isExplosionAvailable) {
-      const explosionVisible = isWordExplosionVisible();
+      const hasActivationExplosionVisible = Object.prototype.hasOwnProperty.call(
+        activationContext,
+        'explosionVisibleAtActivation'
+      );
+      const explosionVisible = hasActivationExplosionVisible
+        ? activationContext.explosionVisibleAtActivation
+        : isWordExplosionVisible();
 
       if (!explosionVisible) {
         // 爆炸弹窗未显示，阻止a4弹窗触发
@@ -6024,9 +6070,11 @@ if (hoveredDetail) {
       // 爆炸弹窗已显示，检查点击的单词位置是否在当前爆炸句子中。
       // 开启爆炸优先时，第一次点击先显示爆炸窗口；窗口显示后，再点当前句子里的单词才允许A4查词窗展开。
       // 优先用Range判断，避免前后句有相同单词时仅靠文本匹配误放行。
-      const wordInExplosion = typeof isWordRangeInCurrentExplosionSentence === 'function'
-        ? isWordRangeInCurrentExplosionSentence(hoveredDetail.range, hoveredDetail.word)
-        : isWordInCurrentExplosionSentence(hoveredDetail.word);
+      const wordInExplosion = hasActivationExplosionVisible
+        ? isA4WordInActivationExplosionSentence(hoveredDetail, activationContext)
+        : (typeof isWordRangeInCurrentExplosionSentence === 'function'
+          ? isWordRangeInCurrentExplosionSentence(hoveredDetail.range, hoveredDetail.word)
+          : isWordInCurrentExplosionSentence(hoveredDetail.word));
 
       if (!wordInExplosion) {
         // 单词不在当前爆炸句子中，阻止a4弹窗，让a7处理（切换爆炸弹窗）
@@ -9718,7 +9766,22 @@ function handleA4PointerActivation(e) {
 
   // 获取当前点击的元素
 
-  handleMouseMoveForTooltip(e,true);
+  const explosionVisibleAtActivation = typeof isWordExplosionVisible === 'function' &&
+    isWordExplosionVisible();
+  const explosionRangeAtActivation = explosionVisibleAtActivation &&
+    typeof getCurrentExplosionSentenceRangeForCheck === 'function'
+      ? getCurrentExplosionSentenceRangeForCheck()
+      : null;
+  const explosionSentenceAtActivation = explosionVisibleAtActivation &&
+    typeof getCurrentExplosionSentence === 'function'
+      ? getCurrentExplosionSentence()
+      : null;
+
+  handleMouseMoveForTooltip(e,true, {
+    explosionVisibleAtActivation,
+    explosionRangeAtActivation,
+    explosionSentenceAtActivation
+  });
 
   // 如果点击发生在Shadow DOM内部
   if (e.composedPath().includes(shadowHost)) {
