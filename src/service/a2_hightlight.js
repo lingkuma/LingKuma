@@ -380,20 +380,20 @@ class ScopeObserver {
   reapplyHighlights(options = {}) {
     console.log("重新应用所有高亮...");
     try {
-      // 确保先完全清除所有高亮
-      this.removeAllHighlights();
-
       if (!this.highlightEnabled && !options.forceEnabled) {
         console.log("高亮当前已关闭，不重新应用");
         return;
       }
 
       // 检查插件是否启用
-      chrome.storage.local.get(['enablePlugin'], (result) => {
-        if (result.enablePlugin === false && !options.forceEnabled) {
+      chrome.storage.local.get(['enablePlugin', 'wordHighlightFloatingButtonScope', 'wordHighlightPageTabOverrides'], (result) => {
+        if (!isWordHighlightEnabledForCurrentPage(result) && !options.forceEnabled) {
           console.log("插件已禁用，不重新应用高亮");
           return;
         }
+
+        // 确认当前页高亮仍启用后再清除，避免 page-scope 启用时被全局 enablePlugin=false 误清空。
+        this.removeAllHighlights();
 
         // Firefox兼容性：继续原有的重新应用高亮逻辑
         const parentEntries = Array.from(this.parent2Text2RawsAllUnknow.entries());
@@ -3236,6 +3236,30 @@ function normalizeHighlightPageThemeOverride(value) {
     return value.isDark;
   }
   return null;
+}
+
+function getWordHighlightPageKeyForCurrentPage() {
+  try {
+    const parsedUrl = new URL(window.location.href);
+    return (parsedUrl.hostname || parsedUrl.host || parsedUrl.href).toLowerCase();
+  } catch (error) {
+    return null;
+  }
+}
+
+function isWordHighlightEnabledForCurrentPage(result) {
+  const scope = result.wordHighlightFloatingButtonScope === 'page' ? 'page' : 'global';
+  if (scope !== 'page') {
+    return result.enablePlugin !== false;
+  }
+
+  const pageKey = getWordHighlightPageKeyForCurrentPage();
+  const overrides = result.wordHighlightPageTabOverrides || {};
+  if (!pageKey) {
+    return false;
+  }
+
+  return Object.prototype.hasOwnProperty.call(overrides, pageKey) && overrides[pageKey] === true;
 }
 
 function urlMatchesPattern(url, pattern) {
