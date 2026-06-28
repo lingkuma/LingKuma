@@ -64,6 +64,12 @@ Alice iniziava a stancarsi molto di stare seduta accanto a sua sorella sulla riv
 ::: tip
 可以，像下面这样操作就行了
 :::
+
+### 如何翻译为不同的语言？
+所有输出都是基于AI提示词，因此如果你想要任何其他的结果，可以手动更改你需要的提示词。
+比如翻译为不同的语言，给出更详细或者更简略的提示。或者更多的例子等。
+![](https://res.cloudinary.com/dux7dnl5b/image/upload/v1782620912/wfmvd5y8distxxeehikl.png)
+
 ### 导入已知词库
 ::: tabs
 == 1. 下载或者制作已知词库

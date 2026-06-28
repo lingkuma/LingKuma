@@ -67,6 +67,11 @@ Alice iniziava a stancarsi molto di stare seduta accanto a sua sorella sulla riv
 ::: tip
 はい、次のように操作できます
 :::
+### 別の言語に翻訳するには？
+すべての出力は AI プロンプトに基づいているため、別の結果が必要な場合は、必要なプロンプトを手動で変更できます。
+たとえば、別の言語に翻訳する、より詳しい回答や簡潔な回答にする、より多くの例を出す、などを指定できます。
+![](https://res.cloudinary.com/dux7dnl5b/image/upload/v1782620912/wfmvd5y8distxxeehikl.png)
+
 ### 既知単語リストをインポート
 ::: tabs
 == 1. 既知単語リストをダウンロードまたは作成

@@ -67,6 +67,11 @@ I'm not a **beginner**, I already know **many** of these words, like CET-4. Can 
 ::: tip
 Yes, you can do it like this:
 :::
+### How to Translate Into Different Languages?
+All output is based on AI prompts, so if you want any other result, you can manually change the prompt you need.
+For example, translate into different languages, ask for more detailed or shorter responses, or request more examples.
+![](https://res.cloudinary.com/dux7dnl5b/image/upload/v1782620912/wfmvd5y8distxxeehikl.png)
+
 ### Import Known Vocabulary
 ::: tabs
 == 1. Download or create a known vocabulary list
