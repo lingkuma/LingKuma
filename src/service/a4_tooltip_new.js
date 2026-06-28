@@ -6021,7 +6021,8 @@ if (hoveredDetail) {
         return;
       }
 
-      // 爆炸弹窗已显示，检查点击的单词是否在当前爆炸句子中
+      // 爆炸弹窗已显示，检查点击的单词是否在当前爆炸句子中。
+      // 开启爆炸优先时，第一次点击先显示爆炸窗口；窗口显示后，再点当前句子里的单词才允许A4查词窗展开。
       const wordInExplosion = isWordInCurrentExplosionSentence(hoveredDetail.word);
 
       if (!wordInExplosion) {
@@ -9192,7 +9193,7 @@ let throttleTimeout = null; // 添加这一行，定义 throttleTimeout 变量
 
 // 1. 初始化缓存变量
 let clickOnlyMode = false;
-let explosionPriorityMode = true; // 新增：爆炸优先模式缓存
+let explosionPriorityMode = false; // 新增：爆炸优先模式缓存
 let a4_wordExplosionEnabled = true; // 新增：单词爆炸功能启用状态缓存（a4专用，避免与a7冲突）
 // 记录上次检测到的缩放比例
 let lastZoomFactor = window.devicePixelRatio || 1;
@@ -9200,7 +9201,7 @@ let lastZoomFactor = window.devicePixelRatio || 1;
 // 2. 首次加载时获取当前值
 chrome.storage.local.get(['clickOnlyTooltip', 'explosionPriorityMode', 'wordExplosionEnabled'], function(result) {
   clickOnlyMode = result.clickOnlyTooltip || true;
-  explosionPriorityMode = result.explosionPriorityMode || true;
+  explosionPriorityMode = result.explosionPriorityMode !== undefined ? result.explosionPriorityMode : false;
   a4_wordExplosionEnabled = result.wordExplosionEnabled !== undefined ? result.wordExplosionEnabled : true;
 });
 

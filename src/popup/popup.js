@@ -448,7 +448,7 @@ function initializeSettings() {
       defaultExpandCapsule: true, // 默认展开胶囊
       preferPopupAbove: false,
       selectionPopupPreferDown: false, // 划词弹窗优先默认向下弹出
-      explosionPriorityMode: true, // 默认不启用爆炸优先模式
+      explosionPriorityMode: false, // 默认不启用爆炸优先模式
       tooltipGap: 0, // 单词与提示窗间距默认值
       selectionPopupGap: 10, // 划词弹窗间隙默认值
       devicePixelRatio: window.devicePixelRatio || 1.0, // 设备像素比默认值，使用当前设备的DPR
@@ -1532,7 +1532,7 @@ const explosionPriorityMode = document.getElementById('explosionPriorityMode');
 
 // 加载状态
 chrome.storage.local.get('explosionPriorityMode', function(result) {
-    explosionPriorityMode.checked = result.explosionPriorityMode || true;
+    explosionPriorityMode.checked = result.explosionPriorityMode !== undefined ? result.explosionPriorityMode : false;
 });
 
 // 监听变化
