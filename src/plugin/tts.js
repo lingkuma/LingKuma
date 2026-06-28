@@ -1,5 +1,90 @@
 // 音频播放器实例（删除全局audioPlayer）
 // let audioPlayer;
+
+const TTS_STORAGE_CACHE_KEYS = [
+    'useOrionTTS',
+    'enableSentenceTTS',
+    'sentenceTTSAutoDetectLanguage',
+    'enableWordTTS',
+    'ttsConfig',
+    'aiConfig'
+];
+const ttsStorageCache = Object.create(null);
+let ttsStorageCachePreloadPromise = null;
+preloadTTSStorageCache();
+
+function hasTTSStorageCacheKey(key) {
+    return Object.prototype.hasOwnProperty.call(ttsStorageCache, key);
+}
+
+function preloadTTSStorageCache() {
+    if (ttsStorageCachePreloadPromise) {
+        return ttsStorageCachePreloadPromise;
+    }
+
+    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+        ttsStorageCachePreloadPromise = Promise.resolve({});
+        return ttsStorageCachePreloadPromise;
+    }
+
+    ttsStorageCachePreloadPromise = new Promise((resolve) => {
+        chrome.storage.local.get(TTS_STORAGE_CACHE_KEYS, (result) => {
+            const values = result || {};
+            TTS_STORAGE_CACHE_KEYS.forEach((key) => {
+                ttsStorageCache[key] = values[key];
+            });
+            resolve(values);
+        });
+    });
+
+    return ttsStorageCachePreloadPromise;
+}
+
+function getTTSStorageValues(keys) {
+    const keyList = Array.isArray(keys) ? keys : [keys];
+    const values = {};
+    const missingKeys = [];
+
+    keyList.forEach((key) => {
+        if (hasTTSStorageCacheKey(key)) {
+            values[key] = ttsStorageCache[key];
+        } else {
+            missingKeys.push(key);
+        }
+    });
+
+    if (missingKeys.length === 0) {
+        return Promise.resolve(values);
+    }
+
+    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+        return Promise.resolve(values);
+    }
+
+    return new Promise((resolve) => {
+        chrome.storage.local.get(missingKeys, (result) => {
+            const storageValues = result || {};
+            missingKeys.forEach((key) => {
+                ttsStorageCache[key] = storageValues[key];
+                values[key] = storageValues[key];
+            });
+            resolve(values);
+        });
+    });
+}
+
+function getTTSStorageValue(key) {
+    return getTTSStorageValues([key]).then((result) => result[key]);
+}
+
+if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+        if (namespace !== 'local') return;
+        Object.keys(changes).forEach((key) => {
+            ttsStorageCache[key] = changes[key].newValue;
+        });
+    });
+}
 /**
  * 判断文本是否为句子
  * @param {string} text - 要判断的文本
@@ -86,11 +171,7 @@ async function playText(params) {
     const ttsParams = normalizeLikelySentenceParamsForTTS(params);
 
     // 检查是否使用Orion TTS
-    const useOrionTTS = await new Promise(resolve => {
-        chrome.storage.local.get(['useOrionTTS'], function(result) {
-            resolve(result.useOrionTTS === true);
-        });
-    });
+    const useOrionTTS = await getTTSStorageValue('useOrionTTS') === true;
 
     // 如果使用Orion TTS且orion_playText函数可用，则使用Orion TTS
     if (useOrionTTS && window.orion_playText) {
@@ -122,9 +203,7 @@ async function playTextInternal(params) {
     const text = getTerminalPunctuatedSingleWord(rawText) || rawText;
 
     if (isLikelySentenceText(text, sentence)) {
-        const settings = await new Promise(resolve => {
-            chrome.storage.local.get(['enableSentenceTTS', 'sentenceTTSAutoDetectLanguage', 'ttsConfig'], resolve);
-        });
+        const settings = await getTTSStorageValues(['enableSentenceTTS', 'sentenceTTSAutoDetectLanguage', 'ttsConfig']);
 
         const sentenceTTSAutoDetectLanguage = settings.sentenceTTSAutoDetectLanguage === undefined
             ? true
@@ -172,8 +251,8 @@ async function playTextInternal(params) {
     let canPlayTTS = true;
     let ttsConfig = { wordTTSProvider: 'edge', sentenceTTSProvider: 'edge' };
 
-    await new Promise(resolve => {
-        chrome.storage.local.get(['enableWordTTS', 'enableSentenceTTS', 'ttsConfig'], function(result) {
+    {
+        const result = await getTTSStorageValues(['enableWordTTS', 'enableSentenceTTS', 'ttsConfig']);
             // 使用新的判断函数
             const textIsSentence = isSentenceText(text, lang);
 
@@ -189,10 +268,7 @@ async function playTextInternal(params) {
             if (result.ttsConfig) {
                 ttsConfig = result.ttsConfig;
             }
-
-            resolve();
-        });
-    });
+    }
 
     // 如果设置为不播放，则直接返回
     if (!canPlayTTS) {
@@ -342,9 +418,8 @@ function evalSimpleCondition(condition, context) {
  * @returns {Promise<string>} 处理后的音频URL
  */
 function getWordAudioUrl(word, lang, urlType = 1) {
-    return new Promise((resolve) => {
-        chrome.storage.local.get('ttsConfig', function(result) {
-            const config = result.ttsConfig || {};
+    return getTTSStorageValue('ttsConfig').then((ttsConfig) => {
+        const config = ttsConfig || {};
             let urlTemplate = '';
 
             // 输出完整的TTS配置，用于调试
@@ -369,8 +444,7 @@ function getWordAudioUrl(word, lang, urlType = 1) {
                 console.warn('URL模板为空，使用默认URL');
                 // 使用一个有效的默认URL，例如Google TTS
                 const defaultUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(word)}&tl=${lang}&client=tw-ob`;
-                resolve(defaultUrl);
-                return;
+                return defaultUrl;
             }
 
             const url = parseTemplateAll(urlTemplate, context);
@@ -381,12 +455,10 @@ function getWordAudioUrl(word, lang, urlType = 1) {
                 console.error('生成的URL无效:', url);
                 // 使用一个有效的默认URL
                 const defaultUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(word)}&tl=${lang}&client=tw-ob`;
-                resolve(defaultUrl);
-                return;
+                return defaultUrl;
             }
 
-            resolve(url);
-        });
+            return url;
     });
 }
 
@@ -471,14 +543,14 @@ async function playMinimaxi(sentence, langOverride = null) {
 
 
     // 从存储中获取 minimaxi API 配置
-    chrome.storage.local.get('aiConfig', function(result) {
+    getTTSStorageValue('aiConfig').then(function(aiConfigFromCache) {
         // 使用存储的值或默认值
-        const group_id = result.aiConfig?.minimaxiGroupId || "1879163477474414979" ;
-        const api_key = result.aiConfig?.minimaxiApiKey || "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiJraW5nIGFkb20iLCJVc2VyTmFtZSI6ImtpbmcgYWRvbSIsIkFjY291bnQiOiIiLCJTdWJqZWN0SUQiOiIxODc5MTYzNDc3NDgyODAzNTg3IiwiUGhvbmUiOiIiLCJHcm91cElEIjoiMTg3OTE2MzQ3NzQ3NDQxNDk3OSIsIlBhZ2VOYW1lIjoiIiwiTWFpbCI6InRpbnZkZUBnbWFpbC5jb20iLCJDcmVhdGVUaW1lIjoiMjAyNS0wMy0xNSAwMzoxMTozMSIsIlRva2VuVHlwZSI6MSwiaXNzIjoibWluaW1heCJ9.F2qLKhTG9SbJcttPAvMPBGCC3ejDnB53xkut_eflk6SJSzuz5sT89aHnVx_yA6e3v08mcYfwNhwV1DHkcUJMZnNtEJM_V-smBZ1rgnM3eZ0QfLozGBB1hnuRhhHOURJ7usXcfMzb6fCpO7m0GSdcJpNIJugl3T-uQl6_-ucc8Dlj4waWulqGGMC10rwb_OUwW8IL7VINTKuz8d_mdafUbTWUNujuQDlHwWS7s7Nuz6PGa8v9RVnyY_cpwyoWDZBJXigLf6KxcBhunmWEeT7PeVf06hWCKQrW4Az3Ib1dcYtiWlyDphmZN9L6n0NEo92eeRMcsC8ZJLRmLr1bHQAumw";
-        const voice_id = result.aiConfig?.minimaxiVoiceId || 'English_Graceful_Lady';//violet_de English_Whispering_girl
-        const model = result.aiConfig?.minimaxiModel || 'speech-01-turbo';
-        const speed = parseInt(result.aiConfig?.minimaxiSpeed) || 1.1; // 这里做一下str to int 转换
-        const baseURL = result.aiConfig?.minimaxiBaseURL || 'https://api.minimaxi.chat/v1/t2a_v2?GroupId=';
+        const group_id = aiConfigFromCache?.minimaxiGroupId || "1879163477474414979" ;
+        const api_key = aiConfigFromCache?.minimaxiApiKey || "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiJraW5nIGFkb20iLCJVc2VyTmFtZSI6ImtpbmcgYWRvbSIsIkFjY291bnQiOiIiLCJTdWJqZWN0SUQiOiIxODc5MTYzNDc3NDgyODAzNTg3IiwiUGhvbmUiOiIiLCJHcm91cElEIjoiMTg3OTE2MzQ3NzQ3NDQxNDk3OSIsIlBhZ2VOYW1lIjoiIiwiTWFpbCI6InRpbnZkZUBnbWFpbC5jb20iLCJDcmVhdGVUaW1lIjoiMjAyNS0wMy0xNSAwMzoxMTozMSIsIlRva2VuVHlwZSI6MSwiaXNzIjoibWluaW1heCJ9.F2qLKhTG9SbJcttPAvMPBGCC3ejDnB53xkut_eflk6SJSzuz5sT89aHnVx_yA6e3v08mcYfwNhwV1DHkcUJMZnNtEJM_V-smBZ1rgnM3eZ0QfLozGBB1hnuRhhHOURJ7usXcfMzb6fCpO7m0GSdcJpNIJugl3T-uQl6_-ucc8Dlj4waWulqGGMC10rwb_OUwW8IL7VINTKuz8d_mdafUbTWUNujuQDlHwWS7s7Nuz6PGa8v9RVnyY_cpwyoWDZBJXigLf6KxcBhunmWEeT7PeVf06hWCKQrW4Az3Ib1dcYtiWlyDphmZN9L6n0NEo92eeRMcsC8ZJLRmLr1bHQAumw";
+        const voice_id = aiConfigFromCache?.minimaxiVoiceId || 'English_Graceful_Lady';//violet_de English_Whispering_girl
+        const model = aiConfigFromCache?.minimaxiModel || 'speech-01-turbo';
+        const speed = parseInt(aiConfigFromCache?.minimaxiSpeed) || 1.1; // 这里做一下str to int 转换
+        const baseURL = aiConfigFromCache?.minimaxiBaseURL || 'https://api.minimaxi.chat/v1/t2a_v2?GroupId=';
 
 
         // 发送消息给background脚本处理句子TTS请求
@@ -506,10 +578,7 @@ async function playMinimaxi(sentence, langOverride = null) {
  * @param {string} audioType - 'word' 或 'sentence'
  */
 async function playGptTTS(text, isSentence, count = 1) {
-    const result = await new Promise(resolve => {
-        chrome.storage.local.get('aiConfig', resolve);
-    });
-    const aiConfig = result.aiConfig || {};
+    const aiConfig = await getTTSStorageValue('aiConfig') || {};
     const apiKey = aiConfig.gptTTSApiKey || '';
 
     if (!apiKey) {
@@ -538,10 +607,7 @@ async function playGptTTS(text, isSentence, count = 1) {
 }
 
 async function playSupertoneTTS(text, isSentence, count = 1, langOverride = null) {
-    const result = await new Promise(resolve => {
-        chrome.storage.local.get('aiConfig', resolve);
-    });
-    const aiConfig = result.aiConfig || {};
+    const aiConfig = await getTTSStorageValue('aiConfig') || {};
     const apiKey = aiConfig.supertoneAPIKey || '';
     const voiceId = aiConfig.supertoneVoiceId || '';
 
@@ -578,8 +644,8 @@ async function playSupertoneTTS(text, isSentence, count = 1, langOverride = null
 
 function stopSpecificAudioType(audioType) {
     // 检查是否使用Orion TTS
-    chrome.storage.local.get(['useOrionTTS'], function(result) {
-        const useOrionTTS = result.useOrionTTS === true;
+    getTTSStorageValue('useOrionTTS').then(function(useOrionTTSSetting) {
+        const useOrionTTS = useOrionTTSSetting === true;
 
         // 如果使用Orion TTS且orion_stopAllAudio函数可用
         if (useOrionTTS && window.orion_stopAllAudio) {
@@ -604,8 +670,8 @@ function stopSpecificAudioType(audioType) {
  */
 function stopPlay() {
     // 检查是否使用Orion TTS
-    chrome.storage.local.get(['useOrionTTS'], function(result) {
-        const useOrionTTS = result.useOrionTTS === true;
+    getTTSStorageValue('useOrionTTS').then(function(useOrionTTSSetting) {
+        const useOrionTTS = useOrionTTSSetting === true;
 
         // 如果使用Orion TTS且orion_stopAllAudio函数可用
         if (useOrionTTS && window.orion_stopAllAudio) {
@@ -660,11 +726,7 @@ async function playEdgeTTS(text, lang, isSentence, contextSentence) {
     console.log('Preparing Edge TTS playback:', { text, lang, isSentence, contextSentence });
 
     // 获取Edge TTS配置
-    const ttsConfig = await new Promise(resolve => {
-        chrome.storage.local.get(['ttsConfig'], function(result) {
-            resolve(result.ttsConfig || {});
-        });
-    });
+    const ttsConfig = await getTTSStorageValue('ttsConfig') || {};
 
     // 确定是否自动选择声音
     const autoVoice = ttsConfig.edgeTTSAutoVoice !== false; // 默认为true

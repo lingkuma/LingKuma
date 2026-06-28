@@ -32,6 +32,49 @@ let explosionResizeObserver = null; // 监听弹窗内容变化的ResizeObserver
 let wordExplosionFontSize = 14; // 爆炸弹窗字体大小，默认14px
 let wordExplosionMaxWidth = 772; // 爆炸弹窗最大宽度，默认772px
 
+const A7_STORAGE_CACHE_KEYS = [
+  'enablePlugin',
+  'wordHighlightFloatingButtonScope',
+  'wordHighlightPageTabOverrides',
+  'wordExplosionEnabled',
+  'wordExplosionTriggerMode',
+  'wordExplosionPositionMode',
+  'wordExplosionFontSize',
+  'wordExplosionMaxWidth',
+  'wordExplosionPreferUp',
+  'wordExplosionLayout',
+  'wordExplosionWordsLayout',
+  'wordExplosionTranslationCount',
+  'wordExplosionSavedPosition',
+  'wordExplosionHighlightSentence',
+  'wordExplosionHighlightColor',
+  'wordExplosionUnderlineEnabled',
+  'wordExplosionUnderlineStyle',
+  'wordExplosionUnderlinePosition',
+  'wordExplosionUnderlineColor',
+  'wordExplosionUnderlineThickness',
+  'showExplosionSentence',
+  'tooltipThemeMode',
+  'highlightChineseEnabled',
+  'highlightJapaneseEnabled',
+  'highlightKoreanEnabled',
+  'highlightAlphabeticEnabled',
+  'explosionHighlightWithTTS',
+  'explosionHighlightNoTTS',
+  'explosionTTSOnly',
+  'showKnownSentenceAnimation',
+  'knownSentenceAnimation',
+  'devicePixelRatio',
+  'autoRequestAITranslations',
+  'explosionSentenceTranslationCount',
+  'pluginBlacklistWebsites',
+  'explosionHighlightSpeed',
+  'highlightSpeed'
+];
+const a7StorageCache = Object.create(null);
+let a7StorageCachePreloadPromise = null;
+preloadA7StorageCache();
+
 // Shadow DOM 相关变量
 let explosionShadowHost = null; // Shadow DOM 宿主元素
 let explosionShadowRoot = null; // Shadow DOM 根节点
@@ -76,35 +119,7 @@ function initWordExplosion() {
 
   wordExplosionInitialized = true;
 
-  chrome.storage.local.get([
-    'enablePlugin', // 插件总开关
-    'wordHighlightFloatingButtonScope',
-    'wordHighlightPageTabOverrides',
-    'wordExplosionEnabled',
-    'wordExplosionTriggerMode',
-    'wordExplosionPositionMode',
-    'wordExplosionFontSize',
-    'wordExplosionMaxWidth',
-    'wordExplosionPreferUp',
-    'wordExplosionLayout',
-    'wordExplosionWordsLayout',
-    'wordExplosionTranslationCount',
-    'wordExplosionSavedPosition',
-    'wordExplosionHighlightSentence',
-    'wordExplosionHighlightColor',
-    'wordExplosionUnderlineEnabled',
-    'wordExplosionUnderlineStyle',
-    'wordExplosionUnderlinePosition',
-    'wordExplosionUnderlineColor',
-    'wordExplosionUnderlineThickness',
-    'showExplosionSentence',
-    'tooltipThemeMode',
-    // 新增：语言高亮设置
-    'highlightChineseEnabled',
-    'highlightJapaneseEnabled',
-    'highlightKoreanEnabled',
-    'highlightAlphabeticEnabled'
-  ], (result) => {
+  getA7StorageValues(A7_STORAGE_CACHE_KEYS).then((result) => {
     // 加载插件总开关状态
     if (!wordExplosionControlMessageSeen) {
       isPluginEnabled = isWordExplosionHighlightEnabledForCurrentPage(result);
@@ -179,9 +194,12 @@ function initWordExplosion() {
 // 监听配置变化
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'local') {
+    Object.keys(changes).forEach((key) => {
+      a7StorageCache[key] = changes[key].newValue;
+    });
     // 监听高亮开关变化；page-scope 下要跟随当前页 override，而不是只看全局 enablePlugin。
     if ((changes.enablePlugin || changes.wordHighlightFloatingButtonScope || changes.wordHighlightPageTabOverrides) && !wordExplosionControlMessageSeen) {
-      chrome.storage.local.get(['enablePlugin', 'wordHighlightFloatingButtonScope', 'wordHighlightPageTabOverrides'], (result) => {
+      getA7StorageValues(['enablePlugin', 'wordHighlightFloatingButtonScope', 'wordHighlightPageTabOverrides']).then((result) => {
         isPluginEnabled = isWordExplosionHighlightEnabledForCurrentPage(result);
         if (!isPluginEnabled) {
           hideWordExplosion();
@@ -1475,7 +1493,7 @@ function showWordExplosion(sentence, sentenceRect = null, sentenceInfo = null) {
   }
 
   // 触发逐词高亮（与爆炸窗口同时触发）
-  chrome.storage.local.get(['explosionHighlightWithTTS', 'explosionHighlightNoTTS', 'explosionTTSOnly'], function(result) {
+  getA7StorageValues(['explosionHighlightWithTTS', 'explosionHighlightNoTTS', 'explosionTTSOnly']).then(function(result) {
     const highlightWithTTS = result.explosionHighlightWithTTS || false;
     const highlightNoTTS = result.explosionHighlightNoTTS !== undefined ? result.explosionHighlightNoTTS : false;
     const ttsOnly = result.explosionTTSOnly !== undefined ? result.explosionTTSOnly : false;
@@ -1513,9 +1531,7 @@ function showWordExplosion(sentence, sentenceRect = null, sentenceInfo = null) {
 
     if (unknownWords.length === 0) {
       // 没有未知单词，检查是否显示动效
-      const result = await new Promise((resolve) => {
-        chrome.storage.local.get(['showKnownSentenceAnimation'], resolve);
-      });
+      const result = await getA7StorageValues(['showKnownSentenceAnimation']);
       const showAnimation = result.showKnownSentenceAnimation !== undefined ? result.showKnownSentenceAnimation : true;
 
       if (showAnimation) {
@@ -1561,13 +1577,78 @@ function showWordExplosion(sentence, sentenceRect = null, sentenceInfo = null) {
   });
 }
 
-// 辅助函数：从storage获取值
-function getStorageValue(key) {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(key, (result) => {
-      resolve(result[key]);
+// 辅助函数：从A7设置缓存获取值，避免爆炸弹窗热路径反复跨进程读取storage
+function hasA7StorageCacheKey(key) {
+  return Object.prototype.hasOwnProperty.call(a7StorageCache, key);
+}
+
+function preloadA7StorageCache() {
+  if (a7StorageCachePreloadPromise) {
+    return a7StorageCachePreloadPromise;
+  }
+
+  if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+    a7StorageCachePreloadPromise = Promise.resolve({});
+    return a7StorageCachePreloadPromise;
+  }
+
+  a7StorageCachePreloadPromise = new Promise((resolve) => {
+    chrome.storage.local.get(A7_STORAGE_CACHE_KEYS, (result) => {
+      const values = result || {};
+      A7_STORAGE_CACHE_KEYS.forEach((key) => {
+        a7StorageCache[key] = values[key];
+      });
+      resolve(values);
     });
   });
+
+  return a7StorageCachePreloadPromise;
+}
+
+function getA7CachedStorageValue(key, fallbackValue = undefined) {
+  if (hasA7StorageCacheKey(key)) {
+    return a7StorageCache[key];
+  }
+
+  preloadA7StorageCache();
+  return fallbackValue;
+}
+
+function getA7StorageValues(keys) {
+  const keyList = Array.isArray(keys) ? keys : [keys];
+  const values = {};
+  const missingKeys = [];
+
+  keyList.forEach((key) => {
+    if (hasA7StorageCacheKey(key)) {
+      values[key] = a7StorageCache[key];
+    } else {
+      missingKeys.push(key);
+    }
+  });
+
+  if (missingKeys.length === 0) {
+    return Promise.resolve(values);
+  }
+
+  if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+    return Promise.resolve(values);
+  }
+
+  return new Promise((resolve) => {
+    chrome.storage.local.get(missingKeys, (result) => {
+      const storageValues = result || {};
+      missingKeys.forEach((key) => {
+        a7StorageCache[key] = storageValues[key];
+        values[key] = storageValues[key];
+      });
+      resolve(values);
+    });
+  });
+}
+
+function getStorageValue(key) {
+  return getA7StorageValues([key]).then((result) => result[key]);
 }
 
 // 定位弹窗 - 智能上下定位模式
@@ -2521,7 +2602,7 @@ async function triggerWordQuery(word, sentence) {
 
   // 2. AI翻译任务（需要先获取设置）
   const translationTask = new Promise((resolve) => {
-    chrome.storage.local.get(['autoRequestAITranslations'], (settings) => {
+    getA7StorageValues(['autoRequestAITranslations']).then((settings) => {
       if (settings.autoRequestAITranslations && typeof fetchAIWordTranslation === 'function') {
         // fetchAIWordTranslation会自动处理数据库更新和缓存更新
         fetchAIWordTranslation(word, sentence)
@@ -2671,7 +2752,7 @@ async function triggerMissingDataQuery(word, sentence, wordDetails) {
   const hasTranslations = wordDetails?.translations && wordDetails.translations.length > 0;
   if (!hasTranslations) {
     const translationTask = new Promise((resolve) => {
-      chrome.storage.local.get(['autoRequestAITranslations'], (settings) => {
+      getA7StorageValues(['autoRequestAITranslations']).then((settings) => {
         if (settings.autoRequestAITranslations && typeof fetchAIWordTranslation === 'function') {
           fetchAIWordTranslation(word, sentence)
             .then(translation => {
@@ -2932,10 +3013,8 @@ async function updateWordExplosionContent(content) {
       return;
     }
 
-    // 使用Promise包装chrome.storage.local.get
-    const result = await new Promise((resolve) => {
-      chrome.storage.local.get(['showKnownSentenceAnimation', 'knownSentenceAnimation'], resolve);
-    });
+    // 从A7设置缓存读取已知句动效配置
+    const result = await getA7StorageValues(['showKnownSentenceAnimation', 'knownSentenceAnimation']);
 
     const showAnimation = result.showKnownSentenceAnimation !== undefined ? result.showKnownSentenceAnimation : true;
 
@@ -3328,7 +3407,7 @@ async function getSentenceTranslations(sentence, unknownWords, forceRefresh = fa
   // 如果缓存中没有翻译，获取配置并触发AI翻译
   // 使用Promise包装以确保正确的异步流程
   return new Promise((resolve) => {
-    chrome.storage.local.get(['explosionSentenceTranslationCount'], async (result) => {
+    getA7StorageValues(['explosionSentenceTranslationCount']).then(async (result) => {
       const translationCount = result.explosionSentenceTranslationCount || 1;
       console.log('[WordExplosion] 需要获取', translationCount, '条翻译');
 
@@ -4658,7 +4737,7 @@ function isUrlInBlacklist(url, blacklistPatterns) {
 
 // 立即执行黑名单检查（在脚本加载时）
 (function() {
-  chrome.storage.local.get(['pluginBlacklistWebsites'], function(result) {
+  getA7StorageValues(['pluginBlacklistWebsites']).then(function(result) {
     const currentUrl = window.location.href;
     const blacklistPatterns = result.pluginBlacklistWebsites || '*://music.youtube.com/*;*ohmygpt*';
 
@@ -4923,7 +5002,7 @@ function triggerExplosionWordByWordHighlight(sentenceInfo, sentence, waitForTTS 
     console.log(`[WordExplosion] 开始逐词高亮，共${wordDetails.length}个单词，waitForTTS=${waitForTTS}`);
 
     // 获取高亮速度设置（优先使用爆炸窗口专用速度，否则使用通用速度）
-    chrome.storage.local.get(['explosionHighlightSpeed', 'highlightSpeed'], function(result) {
+    getA7StorageValues(['explosionHighlightSpeed', 'highlightSpeed']).then(function(result) {
       const msPerChar = result.explosionHighlightSpeed !== undefined ? result.explosionHighlightSpeed :
                         (result.highlightSpeed !== undefined ? result.highlightSpeed : 100);
 
