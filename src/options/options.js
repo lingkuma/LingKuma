@@ -618,6 +618,8 @@ const i18n = {
     'model': 'Modell:',
     'activeProfileLabel': '激活配置:',
     'addProfileBtn': '+ 添加配置',
+    'copyProfile': '复制',
+    'profileCopyNameSuffix': '副本',
     'profileName': '配置名称:',
     'enableApiPollingLabel': '启用轮询',
     'profileEnablePollingLabel': '参与轮询',
@@ -990,6 +992,8 @@ Lingkuma完全开源免费，软件维护不易，如果您感觉该软件对你
     'model': 'Modell:',
     'activeProfileLabel': '啟用設定:',
     'addProfileBtn': '+ 新增設定',
+    'copyProfile': '複製',
+    'profileCopyNameSuffix': '副本',
     'profileName': '設定名稱:',
     'profileEnablePollingLabel': '參與輪詢',
     'excludeTemperatureLabel': '不傳送 temperature 參數',
@@ -1410,6 +1414,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'model': 'Model:',
     'activeProfileLabel': 'Active Config:',
     'addProfileBtn': '+ Add Config',
+    'copyProfile': 'Copy',
+    'profileCopyNameSuffix': 'Copy',
     'profileName': 'Config Name:',
     'enableApiPollingLabel': 'Enable Polling',
     'profileEnablePollingLabel': 'Participate in Polling',
@@ -1664,6 +1670,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'model': 'Modell:',
     'activeProfileLabel': 'Aktive Konfiguration:',
     'addProfileBtn': '+ Konfiguration hinzufügen',
+    'copyProfile': 'Kopieren',
+    'profileCopyNameSuffix': 'Copy',
     'profileName': 'Konfigurationsname:',
     'profileEnablePollingLabel': 'An der Umfrage teilnehmen',
     'excludeTemperatureLabel': 'Temperature-Parameter ausschließen',
@@ -1908,6 +1916,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'model': 'Modèle :',
     'activeProfileLabel': 'Configuration active :',
     'addProfileBtn': '+ Ajouter une configuration',
+    'copyProfile': 'Copier',
+    'profileCopyNameSuffix': 'Copy',
     'profileName': 'Nom de la configuration :',
     'profileEnablePollingLabel': 'Participer au sondage',
     'excludeTemperatureLabel': 'Exclure le paramètre temperature',
@@ -2124,6 +2134,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'model': 'Modelo:',
     'activeProfileLabel': 'Configuración activa:',
     'addProfileBtn': '+ Agregar configuración',
+    'copyProfile': 'Copiar',
+    'profileCopyNameSuffix': 'Copy',
     'profileName': 'Nombre de la configuración:',
     'profileEnablePollingLabel': 'Participar en el sondeo',
     'excludeTemperatureLabel': 'Excluir parámetro temperature',
@@ -2174,6 +2186,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'model': '모델:',
     'activeProfileLabel': '활성 구성:',
     'addProfileBtn': '+ 구성 추가',
+    'copyProfile': '복사',
+    'profileCopyNameSuffix': 'Copy',
     'profileName': '구성 이름:',
     'enableApiPollingLabel': '폴링 활성화',
     'profileEnablePollingLabel': '폴링 참여',
@@ -2353,6 +2367,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'model': 'Модель:',
     'activeProfileLabel': 'Активная конфигурация:',
     'addProfileBtn': '+ Добавить конфигурацию',
+    'copyProfile': 'Копировать',
+    'profileCopyNameSuffix': 'Copy',
     'profileName': 'Имя конфигурации:',
     'enableApiPollingLabel': 'Включить опрос',
     'profileEnablePollingLabel': 'Участвовать в опросе',
@@ -2620,6 +2636,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'model': 'モデル:',
     'activeProfileLabel': 'アクティブ設定:',
     'addProfileBtn': '+ 設定を追加',
+    'copyProfile': 'コピー',
+    'profileCopyNameSuffix': 'Copy',
     'profileName': '設定名:',
     'enableApiPollingLabel': 'ポーリングを有効にする',
     'profileEnablePollingLabel': 'ポーリングに参加',
@@ -2839,6 +2857,8 @@ Lingkuma完全開源免費，軟體維護不易，如果您感覺該軟體對你
     'model': 'Modello:',
     'activeProfileLabel': 'Configurazione attiva:',
     'addProfileBtn': '+ Aggiungi configurazione',
+    'copyProfile': 'Copia',
+    'profileCopyNameSuffix': 'Copy',
     'profileName': 'Nome configurazione:',
     'enableApiPollingLabel': 'Abilita polling',
     'profileEnablePollingLabel': 'Partecipa al polling',
@@ -4711,7 +4731,7 @@ function renderCustomApiTabs() {
     
     const isActive = profile.id === customApiProfiles.activeProfileId;
     const isEditing = profile.id === customApiProfiles.currentEditingId;
-    const enablePolling = profile.enablePolling !== false;
+    const enablePolling = profile.enablePolling === true;
     
     tab.style.cssText = `
       display: flex; align-items: center; gap: 5px; padding: 6px 12px;
@@ -4722,13 +4742,20 @@ function renderCustomApiTabs() {
       ${isActive ? 'border-bottom: 2px solid var(--primary-color, #4CAF50);' : ''}
     `;
     
+    const copyProfileLabel = translate('copyProfile');
+    const copyProfileTitle = `${copyProfileLabel} ${profile.name || 'Unnamed'}`;
+
     tab.innerHTML = `
       <span class="tab-name">${profile.name || 'Unnamed'}</span>
       ${isActive ? '<span style="color: var(--primary-color, #4CAF50); font-size: 10px;">●</span>' : ''}
       ${enablePolling ? '<span style="color: var(--success-color, #34c759); font-size: 10px;">✓</span>' : ''}
+      <button class="copy-tab-btn" data-profile-id="${profile.id}" style="
+        background: none; border: none; cursor: pointer; padding: 0 4px;
+        color: var(--primary-color, #007aff); font-size: 12px; margin-left: 5px;
+      " title="${copyProfileTitle}">${copyProfileLabel}</button>
       <button class="delete-tab-btn" data-profile-id="${profile.id}" style="
         background: none; border: none; cursor: pointer; padding: 0 2px;
-        color: var(--text-secondary, #666); font-size: 14px; margin-left: 5px;
+        color: var(--text-secondary, #666); font-size: 14px;
       " title="Delete">×</button>
     `;
     
@@ -4737,6 +4764,11 @@ function renderCustomApiTabs() {
       switchToProfile(profile.id);
     });
     
+    tab.querySelector('.copy-tab-btn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      duplicateProfile(profile.id);
+    });
+
     tab.querySelector('.delete-tab-btn').addEventListener('click', function(e) {
       e.stopPropagation();
       deleteProfile(profile.id);
@@ -4782,7 +4814,7 @@ function loadProfileToForm(profileId) {
   document.getElementById('apiKey').value = profile.apiKey || '';
   document.getElementById('apiModel').value = profile.apiModel || '';
   document.getElementById('apiTemperature').value = profile.apiTemperature !== undefined ? profile.apiTemperature : 1;
-  document.getElementById('profileEnablePolling').checked = profile.enablePolling !== false;
+  document.getElementById('profileEnablePolling').checked = profile.enablePolling === true;
   // 加载 excludeTemperature 开关状态
   document.getElementById('excludeTemperature').checked = profile.excludeTemperature === true;
   // 加载自定义请求体参数
@@ -4822,6 +4854,23 @@ function saveCurrentProfile() {
   }
 }
 
+function getCopiedProfileName(sourceName) {
+  const baseName = sourceName || 'Unnamed';
+  const suffix = translate('profileCopyNameSuffix') || 'Copy';
+  const candidate = `${baseName} ${suffix}`;
+  const existingNames = new Set(customApiProfiles.profiles.map(profile => profile.name));
+
+  if (!existingNames.has(candidate)) {
+    return candidate;
+  }
+
+  let index = 2;
+  while (existingNames.has(`${candidate} ${index}`)) {
+    index++;
+  }
+  return `${candidate} ${index}`;
+}
+
 function addNewProfile() {
   saveCurrentProfile();
   
@@ -4832,7 +4881,7 @@ function addNewProfile() {
     apiKey: '',
     apiModel: '',
     apiTemperature: 1,
-    enablePolling: true,
+    enablePolling: false,
     excludeTemperature: false, // 默认不排除 temperature 参数
     customRequestBody: '' // 初始化自定义请求体参数
   };
@@ -4840,6 +4889,28 @@ function addNewProfile() {
   customApiProfiles.profiles.push(newProfile);
   customApiProfiles.currentEditingId = newProfile.id;
   
+  saveCustomApiProfiles();
+  renderCustomApiTabs();
+  renderActiveProfileSelect();
+  loadProfileToForm(newProfile.id);
+}
+
+function duplicateProfile(profileId) {
+  saveCurrentProfile();
+
+  const sourceProfile = customApiProfiles.profiles.find(p => p.id === profileId);
+  if (!sourceProfile) return;
+
+  const newProfile = {
+    ...sourceProfile,
+    id: generateUUID(),
+    name: getCopiedProfileName(sourceProfile.name),
+    enablePolling: false
+  };
+
+  customApiProfiles.profiles.push(newProfile);
+  customApiProfiles.currentEditingId = newProfile.id;
+
   saveCustomApiProfiles();
   renderCustomApiTabs();
   renderActiveProfileSelect();
@@ -4918,7 +4989,7 @@ function initCustomApiProfilesManager() {
           apiKey: aiConfig.apiKey || '',
           apiModel: aiConfig.apiModel || '',
           apiTemperature: aiConfig.apiTemperature !== undefined ? aiConfig.apiTemperature : 1,
-          enablePolling: true,
+          enablePolling: false,
           excludeTemperature: false, // 默认不排除 temperature 参数
           customRequestBody: '' // 初始化自定义请求体参数
         };
