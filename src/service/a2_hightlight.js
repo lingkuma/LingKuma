@@ -5,6 +5,9 @@ function isOrionIOSRuntime() {
   return typeof window !== 'undefined' && window.orion_isIOS === true;
 }
 
+const COMPANION_FEATURE_RETRY_DELAY = 500;
+const COMPANION_FEATURE_MAX_RETRIES = 120;
+
 // 添加iOS设备检测
 // window.orion_isIOS is provided later by orion_tts.js; default to false before it loads.
 
@@ -190,6 +193,12 @@ class ScopeObserver {
     this.mutPairFlag = 0; // 变更观察器状态标志
     this.wordDetailsFromDB = {}; // 单词详情数据
     this.highlightEnabled = true; // 插件高亮显示状态，关闭时保留扫描缓存
+    this.wordExplosionInitTimer = null;
+    this.wordExplosionInitRetries = 0;
+    this.wordExplosionInitStarted = false;
+    this.customHighlightInitTimer = null;
+    this.customHighlightInitRetries = 0;
+    this.customHighlightInitStarted = false;
     // this.wordStatusCache = new Map();           // 单词状态缓存
 
     // 添加高亮开关成员变量，并设置默认值
@@ -1296,9 +1305,16 @@ if (window.location.hostname.includes('youtube.com')) {
     let japaneseCount = 0;
     let chineseCount = 0;
 
+    const documentRoot = document.body || document.documentElement;
+    if (!documentRoot) {
+      console.log("页面语言检测跳过：文档根节点尚未准备好");
+      this.isJapaneseDominantPage = false;
+      return;
+    }
+
     // 创建 TreeWalker 遍历视口内的文本节点
     const walker = document.createTreeWalker(
-      document.body,
+      documentRoot,
       NodeFilter.SHOW_TEXT,
       {
         acceptNode: (node) => {
@@ -2672,6 +2688,12 @@ if (window.location.hostname.includes('youtube.com')) {
 
   // 在正常单词高亮完成后同步启动单词爆炸和词组高亮系统
   initCustomHighlightAfterNormalHighlight() {
+    const wordExplosionPending = this.wordExplosionInitStarted || this.wordExplosionInitTimer;
+    const customHighlightPending = this.customHighlightInitStarted || this.customHighlightInitTimer;
+    if (wordExplosionPending && customHighlightPending) {
+      return;
+    }
+
     console.log("正常单词高亮已完成，现在同步启动：单词爆炸 + 词组高亮");
 
     // 同时初始化单词爆炸和词组高亮功能
@@ -2681,42 +2703,92 @@ if (window.location.hostname.includes('youtube.com')) {
 
   // 在正常单词高亮完成后启动单词爆炸功能
   initWordExplosionAfterNormalHighlight() {
-    console.log("正常单词高亮已完成，现在启动单词爆炸系统");
+    if (this.destroyed || this.wordExplosionInitStarted) {
+      return;
+    }
 
-    // 检查单词爆炸函数是否存在
     if (typeof window.initWordExplosionSystem === 'function') {
-      // 使用短延迟确保正常高亮完全完成
+      this.wordExplosionInitStarted = true;
+      this.wordExplosionInitRetries = 0;
+      if (this.wordExplosionInitTimer) {
+        clearTimeout(this.wordExplosionInitTimer);
+        this.wordExplosionInitTimer = null;
+      }
+
       setTimeout(() => {
+        if (this.destroyed) return;
         console.log("调用单词爆炸初始化函数");
         window.initWordExplosionSystem({ manualActivation: true });
       }, 1);
-    } else {
-      console.log("单词爆炸函数尚未加载，延迟重试");
-      // 如果函数还没加载，延迟重试
-      setTimeout(() => {
-        this.initWordExplosionAfterNormalHighlight();
-      }, 500);
+      return;
     }
+
+    if (this.wordExplosionInitTimer) {
+      return;
+    }
+
+    if (this.wordExplosionInitRetries >= COMPANION_FEATURE_MAX_RETRIES) {
+      if (this.wordExplosionInitRetries === COMPANION_FEATURE_MAX_RETRIES) {
+        console.warn("单词爆炸函数仍未加载，停止重试");
+        this.wordExplosionInitRetries++;
+      }
+      return;
+    }
+
+    if (this.wordExplosionInitRetries === 0) {
+      console.log("单词爆炸函数尚未加载，等待动态脚本注入");
+    }
+
+    this.wordExplosionInitRetries++;
+    this.wordExplosionInitTimer = setTimeout(() => {
+      this.wordExplosionInitTimer = null;
+      this.initWordExplosionAfterNormalHighlight();
+    }, COMPANION_FEATURE_RETRY_DELAY);
   }
 
   // 启动词组高亮系统
   initCustomHighlightSystem() {
-    console.log("正常单词高亮已完成，现在启动词组高亮系统");
+    if (this.destroyed || this.customHighlightInitStarted) {
+      return;
+    }
 
-    // 检查词组高亮函数是否存在
     if (typeof window.initCustomHighlight === 'function') {
-      // 使用短延迟确保正常高亮完全完成
+      this.customHighlightInitStarted = true;
+      this.customHighlightInitRetries = 0;
+      if (this.customHighlightInitTimer) {
+        clearTimeout(this.customHighlightInitTimer);
+        this.customHighlightInitTimer = null;
+      }
+
       setTimeout(() => {
+        if (this.destroyed) return;
         console.log("调用词组高亮初始化函数");
         window.initCustomHighlight();
       }, 1);
-    } else {
-      console.log("词组高亮函数尚未加载，延迟重试");
-      // 如果函数还没加载，延迟重试
-      setTimeout(() => {
-        this.initCustomHighlightSystem();
-      }, 500);
+      return;
     }
+
+    if (this.customHighlightInitTimer) {
+      return;
+    }
+
+    if (this.customHighlightInitRetries >= COMPANION_FEATURE_MAX_RETRIES) {
+      if (this.customHighlightInitRetries === COMPANION_FEATURE_MAX_RETRIES) {
+        console.warn("词组高亮函数仍未加载，停止重试");
+        this.customHighlightInitRetries++;
+      }
+      return;
+    }
+
+    if (this.customHighlightInitRetries === 0) {
+      console.log("词组高亮函数尚未加载，等待动态脚本注入");
+    }
+
+    this.customHighlightInitRetries++;
+    this.customHighlightInitTimer = setTimeout(() => {
+      this.customHighlightInitTimer = null;
+      this.initCustomHighlightSystem();
+    }, COMPANION_FEATURE_RETRY_DELAY);
   }
 
   pauseHighlighting() {
@@ -2737,6 +2809,15 @@ if (window.location.hostname.includes('youtube.com')) {
 
     this.destroyed = true;
     this.highlightEnabled = false;
+
+    if (this.wordExplosionInitTimer) {
+      clearTimeout(this.wordExplosionInitTimer);
+      this.wordExplosionInitTimer = null;
+    }
+    if (this.customHighlightInitTimer) {
+      clearTimeout(this.customHighlightInitTimer);
+      this.customHighlightInitTimer = null;
+    }
 
     if (this.messageListener) {
       try {
@@ -3238,13 +3319,60 @@ function normalizeHighlightPageThemeOverride(value) {
   return null;
 }
 
-function getWordHighlightPageKeyForCurrentPage() {
+function getPageKeyFromUrl(url) {
+  if (!url) {
+    return null;
+  }
+
   try {
-    const parsedUrl = new URL(window.location.href);
+    const parsedUrl = new URL(url);
     return (parsedUrl.hostname || parsedUrl.host || parsedUrl.href).toLowerCase();
   } catch (error) {
     return null;
   }
+}
+
+function getFrameOwnerPageKey() {
+  const candidateUrls = [];
+
+  if (window.self !== window.top) {
+    try {
+      if (window.top.location.href) {
+        candidateUrls.push(window.top.location.href);
+      }
+    } catch (error) {
+      // Cross-origin iframe: fall back to referrer or ancestorOrigins below.
+    }
+
+    if (document.referrer) {
+      candidateUrls.push(document.referrer);
+    }
+
+    try {
+      const ancestors = window.location.ancestorOrigins;
+      if (ancestors && ancestors.length) {
+        for (let i = ancestors.length - 1; i >= 0; i--) {
+          candidateUrls.push(ancestors[i]);
+        }
+      }
+    } catch (error) {
+      // ancestorOrigins is not available in every browser.
+    }
+  }
+
+  candidateUrls.push(window.location.href);
+
+  for (const url of candidateUrls) {
+    const pageKey = getPageKeyFromUrl(url);
+    if (pageKey) {
+      return pageKey;
+    }
+  }
+
+  return null;
+}
+function getWordHighlightPageKeyForCurrentPage() {
+  return getFrameOwnerPageKey();
 }
 
 function isWordHighlightEnabledForCurrentPage(result) {

@@ -51,8 +51,7 @@ let highlightJapaneseEnabled = true;
 let highlightKoreanEnabled = true;
 let highlightAlphabeticEnabled = true;
 
-// 优化：合并所有storage读取为一次调用
-chrome.storage.local.get([
+const HIGHLIGHT_RUNTIME_STORAGE_KEYS = [
   'highlightChineseEnabled',
   'highlightJapaneseEnabled',
   'highlightKoreanEnabled',
@@ -61,39 +60,50 @@ chrome.storage.local.get([
   'wordHighlightFloatingButtonScope',
   'wordHighlightPageTabOverrides',
   'pluginBlacklistWebsites'
-], function(result) {
-  // 设置高亮语言开关
-  highlightChineseEnabled = result.highlightChineseEnabled || true;
-  highlightJapaneseEnabled = result.highlightJapaneseEnabled || true;
-  highlightKoreanEnabled = result.highlightKoreanEnabled || true;
-  highlightAlphabeticEnabled = result.highlightAlphabeticEnabled || true;
+];
 
-  // 检查插件是否启用
-  if (!getInitialHighlightEnabled(result)) {
-    console.log("插件已被禁用，清理资源");
-    if (highlightManager) {
-      highlightManager.highlightEnabled = false;
-      highlightManager.removeAllHighlights();
+startHighlightRuntimeFromStorage();
+
+function startHighlightRuntimeFromStorage() {
+  // 优化：合并所有storage读取为一次调用
+  chrome.storage.local.get(HIGHLIGHT_RUNTIME_STORAGE_KEYS, function(result) {
+    // 设置高亮语言开关
+    highlightChineseEnabled = result.highlightChineseEnabled || true;
+    highlightJapaneseEnabled = result.highlightJapaneseEnabled || true;
+    highlightKoreanEnabled = result.highlightKoreanEnabled || true;
+    highlightAlphabeticEnabled = result.highlightAlphabeticEnabled || true;
+
+    // 检查插件是否启用
+    if (!getInitialHighlightEnabled(result)) {
+      console.log("当前页面或iframe未启用高亮，清理资源", {
+        scope: result.wordHighlightFloatingButtonScope === 'page' ? 'page' : 'global',
+        pageKey: getHighlightPageKeyForCurrentPage(),
+        currentUrl: window.location.href
+      });
+      if (highlightManager) {
+        highlightManager.highlightEnabled = false;
+        highlightManager.removeAllHighlights();
+      }
+      return;
     }
-    return;
-  }
 
-  // 检查黑名单
-  const currentUrl = window.location.href;
-  const blacklistPatterns = result.pluginBlacklistWebsites || '*://music.youtube.com/*;*ohmygpt*';
+    // 检查黑名单
+    const currentUrl = window.location.href;
+    const blacklistPatterns = result.pluginBlacklistWebsites || '*://music.youtube.com/*;*ohmygpt*';
 
-  console.log("blacklistPatterns:  ", blacklistPatterns);
-  console.log("currentUrl:  ", currentUrl);
+    console.log("blacklistPatterns:  ", blacklistPatterns);
+    console.log("currentUrl:  ", currentUrl);
 
-  // 如果当前URL在黑名单中，则不执行高亮
-  if (isUrlInBlacklist(currentUrl, blacklistPatterns)) {
-    console.log("当前网站在单词高亮黑名单中，不执行高亮功能");
-    return;
-  }
+    // 如果当前URL在黑名单中，则不执行高亮
+    if (isUrlInBlacklist(currentUrl, blacklistPatterns)) {
+      console.log("当前网站在单词高亮黑名单中，不执行高亮功能");
+      return;
+    }
 
-  // 继续执行原有的高亮初始化逻辑
-  highlightAllWords();
-});
+    // 继续执行原有的高亮初始化逻辑
+    highlightAllWords();
+  });
+}
 
 
 
@@ -119,13 +129,60 @@ function getInitialHighlightEnabled(result) {
   return Object.prototype.hasOwnProperty.call(overrides, pageKey) && overrides[pageKey] === true;
 }
 
-function getHighlightPageKeyForCurrentPage() {
+function getPageKeyFromUrl(url) {
+  if (!url) {
+    return null;
+  }
+
   try {
-    const parsedUrl = new URL(window.location.href);
+    const parsedUrl = new URL(url);
     return (parsedUrl.hostname || parsedUrl.host || parsedUrl.href).toLowerCase();
   } catch (error) {
     return null;
   }
+}
+
+function getFrameOwnerPageKey() {
+  const candidateUrls = [];
+
+  if (window.self !== window.top) {
+    try {
+      if (window.top.location.href) {
+        candidateUrls.push(window.top.location.href);
+      }
+    } catch (error) {
+      // Cross-origin iframe: fall back to referrer or ancestorOrigins below.
+    }
+
+    if (document.referrer) {
+      candidateUrls.push(document.referrer);
+    }
+
+    try {
+      const ancestors = window.location.ancestorOrigins;
+      if (ancestors && ancestors.length) {
+        for (let i = ancestors.length - 1; i >= 0; i--) {
+          candidateUrls.push(ancestors[i]);
+        }
+      }
+    } catch (error) {
+      // ancestorOrigins is not available in every browser.
+    }
+  }
+
+  candidateUrls.push(window.location.href);
+
+  for (const url of candidateUrls) {
+    const pageKey = getPageKeyFromUrl(url);
+    if (pageKey) {
+      return pageKey;
+    }
+  }
+
+  return null;
+}
+function getHighlightPageKeyForCurrentPage() {
+  return getFrameOwnerPageKey();
 }
 function initPlugin() {
   console.log("插件功能初始化中...");
@@ -136,8 +193,8 @@ function initPlugin() {
       console.log('Highlight toggle message:', message.enabled);
       if (message.enabled) {
         console.log('Highlight toggle message:', message.enabled);
-        // Reapply highlight
-        highlightAllWords();
+        // Reapply highlight after rechecking page scope and blacklist for this frame.
+        startHighlightRuntimeFromStorage();
       } else if (highlightManager) {
         highlightManager.highlightEnabled = false;
         if (typeof highlightManager.removeAllHighlights === 'function') {
