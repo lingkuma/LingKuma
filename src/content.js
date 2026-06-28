@@ -233,6 +233,41 @@ function isAllowedYouTubeElement(parent) {
 // =======================
 // 新增辅助函数：根据单词所在 range 获取所在句子
 // =======================
+function isInlineSentenceFragment(element) {
+  if (!element || element.nodeType !== Node.ELEMENT_NODE) return false;
+  const display = window.getComputedStyle(element).display;
+  return display === 'inline';
+}
+
+function getSentenceTraversalParentFromRange(range, fallbackParent, minTextLength) {
+  const rangeContainer = range.startContainer;
+  let parent = rangeContainer.nodeType === Node.TEXT_NODE ? rangeContainer.parentElement : rangeContainer;
+  let firstTextBoundary = null;
+
+  while (parent && parent !== document.body) {
+    if (parent.nodeType === Node.TEXT_NODE) {
+      parent = parent.parentElement;
+      continue;
+    }
+
+    const style = window.getComputedStyle(parent);
+    if (style.position === 'absolute' || style.position === 'fixed') {
+      firstTextBoundary = parent;
+      break;
+    }
+
+    const textLength = parent.innerText ? parent.innerText.trim().length : 0;
+    if (textLength >= minTextLength && !isInlineSentenceFragment(parent)) {
+      firstTextBoundary = parent;
+      break;
+    }
+
+    parent = parent.parentElement;
+  }
+
+  return firstTextBoundary || fallbackParent || document.body;
+}
+
 function getSentenceForWord(detail) {
   // console.log('[getSentenceForWord] 函数被调用');
   // console.log('[getSentenceForWord] 传入的 detail:', {
@@ -269,38 +304,9 @@ function getSentenceForWord(detail) {
   let rawFullTextBuilder = "";
   const isYouTube = window.location.hostname.includes('youtube.com');
   
-  // 找到当前单词所在的文本节点
-  const wordContainer = detail.range.startContainer;
-  let textNodeParent = wordContainer.nodeType === Node.TEXT_NODE ? wordContainer.parentElement : wordContainer;
-  
-  // 向上查找合适的父元素 
-  
-  while (textNodeParent && textNodeParent !== document.body) { 
-    // 如果当前节点是文本节点，继续向上查找 
-    if (textNodeParent.nodeType === Node.TEXT_NODE) { 
-      textNodeParent = textNodeParent.parentElement; 
-      continue; 
-    } 
-    
-    // 检查当前元素是否是absolute/fixed定位 
-    const style = window.getComputedStyle(textNodeParent); 
-    if (style.position === 'absolute' || style.position === 'fixed') { 
-      // 如果是absolute/fixed定位，停止向上查找，使用当前元素 
-      break; 
-    } 
-    
-    // 如果不是absolute/fixed定位，检查文本长度 
-    if (textNodeParent.innerText && textNodeParent.innerText.trim().length >= MIN_TEXT_LENGTH) { 
-      // 文本长度足够，停止查找 
-      break; 
-    } 
-    
-    // 文本长度不够，继续向上查找 
-    textNodeParent = textNodeParent.parentElement; 
-  }
-  
-  // 使用找到的父元素作为遍历起点
-  const traversalParent = textNodeParent || parent;
+  // 使用找到的父元素作为遍历起点。内联片段（span/strong/em/a 等）不能作为句子边界，
+  // 否则同一句被多个内联标签切开时只能拿到当前标签内的文本。
+  const traversalParent = getSentenceTraversalParentFromRange(detail.range, parent, MIN_TEXT_LENGTH);
   // console.log('[getSentenceForWord] TreeWalker 遍历起点元素:', traversalParent);
   // console.log('[getSentenceForWord] traversalParent 标签名:', traversalParent.tagName);
   // console.log('[getSentenceForWord] traversalParent 文本内容:', traversalParent.textContent?.substring(0, 100));
