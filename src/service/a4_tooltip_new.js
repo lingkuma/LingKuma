@@ -6021,9 +6021,12 @@ if (hoveredDetail) {
         return;
       }
 
-      // 爆炸弹窗已显示，检查点击的单词是否在当前爆炸句子中。
+      // 爆炸弹窗已显示，检查点击的单词位置是否在当前爆炸句子中。
       // 开启爆炸优先时，第一次点击先显示爆炸窗口；窗口显示后，再点当前句子里的单词才允许A4查词窗展开。
-      const wordInExplosion = isWordInCurrentExplosionSentence(hoveredDetail.word);
+      // 优先用Range判断，避免前后句有相同单词时仅靠文本匹配误放行。
+      const wordInExplosion = typeof isWordRangeInCurrentExplosionSentence === 'function'
+        ? isWordRangeInCurrentExplosionSentence(hoveredDetail.range, hoveredDetail.word)
+        : isWordInCurrentExplosionSentence(hoveredDetail.word);
 
       if (!wordInExplosion) {
         // 单词不在当前爆炸句子中，阻止a4弹窗，让a7处理（切换爆炸弹窗）

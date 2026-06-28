@@ -4740,6 +4740,70 @@ function getCurrentExplosionSentence() {
   return currentExplosionSentence;
 }
 
+function isUsableExplosionRange(range) {
+  return range &&
+         range.startContainer &&
+         range.endContainer &&
+         document.contains(range.startContainer) &&
+         document.contains(range.endContainer);
+}
+
+function getCurrentExplosionSentenceRangeForCheck() {
+  if (isUsableExplosionRange(currentExplosionSentenceRange)) {
+    return currentExplosionSentenceRange;
+  }
+
+  if (currentExplosionSentenceInfo && isUsableExplosionRange(currentExplosionSentenceInfo.sentenceRange)) {
+    return currentExplosionSentenceInfo.sentenceRange;
+  }
+
+  if (currentExplosionSentence && currentExplosionSentenceInfo && typeof createSentenceRange === 'function') {
+    try {
+      const sentenceRange = createSentenceRange(currentExplosionSentence, currentExplosionSentenceInfo);
+      if (isUsableExplosionRange(sentenceRange)) {
+        currentExplosionSentenceRange = sentenceRange;
+        return sentenceRange;
+      }
+    } catch (error) {
+      console.warn('[WordExplosion] 获取当前爆炸句子Range失败:', error);
+    }
+  }
+
+  return null;
+}
+
+function isRangeInsideExplosionRange(innerRange, outerRange) {
+  if (!isUsableExplosionRange(innerRange) || !isUsableExplosionRange(outerRange)) {
+    return false;
+  }
+
+  try {
+    const startsInside = outerRange.compareBoundaryPoints(Range.START_TO_START, innerRange) <= 0;
+    const endsInside = outerRange.compareBoundaryPoints(Range.END_TO_END, innerRange) >= 0;
+    return startsInside && endsInside;
+  } catch (error) {
+    console.warn('[WordExplosion] 比较当前单词Range和爆炸句子Range失败:', error);
+    return false;
+  }
+}
+
+/**
+ * 检查给定的单词Range是否在当前爆炸的句子中。
+ * 这比只比较单词文本更可靠，避免前后句有相同单词时误放行A4查词窗。
+ * @param {Range} wordRange - 被点击单词的Range
+ * @param {string} word - 备用文本判断使用的单词
+ * @returns {boolean} - 单词Range是否在当前爆炸句子中
+ */
+function isWordRangeInCurrentExplosionSentence(wordRange, word) {
+  const sentenceRange = getCurrentExplosionSentenceRangeForCheck();
+
+  if (sentenceRange) {
+    return isRangeInsideExplosionRange(wordRange, sentenceRange);
+  }
+
+  return isWordInCurrentExplosionSentence(word);
+}
+
 /**
  * 检查给定的单词是否在当前爆炸的句子中
  * @param {string} word - 要检查的单词
