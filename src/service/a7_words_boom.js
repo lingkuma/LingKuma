@@ -78,6 +78,8 @@ function initWordExplosion() {
 
   chrome.storage.local.get([
     'enablePlugin', // 插件总开关
+    'wordHighlightFloatingButtonScope',
+    'wordHighlightPageTabOverrides',
     'wordExplosionEnabled',
     'wordExplosionTriggerMode',
     'wordExplosionPositionMode',
@@ -105,7 +107,7 @@ function initWordExplosion() {
   ], (result) => {
     // 加载插件总开关状态
     if (!wordExplosionControlMessageSeen) {
-      isPluginEnabled = result.enablePlugin !== false;
+      isPluginEnabled = isWordExplosionHighlightEnabledForCurrentPage(result);
     }
     wordExplosionConfig.enabled = result.wordExplosionEnabled !== undefined ? result.wordExplosionEnabled : true;
     wordExplosionConfig.triggerMode = result.wordExplosionTriggerMode || 'click';
@@ -177,13 +179,15 @@ function initWordExplosion() {
 // 监听配置变化
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'local') {
-    // 监听插件总开关变化
-    if (changes.enablePlugin && !wordExplosionControlMessageSeen) {
-      isPluginEnabled = changes.enablePlugin.newValue !== false;
-      if (!isPluginEnabled) {
-        hideWordExplosion();
-        console.log('[WordExplosion] plugin disabled, hide word explosion');
-      }
+    // 监听高亮开关变化；page-scope 下要跟随当前页 override，而不是只看全局 enablePlugin。
+    if ((changes.enablePlugin || changes.wordHighlightFloatingButtonScope || changes.wordHighlightPageTabOverrides) && !wordExplosionControlMessageSeen) {
+      chrome.storage.local.get(['enablePlugin', 'wordHighlightFloatingButtonScope', 'wordHighlightPageTabOverrides'], (result) => {
+        isPluginEnabled = isWordExplosionHighlightEnabledForCurrentPage(result);
+        if (!isPluginEnabled) {
+          hideWordExplosion();
+          console.log('[WordExplosion] highlight runtime disabled by storage, hide word explosion');
+        }
+      });
     }
     if (changes.wordExplosionEnabled) {
       wordExplosionEnabled = changes.wordExplosionEnabled.newValue;
@@ -4552,6 +4556,30 @@ function getSentenceRect(sentence, foundInfo) {
     console.error('[WordExplosion] 获取句子位置失败:', error);
     return null;
   }
+}
+
+function getWordExplosionPageKeyForCurrentPage() {
+  try {
+    const parsedUrl = new URL(window.location.href);
+    return (parsedUrl.hostname || parsedUrl.host || parsedUrl.href).toLowerCase();
+  } catch (error) {
+    return null;
+  }
+}
+
+function isWordExplosionHighlightEnabledForCurrentPage(result) {
+  const scope = result.wordHighlightFloatingButtonScope === 'page' ? 'page' : 'global';
+  if (scope !== 'page') {
+    return result.enablePlugin !== false;
+  }
+
+  const pageKey = getWordExplosionPageKeyForCurrentPage();
+  const overrides = result.wordHighlightPageTabOverrides || {};
+  if (!pageKey) {
+    return false;
+  }
+
+  return Object.prototype.hasOwnProperty.call(overrides, pageKey) && overrides[pageKey] === true;
 }
 
 // 检查URL是否匹配黑名单模式（与高亮黑名单同步）
