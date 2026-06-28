@@ -38,6 +38,30 @@ function logOnce(message, ...args) {
   }
 }
 
+const A4_STORAGE_CACHE_KEYS = [
+  'tooltipGap',
+  'autoCloseTooltip',
+  'autoRefreshTooltip',
+  'enableAutoWordTTS',
+  'autoExpandTooltip',
+  'clickOnlyTooltip',
+  'useOrionTTS',
+  'liquidGlassEnabled',
+  'isDarkMode',
+  'tooltipThemeMode',
+  'tooltipBackground',
+  'devicePixelRatio',
+  'defaultExpandCapsule',
+  'preferPopupAbove',
+  'tooltipMinimized',
+  'defaultExpandTooltip',
+  'defaultExpandSententsTooltip',
+  'customCapsules',
+  'wordStatusKeys'
+];
+const a4StorageCache = Object.create(null);
+let a4StorageCachePreloadPromise = null;
+preloadA4StorageCache();
 /**
  * 确保单词拥有完整的详情数据
  * 如果缓存中只有轻量级数据（status + isCustom），则从数据库加载完整数据
@@ -94,20 +118,11 @@ async function ensureFullWordDetails(word) {
  * 快速获取液体玻璃状态（带缓存）
  */
 function getLiquidGlassEnabledFast() {
-  return new Promise((resolve) => {
-    const now = Date.now();
-    // 缓存5秒有效
-    if (liquidGlassEnabledCache !== null && (now - liquidGlassEnabledCacheTime < 5000)) {
-      resolve(liquidGlassEnabledCache);
-      return;
-    }
-
-    chrome.storage.local.get(['liquidGlassEnabled'], (result) => {
-      const isEnabled = result.liquidGlassEnabled !== undefined ? result.liquidGlassEnabled : liquidGlassEnabled;
-      liquidGlassEnabledCache = isEnabled;
-      liquidGlassEnabledCacheTime = now;
-      resolve(isEnabled);
-    });
+  return getStorageValue('liquidGlassEnabled').then((storedValue) => {
+    const isEnabled = storedValue !== undefined ? storedValue : liquidGlassEnabled;
+    liquidGlassEnabledCache = isEnabled;
+    liquidGlassEnabledCacheTime = Date.now();
+    return isEnabled;
   });
 }
 
@@ -182,8 +197,7 @@ function applyFirefoxGlassEffect() {
     tooltipEl.classList.add('firefox-glass-effect');
 
     // 检测当前主题模式
-    chrome.storage.local.get(['isDarkMode'], (result) => {
-      const isDark = result.isDarkMode;
+    getStorageValue('isDarkMode').then((isDark) => {
       if (isDark) {
         tooltipEl.classList.add('dark-mode');
       } else {
@@ -470,8 +484,8 @@ function updateLiquidGlassToggleButton(button, enabled) {
 
   // 如果没有传入状态，从存储中读取
   if (enabled === undefined) {
-    chrome.storage.local.get(['liquidGlassEnabled'], (result) => {
-      const isEnabled = result.liquidGlassEnabled !== undefined ? result.liquidGlassEnabled : true;
+    getStorageValue('liquidGlassEnabled').then((storedLiquidGlassEnabled) => {
+      const isEnabled = storedLiquidGlassEnabled !== undefined ? storedLiquidGlassEnabled : true;
       updateLiquidGlassToggleButton(button, isEnabled);
     });
     return;
@@ -661,33 +675,18 @@ let cachedBackgroundSettings = null; // 缓存的背景设置
 let lastBackgroundSettingsUpdate = 0; // 上次更新缓存的时间戳
 
 // 获取背景设置并应用
-function loadBackgroundSettings() {
-  return new Promise((resolve) => {
-    // 检查是否有缓存且缓存时间不超过5分钟
-    const now = Date.now();
-    const cacheExpiry = 10 * 60 * 1000; // 5分钟缓存过期时间
+async function loadBackgroundSettings() {
+  if (cachedBackgroundSettings) {
+    console.log("使用缓存的背景设置");
+    applyBackgroundSettings(cachedBackgroundSettings);
+    return;
+  }
 
-    if (cachedBackgroundSettings && (now - lastBackgroundSettingsUpdate < cacheExpiry)) {
-      console.log("使用缓存的背景设置");
-      applyBackgroundSettings(cachedBackgroundSettings);
-      resolve();
-      return;
-    }
-
-    // 如果没有缓存或缓存已过期，从storage获取
-    chrome.storage.local.get(['tooltipBackground'], function(result) {
-      const bgSettings = result.tooltipBackground || { enabled: true, defaultType: 'svg' };
-      console.log("从storage加载背景设置:", bgSettings);
-
-      // 更新缓存
-      cachedBackgroundSettings = bgSettings;
-      lastBackgroundSettingsUpdate = now;
-
-      // 应用设置
-      applyBackgroundSettings(bgSettings);
-      resolve();
-    });
-  });
+  const bgSettings = await getStorageValue('tooltipBackground') || { enabled: true, defaultType: 'svg' };
+  console.log("从缓存读取背景设置:", bgSettings);
+  cachedBackgroundSettings = bgSettings;
+  lastBackgroundSettingsUpdate = Date.now();
+  applyBackgroundSettings(bgSettings);
 }
 
 // 应用背景设置的函数，从loadBackgroundSettings中提取出来以便复用
@@ -1072,8 +1071,7 @@ async function showEnhancedTooltipForWord(word, sentence, wordRect, parent, orig
       if (await isFirefox()) {
         tooltipEl.classList.add('firefox-glass-effect');
         // 检测当前主题模式
-        chrome.storage.local.get(['isDarkMode'], (result) => {
-          const isDark = result.isDarkMode;
+        getStorageValue('isDarkMode').then((isDark) => {
           if (isDark) {
             tooltipEl.classList.add('dark-mode');
           } else {
@@ -1094,14 +1092,14 @@ async function showEnhancedTooltipForWord(word, sentence, wordRect, parent, orig
   // 检查是否需要禁用动画（Bionic模式或液体玻璃特效）
   // 保存当前tooltipEl的引用，避免异步操作中访问已清理的全局变量
   const animationTooltipEl = tooltipEl;
-  chrome.storage.local.get(['liquidGlassEnabled'], (result) => {
+  getStorageValue('liquidGlassEnabled').then((storedLiquidGlassEnabled) => {
     // 检查tooltipEl是否仍然存在且未被移除，以及tooltip是否正在被销毁
     if (!animationTooltipEl || !animationTooltipEl.parentNode || tooltipBeingDestroyed) {
       console.log('tooltipEl 已被移除或tooltip正在被销毁，跳过动画禁用设置');
       return;
     }
 
-    const isGlassEnabled = result.liquidGlassEnabled !== undefined ? result.liquidGlassEnabled : liquidGlassEnabled;
+    const isGlassEnabled = storedLiquidGlassEnabled !== undefined ? storedLiquidGlassEnabled : liquidGlassEnabled;
     const shouldDisableAnimation = isBionicActive || isGlassEnabled;
 
     if (shouldDisableAnimation) {
@@ -1403,14 +1401,14 @@ async function showEnhancedTooltipForWord(word, sentence, wordRect, parent, orig
   // 获取弹窗主题模式设置
   // 保存当前tooltipEl的引用，避免异步操作中访问已清理的全局变量
   const currentTooltipEl = tooltipEl;
-  chrome.storage.local.get(['tooltipThemeMode'], (result) => {
+  getStorageValue('tooltipThemeMode').then((tooltipThemeMode) => {
     // 使用保存的引用而不是全局变量，并检查tooltip是否正在被销毁
     if (!currentTooltipEl || !currentTooltipEl.parentNode || tooltipBeingDestroyed) {
       console.error('tooltipEl 已被移除或tooltip正在被销毁，无法设置主题模式');
       return;
     }
 
-    const themeMode = result.tooltipThemeMode || 'auto';
+    const themeMode = tooltipThemeMode || 'auto';
 
     if (themeMode === 'dark') {
       // 固定暗色主题
@@ -4527,8 +4525,8 @@ document.addEventListener("keydown", currentTooltipKeydownHandler, false); // <-
       e.stopPropagation();
 
       // 切换液体玻璃效果状态
-      chrome.storage.local.get(['liquidGlassEnabled'], (result) => {
-        const currentState = result.liquidGlassEnabled !== undefined ? result.liquidGlassEnabled : true;
+      getStorageValue('liquidGlassEnabled').then((storedLiquidGlassEnabled) => {
+        const currentState = storedLiquidGlassEnabled !== undefined ? storedLiquidGlassEnabled : true;
         const newState = !currentState;
 
         // 保存新状态
@@ -4685,11 +4683,9 @@ document.addEventListener("keydown", currentTooltipKeydownHandler, false); // <-
     // 使用 Promise 来确保异步操作完成后再绑定事件
     const initializeCapsule = async () => {
       // 检查是否默认展开胶囊
-      const result = await new Promise(resolve => {
-        chrome.storage.local.get('defaultExpandCapsule', resolve);
-      });
+      const defaultExpandCapsule = await getStorageValue('defaultExpandCapsule');
 
-      if (result.defaultExpandCapsule === true) {
+      if (defaultExpandCapsule === true) {
         // 默认展开胶囊 - 延迟一点确保弹窗已经完全渲染
         setTimeout(async () => {
           await updateCapsulesPosition();
@@ -4911,7 +4907,7 @@ document.addEventListener("keydown", currentTooltipKeydownHandler, false); // <-
   const willExceedBottom = (estimatedTooltipHeight + gap) > spaceBelowViewport;
 
   // 获取用户设置：是否优先向上弹出和是否需要最小化
-  chrome.storage.local.get(['preferPopupAbove', 'tooltipMinimized'], function(result) {
+  getStorageValues(['preferPopupAbove', 'tooltipMinimized']).then(function(result) {
     const preferPopupAbove = result.preferPopupAbove || false;
     const shouldMinimize = result.tooltipMinimized === true;
 
@@ -5051,7 +5047,7 @@ document.addEventListener("keydown", currentTooltipKeydownHandler, false); // <-
     }
 
     // 在显示动画之前，先处理收缩和最小化状态，避免闪动
-    chrome.storage.local.get(['defaultExpandTooltip', 'defaultExpandSententsTooltip'], function(expandResult) {
+    getStorageValues(['defaultExpandTooltip', 'defaultExpandSententsTooltip']).then(function(expandResult) {
       // 如果设置为不展开,则添加collapsed类
       if (!expandResult.defaultExpandTooltip) {
         tooltipEl.classList.add('collapsed');
@@ -5094,7 +5090,7 @@ document.addEventListener("keydown", currentTooltipKeydownHandler, false); // <-
   });
 
   // 不在这里设置可见性，而是在位置计算完成后设置
-  // 位置计算在chrome.storage.local.get回调中完成
+  // 位置计算在缓存读取回调中完成
 
   // 添加滚轮事件监听，防止iframe页面被滚动
   tooltipEl.addEventListener('wheel', (e) => {
@@ -5265,8 +5261,8 @@ function updateButtonColors(tooltipEl, wordStatus) {
     };
 
   // 首先获取弹窗主题模式设置
-  chrome.storage.local.get(['tooltipThemeMode'], (result) => {
-    const themeMode = result.tooltipThemeMode || 'auto';
+  getStorageValue('tooltipThemeMode').then((tooltipThemeMode) => {
+    const themeMode = tooltipThemeMode || 'auto';
 
     if (themeMode === 'dark') {
       // 固定暗色主题
@@ -5495,14 +5491,14 @@ function updateStatusToggleButton(tooltipEl, currentStatus) {
       e.preventDefault(); // 阻止默认行为，希望能阻止焦点转移和后续的 click 事件
 
       // 检查是否使用Orion TTS
-      chrome.storage.local.get(['useOrionTTS'], function(result) {
+      getStorageValue('useOrionTTS').then(function(useOrionTTSSetting) {
         // 添加null检查，确保tooltipEl存在且tooltip未被销毁
         if (!tooltipEl || tooltipBeingDestroyed) {
           console.error('tooltipEl 为 null 或tooltip正在被销毁，无法处理单词标题点击');
           return;
         }
 
-        const useOrionTTS = result.useOrionTTS === true;
+        const useOrionTTS = useOrionTTSSetting === true;
 
         // 如果使用Orion TTS，且有自定义播放按钮，则不执行播放操作
         // 因为自定义播放按钮有自己的点击事件处理
@@ -5541,8 +5537,8 @@ function updateStatusToggleButton(tooltipEl, currentStatus) {
       e.stopPropagation(); // 阻止事件冒泡，防止触发word-title的点击事件
 
       // 检查是否使用Orion TTS
-      chrome.storage.local.get(['useOrionTTS'], function(result) {
-        const useOrionTTS = result.useOrionTTS === true;
+      getStorageValue('useOrionTTS').then(function(useOrionTTSSetting) {
+        const useOrionTTS = useOrionTTSSetting === true;
 
         // 如果使用Orion TTS，且有自定义播放按钮，则不执行播放操作
         // 因为自定义播放按钮有自己的点击事件处理
@@ -5729,12 +5725,101 @@ function updateStatusToggleButton(tooltipEl, currentStatus) {
 // 修改 handleMouseMoveForTooltip：当鼠标悬停时计算句子并调用扩展的 tooltip
 // =======================
 
-// 修改为使用Promise包装chrome.storage.local.get
-function getStorageValue(key) {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(key, (result) => {
-      resolve(result[key]);
+// 使用内存缓存包装chrome.storage.local.get，避免查词热路径反复跨进程读取storage
+function hasA4StorageCacheKey(key) {
+  return Object.prototype.hasOwnProperty.call(a4StorageCache, key);
+}
+
+function preloadA4StorageCache() {
+  if (a4StorageCachePreloadPromise) {
+    return a4StorageCachePreloadPromise;
+  }
+
+  if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+    a4StorageCachePreloadPromise = Promise.resolve({});
+    return a4StorageCachePreloadPromise;
+  }
+
+  a4StorageCachePreloadPromise = new Promise((resolve) => {
+    chrome.storage.local.get(A4_STORAGE_CACHE_KEYS, (result) => {
+      const values = result || {};
+      A4_STORAGE_CACHE_KEYS.forEach((key) => {
+        a4StorageCache[key] = values[key];
+      });
+      resolve(values);
     });
+  });
+
+  return a4StorageCachePreloadPromise;
+}
+
+function getCachedStorageValue(key, fallbackValue = undefined) {
+  if (hasA4StorageCacheKey(key)) {
+    return a4StorageCache[key];
+  }
+
+  preloadA4StorageCache();
+  return fallbackValue;
+}
+
+function getStorageValues(keys) {
+  const keyList = Array.isArray(keys) ? keys : [keys];
+  const values = {};
+  const missingKeys = [];
+
+  keyList.forEach((key) => {
+    if (hasA4StorageCacheKey(key)) {
+      values[key] = a4StorageCache[key];
+    } else {
+      missingKeys.push(key);
+    }
+  });
+
+  if (missingKeys.length === 0) {
+    return Promise.resolve(values);
+  }
+
+  if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+    return Promise.resolve(values);
+  }
+
+  return new Promise((resolve) => {
+    chrome.storage.local.get(missingKeys, (result) => {
+      const storageValues = result || {};
+      missingKeys.forEach((key) => {
+        a4StorageCache[key] = storageValues[key];
+        values[key] = storageValues[key];
+      });
+      resolve(values);
+    });
+  });
+}
+
+function getStorageValue(key) {
+  return getStorageValues([key]).then((result) => result[key]);
+}
+
+if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+  chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace !== 'local') return;
+
+    Object.keys(changes).forEach((key) => {
+      a4StorageCache[key] = changes[key].newValue;
+    });
+
+    if (changes.tooltipBackground) {
+      cachedBackgroundSettings = changes.tooltipBackground.newValue || null;
+      lastBackgroundSettingsUpdate = Date.now();
+      if (cachedBackgroundSettings && typeof applyBackgroundSettings === 'function') {
+        applyBackgroundSettings(cachedBackgroundSettings);
+      }
+    }
+
+    if (changes.liquidGlassEnabled) {
+      liquidGlassEnabled = changes.liquidGlassEnabled.newValue !== undefined ? changes.liquidGlassEnabled.newValue : liquidGlassEnabled;
+      liquidGlassEnabledCache = liquidGlassEnabled;
+      liquidGlassEnabledCacheTime = Date.now();
+    }
   });
 }
 
@@ -5793,10 +5878,11 @@ async function handleMouseMoveForTooltip(e,isOffscreen = false, activationContex
     tooltipDebounceTimer = null;
   }
 
-  // await 获取数据库总量
+  // 首次进入时批量预加载A4常用设置，后续都从内存缓存读取
+  await preloadA4StorageCache();
 
   // 获取用户设置的gap值，用于tooltip边界检测
-  let userGap = await getStorageValue('tooltipGap');
+  let userGap = getCachedStorageValue('tooltipGap', 50);
   userGap = userGap !== undefined ? userGap : 50; // 默认值为50
 
 
@@ -5809,9 +5895,9 @@ async function handleMouseMoveForTooltip(e,isOffscreen = false, activationContex
   }
   // --- 检查结束 ---
   let parent = getParentAtPoint(e.clientX, e.clientY);
-  // 使用await等待获取设置值
-  const autoCloseTooltip = await getStorageValue('autoCloseTooltip');
-  const autoRefreshTooltip = await getStorageValue('autoRefreshTooltip');
+  // 从A4设置缓存读取开关值
+  const autoCloseTooltip = getCachedStorageValue('autoCloseTooltip');
+  const autoRefreshTooltip = getCachedStorageValue('autoRefreshTooltip');
 
   if (!autoCloseTooltip && tooltipEl) {
     // console.log("autoCloseTooltip 为 false，小窗存在,不做操作");
@@ -5892,7 +5978,7 @@ async function handleMouseMoveForTooltip(e,isOffscreen = false, activationContex
       // 检查当前单词是否与上次 *播放* 的不同
       if (currentWordLower !== lastPlayedTTSWord) {
         // 获取开关状态
-        isAutoWordTTSEnabled = await getStorageValue('enableAutoWordTTS');
+        isAutoWordTTSEnabled = getCachedStorageValue('enableAutoWordTTS');
 
         // 只有在开关启用时才设置防抖和播放
         if (isAutoWordTTSEnabled) {
@@ -5986,16 +6072,16 @@ if (hoveredDetail) {
   //或者不一致，也会关闭。这里没必要判断了。
 
 
-     // 等待获取autoExpandTooltip设置 自动展开未高亮单词的小窗
-     const autoExpand = await getStorageValue('autoExpandTooltip') || false;
+     // 从缓存读取autoExpandTooltip设置 自动展开未高亮单词的小窗
+     const autoExpand = getCachedStorageValue('autoExpandTooltip') || false;
      // console.log("autoExpand 为:", autoExpand);
 
 
      //这里，如果是点击触发，就显示小窗了。
      //如果是自动触发，则不显示小窗。
 
-     // 使用 await 获取 clickOnlyTooltip 设置
-     const clickOnlyMode = await getStorageValue('clickOnlyTooltip') || false;
+     // 从缓存读取 clickOnlyTooltip 设置
+     const clickOnlyMode = getCachedStorageValue('clickOnlyTooltip') || false;
 
      if(clickOnlyMode){
         // console.log("clickOnlyMode 为:", clickOnlyMode);
@@ -10035,8 +10121,8 @@ function closeTooltipWithAnimation() {
   currentTooltipKeydownHandler = null;
 
   // 检查是否需要禁用动画（Bionic模式或液体玻璃特效）
-  chrome.storage.local.get(['liquidGlassEnabled'], (result) => {
-    const isGlassEnabled = result.liquidGlassEnabled !== undefined ? result.liquidGlassEnabled : liquidGlassEnabled;
+  getStorageValue('liquidGlassEnabled').then((storedLiquidGlassEnabled) => {
+    const isGlassEnabled = storedLiquidGlassEnabled !== undefined ? storedLiquidGlassEnabled : liquidGlassEnabled;
     const shouldDisableAnimation = isBionicActive || isGlassEnabled;
 
     if (shouldDisableAnimation) {
@@ -10375,7 +10461,7 @@ async function repositionMiniTooltip() {
   const willExceedBottom = (miniHeight + gap) > spaceBelowViewport;
 
   // 获取用户设置：是否优先向上弹出
-  chrome.storage.local.get('preferPopupAbove', function(result) {
+  getStorageValues(['preferPopupAbove']).then(function(result) {
     const preferPopupAbove = result.preferPopupAbove || false;
 
     // 根据设置和空间情况决定弹窗方向
@@ -10743,9 +10829,7 @@ function restoreExamplesSectionDefaultState() {
 // 生成所有胶囊容器（包括默认容器和自定义容器）
 async function generateAllCapsules(wrapper, currentWord, shadowRoot, currentSentence = '') {
   // 获取自定义胶囊配置
-  const result = await new Promise(resolve => {
-    chrome.storage.local.get(['customCapsules', 'tooltipThemeMode'], resolve);
-  });
+  const result = await getStorageValues(['customCapsules', 'tooltipThemeMode']);
 
   const customCapsules = result.customCapsules || [];
   const themeMode = result.tooltipThemeMode || 'auto';
@@ -10939,8 +11023,8 @@ function bindDefaultCapsuleEvents(capsule, shadowRoot) {
         updateHighlightThemeButtonIcon(highlightThemeBtn, newMode);
 
         // 如果当前tooltip主题模式是auto，需要更新tooltip和爆炸窗口的主题
-        chrome.storage.local.get(['tooltipThemeMode'], (result) => {
-          const themeMode = result.tooltipThemeMode || 'auto';
+        getStorageValue('tooltipThemeMode').then((tooltipThemeMode) => {
+          const themeMode = tooltipThemeMode || 'auto';
           if (themeMode === 'auto') {
             // 更新当前tooltip的主题
             if (tooltipEl) {
