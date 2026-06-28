@@ -49,6 +49,12 @@ Alice iniziava a stancarsi molto di stare seduta accanto a sua sorella sulla riv
 
 
 
+## Manually Click the Button to Start Highlighting
+Keeping highlighting off by default reduces the extension's memory usage. Core features load only after you manually click to enable highlighting.
+Note: for pages that are already loaded, turning highlighting off does not release memory. You need to turn highlighting off and refresh the page to release the extension memory.
+![](https://res.cloudinary.com/dux7dnl5b/image/upload/v1782620013/s2miikysy1obsi6borde.gif)
+
+
 ## Why are all the words above blue?
 ::: tip
 Because you don't know these words. You can click to look them up, and then the words turn yellow. If you know a word, you can change its status to "checkmark ✅", and the word will no longer be highlighted.

@@ -49,6 +49,12 @@ Alice iniziava a stancarsi molto di stare seduta accanto a sua sorella sulla riv
 
 
 
+## 手動點擊按鈕啟動醒目提示
+預設關閉醒目提示可降低擴充功能的記憶體占用，只有手動點擊醒目提示後，核心功能才會載入。
+註：對於已經載入的網頁，取消醒目提示並不能釋放記憶體，需要取消醒目提示並重新整理頁面，才能釋放擴充功能記憶體。
+![](https://res.cloudinary.com/dux7dnl5b/image/upload/v1782620013/s2miikysy1obsi6borde.gif)
+
+
 ## 為什麼上面單字都是藍色的？
 ::: tip
 因為這些單字您都不認識，您可以點擊查询，然後單字就變成了黃色。 如果您認識這個單字，可以將狀態改成「打勾✅」，這樣單字就不會高亮。

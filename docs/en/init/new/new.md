@@ -2,6 +2,8 @@
 
 1. ## Floating Button & Performance Optimization
 Each page has an independent highlight state, and highlighting is off by default, so it adds no overhead when not enabled.
+Keeping highlighting off by default reduces the extension's memory usage. Core features load only after you manually click to enable highlighting.
+Note: for pages that are already loaded, turning highlighting off does not release memory. You need to turn highlighting off and refresh the page to release the extension memory.
 ![](https://res.cloudinary.com/dux7dnl5b/image/upload/v1782477615/sbcj9hbt5pqulxziqple.gif)
 
 

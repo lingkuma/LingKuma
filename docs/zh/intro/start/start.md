@@ -46,7 +46,10 @@ Alice iniziava a stancarsi molto di stare seduta accanto a sua sorella sulla riv
 
 
 :::
-
+## 手动点击按钮启动高亮
+默认关闭高亮可降低插件内存占用，只有手动点击高亮后，核心功能才加载。
+注：对于已经加载的网页，取消高亮并不能释放内存，需要取消高亮并刷新页面才能释放插件内存。
+![](https://res.cloudinary.com/dux7dnl5b/image/upload/v1782620013/s2miikysy1obsi6borde.gif)
 
 
 ## 为什么上面单词都是蓝色的？
