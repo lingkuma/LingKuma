@@ -6,6 +6,17 @@
   "extDescription": {
     "message": "Aprende cualquier idioma en la web",
     "description": "Extension description"
+  },
+  "word_highlight_button_scope": {
+    "message": "Alcance del botón",
+    "description": "Popup label for the word highlight floating button scope setting"
+  },
+  "word_highlight_button_scope_page": {
+    "message": "Página individual",
+    "description": "Popup option for applying the word highlight floating button to the current page only"
+  },
+  "word_highlight_button_scope_global": {
+    "message": "Global",
+    "description": "Popup option for applying the word highlight floating button globally"
   }
 }
-

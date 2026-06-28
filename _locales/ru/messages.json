@@ -6,6 +6,17 @@
   "extDescription": {
     "message": "Изучайте любой язык в интернете",
     "description": "Extension description"
+  },
+  "word_highlight_button_scope": {
+    "message": "Область действия кнопки",
+    "description": "Popup label for the word highlight floating button scope setting"
+  },
+  "word_highlight_button_scope_page": {
+    "message": "Одна веб-страница",
+    "description": "Popup option for applying the word highlight floating button to the current page only"
+  },
+  "word_highlight_button_scope_global": {
+    "message": "Глобально",
+    "description": "Popup option for applying the word highlight floating button globally"
   }
 }
-

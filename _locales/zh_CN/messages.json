@@ -6,6 +6,17 @@
   "extDescription": {
     "message": "在网页上学习任何语言",
     "description": "扩展描述"
+  },
+  "word_highlight_button_scope": {
+    "message": "按钮生效范围",
+    "description": "Popup label for the word highlight floating button scope setting"
+  },
+  "word_highlight_button_scope_page": {
+    "message": "单个网页",
+    "description": "Popup option for applying the word highlight floating button to the current page only"
+  },
+  "word_highlight_button_scope_global": {
+    "message": "全局",
+    "description": "Popup option for applying the word highlight floating button globally"
   }
 }
-

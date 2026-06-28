@@ -4,8 +4,19 @@
     "description": "Extension name"
   },
   "extDescription": {
-    "message": "Apprenez n'importe quelle langue sur le web",
+    "message": "Apprenez n\u0027importe quelle langue sur le web",
     "description": "Extension description"
+  },
+  "word_highlight_button_scope": {
+    "message": "Portée du bouton",
+    "description": "Popup label for the word highlight floating button scope setting"
+  },
+  "word_highlight_button_scope_page": {
+    "message": "Page unique",
+    "description": "Popup option for applying the word highlight floating button to the current page only"
+  },
+  "word_highlight_button_scope_global": {
+    "message": "Global",
+    "description": "Popup option for applying the word highlight floating button globally"
   }
 }
-

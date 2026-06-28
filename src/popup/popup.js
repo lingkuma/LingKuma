@@ -3835,6 +3835,9 @@ const i18n = {
 
     // 高亮语言设置
     "word_highlight_floating_button": "网页单词高亮悬浮按钮",
+    "word_highlight_button_scope": "按钮生效范围",
+    "word_highlight_button_scope_page": "单个网页",
+    "word_highlight_button_scope_global": "全局",
     "highlight_chinese": "中文",
     "highlight_japanese": "日语",
     "auto_detect_japanese_kanji": "智能识别日文独立汉字",
@@ -4041,6 +4044,9 @@ const i18n = {
 
     // Highlight Language Settings
     "word_highlight_floating_button": "Web Word Highlight Floating Button",
+    "word_highlight_button_scope": "Button scope",
+    "word_highlight_button_scope_page": "Single page",
+    "word_highlight_button_scope_global": "Global",
     "highlight_chinese": "Chinese",
     "highlight_japanese": "Japanese",
     "auto_detect_japanese_kanji": "Smart Detect Japanese Kanji",
@@ -4215,6 +4221,9 @@ const i18n = {
     "word_status_5": "單字狀態 5 (標記)",
     "word_status_toggle": "切換已知/未知",
     "word_highlight_floating_button": "網頁單字高亮懸浮按鈕",
+    "word_highlight_button_scope": "按鈕生效範圍",
+    "word_highlight_button_scope_page": "單個網頁",
+    "word_highlight_button_scope_global": "全域",
     "highlight_chinese": "中文",
     "highlight_japanese": "日語",
     "auto_detect_japanese_kanji": "智慧識別日文獨立漢字",
@@ -4387,6 +4396,9 @@ const i18n = {
 
         // Hervorhebung Spracheinstellungen
         "word_highlight_floating_button": "Schwebende Schaltfläche für Worthervorhebung",
+        "word_highlight_button_scope": "Geltungsbereich der Schaltfläche",
+        "word_highlight_button_scope_page": "Einzelne Webseite",
+        "word_highlight_button_scope_global": "Global",
         "highlight_chinese": "Chinesisch",
         "highlight_japanese": "Japanisch ",
         "auto_detect_japanese_kanji": "Intelligente Erkennung japanischer Kanji",
@@ -4555,6 +4567,9 @@ const i18n = {
 
         // Paramètres de surbrillance de langue
         "word_highlight_floating_button": "Bouton flottant de surlignage des mots",
+        "word_highlight_button_scope": "Portée du bouton",
+        "word_highlight_button_scope_page": "Page unique",
+        "word_highlight_button_scope_global": "Global",
         "highlight_chinese": "Chinois ",
         "highlight_japanese": "Japonais ",
         "auto_detect_japanese_kanji": "Détection intelligente des kanji japonais",
@@ -4724,6 +4739,9 @@ const i18n = {
 
         // Configuración de resaltado de idioma
         "word_highlight_floating_button": "Botón flotante de resaltado de palabras",
+        "word_highlight_button_scope": "Alcance del botón",
+        "word_highlight_button_scope_page": "Página individual",
+        "word_highlight_button_scope_global": "Global",
         "highlight_chinese": "Chino",
         "highlight_japanese": "Japonés",
         "auto_detect_japanese_kanji": "Detección inteligente de kanji japoneses",
@@ -4895,6 +4913,9 @@ const i18n = {
 
           // ハイライト言語設定
           "word_highlight_floating_button": "Web単語ハイライトのフローティングボタン",
+          "word_highlight_button_scope": "ボタンの適用範囲",
+          "word_highlight_button_scope_page": "単一のWebページ",
+          "word_highlight_button_scope_global": "グローバル",
           "highlight_chinese": "中国語",
           "highlight_japanese": "日本語",
           "auto_detect_japanese_kanji": "日本語の漢字を自動検出",
@@ -5066,6 +5087,9 @@ const i18n = {
 
           // 강조 표시 언어 설정
           "word_highlight_floating_button": "웹 단어 강조 플로팅 버튼",
+          "word_highlight_button_scope": "버튼 적용 범위",
+          "word_highlight_button_scope_page": "단일 웹페이지",
+          "word_highlight_button_scope_global": "전역",
           "highlight_chinese": "중국어 ",
           "highlight_japanese": "일본어 ",
           "auto_detect_japanese_kanji": "일본어 한자 자동 감지",
@@ -5224,6 +5248,9 @@ const i18n = {
 
           // Настройки подсветки языка
           "word_highlight_floating_button": "Плавающая кнопка подсветки слов",
+          "word_highlight_button_scope": "Область действия кнопки",
+          "word_highlight_button_scope_page": "Одна веб-страница",
+          "word_highlight_button_scope_global": "Глобально",
           "highlight_chinese": "Китайский",
           "highlight_japanese": "Японский",
           "auto_detect_japanese_kanji": "Умное определение японских кандзи",
@@ -5381,6 +5408,9 @@ const i18n = {
 
           // Impostazioni lingua evidenziazione
           "word_highlight_floating_button": "Pulsante flottante evidenziazione parole",
+          "word_highlight_button_scope": "Ambito del pulsante",
+          "word_highlight_button_scope_page": "Singola pagina web",
+          "word_highlight_button_scope_global": "Globale",
           "highlight_chinese": "Cinese",
           "highlight_japanese": "Giapponese",
           "auto_detect_japanese_kanji": "Rilevamento intelligente dei Kanji giapponesi",

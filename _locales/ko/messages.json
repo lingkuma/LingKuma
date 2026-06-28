@@ -6,6 +6,17 @@
   "extDescription": {
     "message": "웹에서 모든 언어를 학습하세요",
     "description": "Extension description"
+  },
+  "word_highlight_button_scope": {
+    "message": "버튼 적용 범위",
+    "description": "Popup label for the word highlight floating button scope setting"
+  },
+  "word_highlight_button_scope_page": {
+    "message": "단일 웹페이지",
+    "description": "Popup option for applying the word highlight floating button to the current page only"
+  },
+  "word_highlight_button_scope_global": {
+    "message": "전역",
+    "description": "Popup option for applying the word highlight floating button globally"
   }
 }
-
