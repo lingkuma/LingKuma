@@ -34,6 +34,7 @@ const YOUTUBE_HIGHLIGHT_IDENTIFIERS = [
   'ytd-comment-thread-renderer',
   'ytd-comment-view-model',
   'yt-attributed-string',
+  'YtmCommentRendererText',
   'comment-content'
 ];
 
@@ -1013,6 +1014,7 @@ if (window.location.hostname.includes('youtube.com')) {
     'ytd-comment-thread-renderer',
     'ytd-comment-view-model',
     'yt-attributed-string',
+    'YtmCommentRendererText',
     'comment-content'
   ];
 

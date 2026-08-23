@@ -194,6 +194,7 @@ function isAllowedYouTubeElement(parent) {
     'ytd-comment-thread-renderer',
     'ytd-comment-view-model',
     'yt-attributed-string',
+    'YtmCommentRendererText',
     'comment-content'
   ];
 
