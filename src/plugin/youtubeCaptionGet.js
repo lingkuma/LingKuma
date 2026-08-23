@@ -302,93 +302,163 @@ window.isValidJsonUrl = async function(url) {
   }
 };
 
+function getYouTubeSubtitleButton() {
+  const selectors = [
+    '.ytp-subtitles-button',
+    '#player-control-overlay yt-closed-captions-toggle-button ytm-closed-captioning-button button',
+    '#player-control-overlay ytm-closed-captioning-button button',
+    'yt-closed-captions-toggle-button ytm-closed-captioning-button button'
+  ];
+
+  for (const selector of selectors) {
+    const button = document.querySelector(selector);
+    if (button) {
+      return button;
+    }
+  }
+
+  return null;
+}
+
+function isYouTubeSubtitleButtonPressed(button) {
+  if (!button) {
+    return false;
+  }
+
+  return button.getAttribute('aria-pressed') === 'true' ||
+    button.getAttribute('aria-checked') === 'true' ||
+    button.closest('[aria-pressed="true"], [aria-checked="true"]') !== null;
+}
+
+let youtubeCaptionControlRequestId = 0;
+
+function requestPageYouTubeCaptionControl(action, timeoutMs = 6500) {
+  const requestId = `lingkuma-caption-${Date.now()}-${++youtubeCaptionControlRequestId}`;
+
+  return new Promise(resolve => {
+    const handleResult = event => {
+      if (event.detail?.requestId !== requestId) {
+        return;
+      }
+      clearTimeout(timeoutId);
+      document.removeEventListener('lingkuma_youtube_caption_control_result', handleResult);
+      resolve(event.detail);
+    };
+    const timeoutId = setTimeout(() => {
+      document.removeEventListener('lingkuma_youtube_caption_control_result', handleResult);
+      resolve(null);
+    }, timeoutMs);
+
+    document.addEventListener('lingkuma_youtube_caption_control_result', handleResult);
+    document.dispatchEvent(new CustomEvent('lingkuma_youtube_caption_control', {
+      detail: { requestId, action }
+    }));
+  });
+}
+
+function showYouTubePlayerControls() {
+  if (getYouTubeSubtitleButton()) {
+    return;
+  }
+
+  const video = document.querySelector('video');
+  if (video) {
+    console.log('移动播放器控件未显示，尝试唤醒控件层');
+    video.click();
+  }
+
+  requestPageYouTubeCaptionControl('show').catch(() => {});
+}
+
+function waitForYouTubeSubtitleButton(timeoutMs = 5000) {
+  const existingButton = getYouTubeSubtitleButton();
+  if (existingButton) {
+    return Promise.resolve(existingButton);
+  }
+
+  showYouTubePlayerControls();
+
+  return new Promise(resolve => {
+    const startedAt = Date.now();
+    const check = () => {
+      const button = getYouTubeSubtitleButton();
+      if (button || Date.now() - startedAt >= timeoutMs) {
+        resolve(button);
+        return;
+      }
+      setTimeout(check, 250);
+    };
+    check();
+  });
+}
+
+function clickYouTubeSubtitleButton(button) {
+  if (!button) {
+    return false;
+  }
+
+  button.click();
+  return true;
+}
+
 // YouTube 字幕触发器
-function triggerYouTubeSubtitles(force = false, closeAfter = false) {
+async function triggerYouTubeSubtitles(force = false, closeAfter = false) {
   console.log('尝试触发 YouTube 字幕...');
 
-  // 延迟执行，确保页面已完全加载
-  setTimeout(() => {
-    // YouTube 字幕按钮选择器
-    const subtitleButtonSelector = '.ytp-subtitles-button';
-    const subtitleButton = document.querySelector(subtitleButtonSelector);
+  await new Promise(resolve => setTimeout(resolve, 250));
+  const subtitleButton = await waitForYouTubeSubtitleButton();
 
-    if (subtitleButton) {
-      console.log('找到字幕按钮');
+  if (subtitleButton) {
+    const isMobileButton = subtitleButton.matches(
+      '#player-control-overlay yt-closed-captions-toggle-button ytm-closed-captioning-button button,' +
+      '#player-control-overlay ytm-closed-captioning-button button'
+    );
+    console.log(`找到字幕按钮${isMobileButton ? '（移动播放器）' : ''}`);
 
-      // 检查字幕按钮状态
-      const isPressed = subtitleButton.getAttribute('aria-pressed') === 'true';
-      console.log(`字幕当前状态: ${isPressed ? '开启' : '关闭'}`);
+    const isPressed = isYouTubeSubtitleButtonPressed(subtitleButton);
+    console.log(`字幕当前状态: ${isPressed ? '开启' : '关闭'}`);
 
-      if (isPressed && force) {
-        // 如果字幕已开启且强制刷新，先关闭再开启
-        console.log('强制刷新字幕: 关闭再开启');
-        subtitleButton.click();
-        setTimeout(() => {
-          subtitleButton.click();
-          console.log('字幕已重新开启');
-
-          // 如果需要在获取URL后关闭字幕
-          if (closeAfter) {
-            setTimeout(() => {
-              console.log('获取URL后关闭字幕');
-              subtitleButton.click();
-            }, 1000); // 等待1秒后关闭字幕，确保URL已被捕获
-          }
-        }, 100);
-      } else if (!isPressed) {
-        // 如果字幕关闭，直接开启
-        console.log('开启字幕');
-        subtitleButton.click();
-
-        // 如果需要在获取URL后关闭字幕
-        if (closeAfter) {
-          setTimeout(() => {
-            console.log('获取URL后关闭字幕');
-            subtitleButton.click();
-          }, 1000); // 等待1秒后关闭字幕，确保URL已被捕获
-        }
-      } else if (isPressed && closeAfter) {
-        // 如果字幕已开启且需要关闭
-        console.log('关闭字幕');
-        subtitleButton.click();
-      } else {
-        console.log('字幕已经开启，无需操作');
-      }
-      return;
-    }
-
-    // 如果找不到字幕按钮，尝试使用播放器 API
-    console.log('未找到字幕按钮，尝试使用播放器 API');
-    const player = document.querySelector('#movie_player');
-
-    if (player && typeof player.toggleSubtitles === 'function') {
-      console.log('使用播放器 API 切换字幕');
-      player.toggleSubtitles();
-
-      if (force) {
-        setTimeout(() => {
-          player.toggleSubtitles();
-          console.log('字幕已重新切换');
-
-          // 如果需要在获取URL后关闭字幕
-          if (closeAfter) {
-            setTimeout(() => {
-              console.log('获取URL后关闭字幕');
-              player.toggleSubtitles();
-            }, 1000); // 等待1秒后关闭字幕，确保URL已被捕获
-          }
-        }, 100);
-      } else if (closeAfter) {
-        // 如果需要在获取URL后关闭字幕
-        setTimeout(() => {
-          console.log('获取URL后关闭字幕');
-          player.toggleSubtitles();
-        }, 1000); // 等待1秒后关闭字幕，确保URL已被捕获
-      }
+    if (isPressed && force) {
+      console.log('强制刷新字幕: 关闭再开启');
+      clickYouTubeSubtitleButton(subtitleButton);
+      await new Promise(resolve => setTimeout(resolve, 150));
+      clickYouTubeSubtitleButton(getYouTubeSubtitleButton() || subtitleButton);
+      console.log('字幕已重新开启');
+    } else if (!isPressed) {
+      console.log('开启字幕');
+      clickYouTubeSubtitleButton(subtitleButton);
+    } else if (closeAfter) {
+      console.log('关闭字幕');
+      clickYouTubeSubtitleButton(subtitleButton);
     } else {
-      console.log('无法找到字幕控制元素或方法');
+      console.log('字幕已经开启，无需操作');
     }
-  }, 1000);
+    return true;
+  }
+
+  console.log('隔离世界未找到字幕按钮，尝试通过页面上下文控制移动字幕');
+  const pageControlResult = await requestPageYouTubeCaptionControl(force ? 'refresh' : 'ensure-on');
+  if (pageControlResult?.found) {
+    console.log('页面上下文已操作移动字幕按钮:', pageControlResult);
+    return true;
+  }
+
+  console.log('页面上下文也未找到字幕按钮，尝试使用播放器 API');
+  const player = document.querySelector('#movie_player');
+
+  if (player && typeof player.toggleSubtitles === 'function') {
+    console.log('使用播放器 API 切换字幕');
+    player.toggleSubtitles();
+    if (force) {
+      await new Promise(resolve => setTimeout(resolve, 150));
+      player.toggleSubtitles();
+      console.log('字幕已重新切换');
+    }
+    return true;
+  }
+
+  console.log('无法找到字幕控制元素或方法');
+  return false;
 }
 
 // 提供一个函数来获取当前可用的字幕轨道
@@ -428,7 +498,7 @@ function getAvailableSubtitleTracks() {
 
 async function forceSubtitleAndGetJsonUrl(closeAfterGet = true) {
   console.log('触发字幕并等待原始字幕响应...');
-  triggerYouTubeSubtitles(true, false);
+  await triggerYouTubeSubtitles(true, false);
 
   const capturedResult = await window.waitForCapturedSubtitleData(10000);
   let url = capturedResult?.url || window.getBestCapturedSubtitleUrl();
@@ -451,9 +521,11 @@ async function forceSubtitleAndGetJsonUrl(closeAfterGet = true) {
     : `${url}&fmt=json3`;
 
   if (closeAfterGet) {
-    const subtitleButton = document.querySelector('.ytp-subtitles-button');
-    if (subtitleButton?.getAttribute('aria-pressed') === 'true') {
-      subtitleButton.click();
+    const subtitleButton = await waitForYouTubeSubtitleButton(2000);
+    if (isYouTubeSubtitleButtonPressed(subtitleButton)) {
+      clickYouTubeSubtitleButton(subtitleButton);
+    } else if (!subtitleButton) {
+      await requestPageYouTubeCaptionControl('ensure-off', 3000);
     }
   }
 

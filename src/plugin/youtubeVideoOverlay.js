@@ -27,6 +27,7 @@
     let originalParent = null;
     let originalNextSibling = null;
     let originalVideoStyle = null;
+    let overlayCreationInProgress = false;
     let isOverlayActive = false;
     let currentUrl = window.location.href;
     let floatButton = null;
@@ -1090,13 +1091,30 @@
         })();
     }
 
-    function createOverlay() {
+    async function createOverlay() {
+        if (overlayCreationInProgress) {
+            return;
+        }
+        overlayCreationInProgress = true;
+
+        try {
         console.log("创建 YouTube 视频覆盖层...");
 
-        const videoElement = document.querySelector('video');
+        let videoElement = document.querySelector('video');
         if (!videoElement) {
             console.log("未找到视频元素");
             return;
+        }
+
+        const isMobileYouTube = window.location.hostname === 'm.youtube.com';
+        if (isMobileYouTube) {
+            console.log('移动 YouTube：先在原播放器中获取字幕，再创建覆盖层');
+            await getYoutubeSubtitles();
+            videoElement = document.querySelector('video');
+            if (!videoElement) {
+                console.log("获取字幕后未找到视频元素");
+                return;
+            }
         }
 
         originalVideo = videoElement;
@@ -1201,10 +1219,16 @@
 
         console.log("YouTube 视频覆盖层创建成功，视频已移动到覆盖层");
 
-        getYoutubeSubtitles().then(() => {
+        const finishOverlayInitialization = () => {
             updateDisplayMode();
             startSubtitleUpdate();
-        });
+        };
+
+        if (isMobileYouTube) {
+            finishOverlayInitialization();
+        } else {
+            getYoutubeSubtitles().then(finishOverlayInitialization);
+        }
 
         keydownHandler = function(event) {
             if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
@@ -1239,6 +1263,9 @@
         const video = getVideoElement();
         if (video) {
             video.addEventListener('play', playHandler);
+        }
+        } finally {
+            overlayCreationInProgress = false;
         }
     }
 

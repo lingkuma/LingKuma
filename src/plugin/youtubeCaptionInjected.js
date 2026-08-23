@@ -30,6 +30,82 @@
     }
   }
 
+  const mobileSubtitleButtonSelectors = [
+    '#player-control-overlay yt-closed-captions-toggle-button ytm-closed-captioning-button button',
+    '#player-control-overlay ytm-closed-captioning-button button',
+    'yt-closed-captions-toggle-button ytm-closed-captioning-button button'
+  ];
+
+  function getMobileSubtitleButton() {
+    for (const selector of mobileSubtitleButtonSelectors) {
+      const button = document.querySelector(selector);
+      if (button) {
+        return button;
+      }
+    }
+    return null;
+  }
+
+  function isSubtitleButtonPressed(button) {
+    return button?.getAttribute('aria-pressed') === 'true' ||
+      button?.getAttribute('aria-checked') === 'true' ||
+      button?.closest('[aria-pressed="true"], [aria-checked="true"]') !== null;
+  }
+
+  function waitForMobileSubtitleButton(timeoutMs = 5000) {
+    const existingButton = getMobileSubtitleButton();
+    if (existingButton) {
+      return Promise.resolve(existingButton);
+    }
+
+    document.querySelector('video')?.click();
+
+    return new Promise(resolve => {
+      const startedAt = Date.now();
+      const check = () => {
+        const button = getMobileSubtitleButton();
+        if (button || Date.now() - startedAt >= timeoutMs) {
+          resolve(button);
+          return;
+        }
+        setTimeout(check, 100);
+      };
+      check();
+    });
+  }
+
+  document.addEventListener('lingkuma_youtube_caption_control', async event => {
+    const requestId = event.detail?.requestId;
+    const action = event.detail?.action;
+    if (!requestId || !['show', 'ensure-on', 'refresh', 'ensure-off'].includes(action)) {
+      return;
+    }
+
+    let button = await waitForMobileSubtitleButton();
+    const wasPressed = isSubtitleButtonPressed(button);
+
+    if (button && action === 'refresh' && wasPressed) {
+      button.click();
+      await new Promise(resolve => setTimeout(resolve, 150));
+      button = await waitForMobileSubtitleButton(2000) || button;
+      button.click();
+    } else if (button && (action === 'ensure-on' || action === 'refresh') && !wasPressed) {
+      button.click();
+    } else if (button && action === 'ensure-off' && wasPressed) {
+      button.click();
+    }
+
+    document.dispatchEvent(new CustomEvent('lingkuma_youtube_caption_control_result', {
+      detail: {
+        requestId,
+        action,
+        found: Boolean(button),
+        wasPressed,
+        pressed: isSubtitleButtonPressed(getMobileSubtitleButton() || button)
+      }
+    }));
+  });
+
   function dispatchSubtitleData(url, text) {
     if (!text) {
       return;
