@@ -673,7 +673,12 @@ function startDragWordExplosion(e) {
 function dragWordExplosion(e) {
   if (!wordExplosionDragging) return;
 
-  const x = e.clientX - wordExplosionDragOffset.x;
+  const rect = wordExplosionEl.getBoundingClientRect();
+  const x = clampWordExplosionLeft(
+    e.clientX - wordExplosionDragOffset.x,
+    rect.width,
+    window.innerWidth
+  );
   const y = e.clientY - wordExplosionDragOffset.y;
 
   wordExplosionEl.style.left = x + 'px';
@@ -1651,6 +1656,15 @@ function getStorageValue(key) {
   return getA7StorageValues([key]).then((result) => result[key]);
 }
 
+// Keep the popup inside the viewport while preserving a small visual margin.
+// `left` is always expressed in viewport coordinates by this helper.
+function clampWordExplosionLeft(left, width, viewportWidth = window.innerWidth, margin = 20) {
+  const safeLeft = Number.isFinite(left) ? left : margin;
+  const safeWidth = Number.isFinite(width) ? Math.max(0, width) : 0;
+  const maxLeft = Math.max(margin, viewportWidth - safeWidth - margin);
+  return Math.min(Math.max(safeLeft, margin), maxLeft);
+}
+
 // 定位弹窗 - 智能上下定位模式
 async function positionWordExplosion(sentenceRect = null) {
   if (!wordExplosionEl) return;
@@ -1673,8 +1687,14 @@ async function positionWordExplosion(sentenceRect = null) {
   if (wordExplosionConfig.positionMode === 'manual' && wordExplosionSavedPosition) {
     wordExplosionEl.style.position = 'fixed';
 
-    // 手动模式使用保存的位置
-    wordExplosionEl.style.left = wordExplosionSavedPosition.x + 'px';
+    // 手动模式使用保存的位置，但窗口尺寸或视口变化后仍需保持在屏幕内。
+    const savedRect = wordExplosionEl.getBoundingClientRect();
+    const manualLeft = clampWordExplosionLeft(
+      wordExplosionSavedPosition.x,
+      savedRect.width,
+      window.innerWidth
+    );
+    wordExplosionEl.style.left = manualLeft + 'px';
     wordExplosionEl.style.top = wordExplosionSavedPosition.y + 'px';
 
     // 手动模式下也需要定位左侧按钮
@@ -1692,15 +1712,15 @@ async function positionWordExplosion(sentenceRect = null) {
         }
         // 手动模式使用fixed定位
         leftButtons.style.position = 'fixed';
-        leftButtons.style.left = (wordExplosionSavedPosition.x - 28) + 'px';
-        leftButtons.style.top = (wordExplosionSavedPosition.y + 16) + 'px';
+        leftButtons.style.left = (manualLeft - 28) + 'px';
+        leftButtons.style.top = (parseFloat(wordExplosionEl.style.top) + 16) + 'px';
 
         // 定位透明连接层
         if (leftButtonsBridge) {
           leftButtonsBridge.style.display = 'block';
           leftButtonsBridge.style.position = 'fixed';
-          leftButtonsBridge.style.left = (wordExplosionSavedPosition.x - 4) + 'px';
-          leftButtonsBridge.style.top = wordExplosionSavedPosition.y + 'px';
+          leftButtonsBridge.style.left = (manualLeft - 4) + 'px';
+          leftButtonsBridge.style.top = wordExplosionEl.style.top;
           // 获取弹窗高度
           const explosionRect = wordExplosionEl.getBoundingClientRect();
           leftButtonsBridge.style.height = explosionRect.height + 'px';
@@ -1751,10 +1771,14 @@ async function positionWordExplosion(sentenceRect = null) {
 
   // 如果没有句子位置信息，使用固定位置（右下角）
   if (!sentenceRect) {
-    const x = viewportWidth - explosionWidth - 20 + scrollX;
+    const x = clampWordExplosionLeft(
+      viewportWidth - explosionWidth - 20,
+      explosionWidth,
+      viewportWidth
+    ) + scrollX;
     const y = viewportHeight - 620 + scrollY;
 
-    wordExplosionEl.style.left = Math.max(20 + scrollX, x) + 'px';
+    wordExplosionEl.style.left = x + 'px';
     wordExplosionEl.style.top = Math.max(20 + scrollY, y) + 'px';
     wordExplosionEl.style.bottom = 'auto';
     wordExplosionEl.style.maxHeight = '600px';
@@ -1779,16 +1803,7 @@ async function positionWordExplosion(sentenceRect = null) {
   // console.log('[WordExplosion] 居中计算 step5 - 初始弹窗左边缘:', explosionLeft, '(句子中心:', sentenceCenterX, '- 半宽:', halfExplosionWidth, ')');
 
   // 确保不超出左右边界（视口坐标）
-  const originalLeft = explosionLeft;
-  if (explosionLeft < 20) {
-    explosionLeft = 20;
-  } else if (explosionLeft + explosionWidth > viewportWidth - 20) {
-    explosionLeft = viewportWidth - explosionWidth - 20;
-  }
-
-  if (originalLeft !== explosionLeft) {
-    // console.log('[WordExplosion] 居中计算 step6 - 边界调整后的弹窗左边缘:', explosionLeft);
-  }
+  explosionLeft = clampWordExplosionLeft(explosionLeft, explosionWidth, viewportWidth);
 
   // 转换为页面坐标（加上滚动偏移）
   const explosionLeftInViewport = explosionLeft;
@@ -1889,11 +1904,11 @@ async function positionWordExplosion(sentenceRect = null) {
 
     // 计算期望的底部中心点位置（页面坐标）
     // 底部中心点应该在句子上方 gap 距离处
-    const bottomCenterX = sentenceCenterX + scrollX;
     const bottomCenterY = explosionBottomInPage;
 
     // 先设置 maxHeight 和临时的 left，以便获取实际高度
-    wordExplosionEl.style.left = (bottomCenterX - explosionWidth / 2) + 'px';
+    // 使用已经过视口边界约束的水平位置，避免短句把宽弹窗推到屏幕外。
+    wordExplosionEl.style.left = explosionLeft + 'px';
     wordExplosionEl.style.maxHeight = finalMaxHeight + 'px';
     wordExplosionEl.style.overflow = 'auto';
     wordExplosionEl.style.bottom = 'auto';
@@ -1903,7 +1918,7 @@ async function positionWordExplosion(sentenceRect = null) {
     const actualHeight = wordExplosionEl.getBoundingClientRect().height;
 
     // 向上弹出时，计算top使得底部在期望位置
-    // 期望的左下角位置 = (bottomCenterX - width/2, bottomCenterY)
+    // 期望的左下角位置 = (explosionLeft, bottomCenterY)
     // 所以 top = bottomCenterY - actualHeight
     const adjustedTop = bottomCenterY - actualHeight;
 
@@ -1935,12 +1950,10 @@ async function positionWordExplosion(sentenceRect = null) {
     const explosionTop = sentenceRect.bottom + gap + scrollY;
 
     // 向下弹出时，计算left和top使得弹窗居中对齐句子
-    const topCenterX = sentenceCenterX + scrollX;
     const topCenterY = explosionTop;
 
-    const adjustedLeft = topCenterX - (explosionWidth / 2);
-
-    wordExplosionEl.style.left = adjustedLeft + 'px';
+    // 向下弹出也复用同一个边界内的水平位置。
+    wordExplosionEl.style.left = explosionLeft + 'px';
     wordExplosionEl.style.top = topCenterY + 'px';
     wordExplosionEl.style.bottom = 'auto';
     wordExplosionEl.style.maxHeight = maxHeight + 'px';
@@ -1998,7 +2011,24 @@ function repositionExplosionWhenAbove() {
   const { explosionBottomInPage, minTopInPage } = currentExplosionPosition;
 
   // 获取弹窗当前的实际高度
-  const currentHeight = wordExplosionEl.getBoundingClientRect().height;
+  const currentRect = wordExplosionEl.getBoundingClientRect();
+  const currentHeight = currentRect.height;
+
+  // 内容更新可能改变弹窗宽度，重新定位时也要重新应用水平边界。
+  const scrollX = currentExplosionPosition.scrollX || 0;
+  const currentLeft = parseFloat(wordExplosionEl.style.left);
+  const currentLeftInViewport = wordExplosionEl.style.position === 'fixed'
+    ? currentLeft
+    : currentLeft - scrollX;
+  const clampedLeftInViewport = clampWordExplosionLeft(
+    currentLeftInViewport,
+    currentRect.width,
+    window.innerWidth
+  );
+  const clampedLeft = wordExplosionEl.style.position === 'fixed'
+    ? clampedLeftInViewport
+    : clampedLeftInViewport + scrollX;
+  wordExplosionEl.style.left = clampedLeft + 'px';
 
   // 计算新的top位置，使底部保持在explosionBottomInPage
   const newTop = explosionBottomInPage - currentHeight;
@@ -2015,10 +2045,12 @@ function repositionExplosionWhenAbove() {
     const leftButtonsBridge = explosionShadowRoot.getElementById('word-explosion-left-buttons-bridge');
 
     if (leftButtons) {
+      leftButtons.style.left = (clampedLeft - 28) + 'px';
       leftButtons.style.top = (finalTop + 16) + 'px'; // 向下偏移16px，避免与弹窗圆角平齐
     }
 
     if (leftButtonsBridge) {
+      leftButtonsBridge.style.left = (clampedLeft - 4) + 'px';
       leftButtonsBridge.style.top = finalTop + 'px';
       // 更新连接层高度
       leftButtonsBridge.style.height = currentHeight + 'px';
