@@ -25,6 +25,7 @@ let wordExplosionManualBlacklistOverride = false; //增加本页手动黑名单�
 let isPluginEnabled = false; // 插件总开关状态（默认为true，等待异步检查完成后更新）
 let wordExplosionControlMessageSeen = false;
 let wordExplosionInitialized = false;
+let wordExplosionRenderSequence = 0; // 用于忽略过期的异步解析结果
 let currentExplosionSentenceRange = null; // 当前爆炸句子的Range对象，用于高亮
 let explosionThemeMode = 'auto'; // 主题模式：'auto', 'light', 'dark'（跟随tooltip的tooltipThemeMode）
 let currentExplosionPosition = null; // 记录当前弹窗的定位信息：{ isAbove: boolean, sentenceRect: DOMRect }
@@ -578,12 +579,14 @@ function createWordExplosionTooltip() {
     explosionShadowRoot.appendChild(container);
     // 将左侧按钮单独添加到Shadow DOM，而不是作为container的子元素
     leftButtons.id = 'word-explosion-left-buttons-wrapper';
+    leftButtons.style.visibility = 'hidden';
     explosionShadowRoot.appendChild(leftButtons);
 
     // 创建透明连接层，填充按钮和弹窗之间的空隙，阻止鼠标穿透
     const leftButtonsBridge = document.createElement('div');
     leftButtonsBridge.id = 'word-explosion-left-buttons-bridge';
     leftButtonsBridge.className = 'word-explosion-left-buttons-bridge';
+    leftButtonsBridge.style.visibility = 'hidden';
     // 添加鼠标事件，确保被认为在弹窗内
     leftButtonsBridge.addEventListener('mouseenter', () => {
       isMouseInsideExplosion = true;
@@ -704,9 +707,25 @@ function stopDragWordExplosion() {
   document.removeEventListener('mouseup', stopDragWordExplosion);
 }
 
+// The auxiliary buttons live beside the popup, so hide them during the
+// off-screen measurement phase as well as when the popup itself is hidden.
+function setExplosionAuxiliaryVisibility(visible) {
+  if (!explosionShadowRoot) return;
+
+  const leftButtons = explosionShadowRoot.getElementById('word-explosion-left-buttons-wrapper');
+  const leftButtonsBridge = explosionShadowRoot.getElementById('word-explosion-left-buttons-bridge');
+  if (leftButtons) {
+    leftButtons.style.visibility = visible ? 'visible' : 'hidden';
+  }
+  if (leftButtonsBridge) {
+    leftButtonsBridge.style.visibility = visible ? 'visible' : 'hidden';
+  }
+}
+
 function hideWordExplosion() {
   if (wordExplosionEl) {
     wordExplosionEl.style.display = 'none';
+    wordExplosionEl.style.visibility = 'hidden';
   }
 
   // 从Shadow DOM中隐藏左侧按钮
@@ -714,12 +733,14 @@ function hideWordExplosion() {
     const leftButtons = explosionShadowRoot.getElementById('word-explosion-left-buttons-wrapper');
     if (leftButtons) {
       leftButtons.style.display = 'none';
+      leftButtons.style.visibility = 'hidden';
     }
 
     // 隐藏透明连接层
     const leftButtonsBridge = explosionShadowRoot.getElementById('word-explosion-left-buttons-bridge');
     if (leftButtonsBridge) {
       leftButtonsBridge.style.display = 'none';
+      leftButtonsBridge.style.visibility = 'hidden';
     }
   }
 
@@ -1467,6 +1488,12 @@ function showWordExplosion(sentence, sentenceRect = null, sentenceInfo = null) {
     return;
   }
 
+  // 在异步解析生词前立即隐藏旧弹窗，避免旧位置或默认位置短暂闪现。
+  const renderSequence = ++wordExplosionRenderSequence;
+  if (wordExplosionEl) {
+    hideWordExplosion();
+  }
+
   // 切换句子时，移除旧的高亮
   if (currentExplosionSentence !== sentence) {
     removeExplosionSentenceHighlight();
@@ -1531,12 +1558,16 @@ function showWordExplosion(sentence, sentenceRect = null, sentenceInfo = null) {
 
   // 解析句子，获取未知单词
   extractUnknownWords(sentence).then(async unknownWords => {
+    // 新句子已经触发时，丢弃旧请求的结果，避免它重新显示弹窗。
+    if (renderSequence !== wordExplosionRenderSequence) return;
+
     // 创建或获取弹窗（无论是否有生词都创建，以支持爆炸优先模式）
     const tooltip = createWordExplosionTooltip();
 
     if (unknownWords.length === 0) {
       // 没有未知单词，检查是否显示动效
       const result = await getA7StorageValues(['showKnownSentenceAnimation']);
+      if (renderSequence !== wordExplosionRenderSequence) return;
       const showAnimation = result.showKnownSentenceAnimation !== undefined ? result.showKnownSentenceAnimation : true;
 
       if (showAnimation) {
@@ -1562,6 +1593,7 @@ function showWordExplosion(sentence, sentenceRect = null, sentenceInfo = null) {
     // 先将弹窗移到屏幕外，避免在定位前闪现
     tooltip.style.left = '-9999px';
     tooltip.style.top = '-9999px';
+    setExplosionAuxiliaryVisibility(false);
 
     // 先隐藏弹窗，让浏览器完成内容渲染和布局，但不显示给用户
     tooltip.style.visibility = 'hidden';
@@ -1575,9 +1607,12 @@ function showWordExplosion(sentence, sentenceRect = null, sentenceInfo = null) {
 
     // 使用requestAnimationFrame确保浏览器已完成渲染，再进行精确定位
     requestAnimationFrame(async () => {
+      if (renderSequence !== wordExplosionRenderSequence) return;
       await positionWordExplosion(sentenceRect);
+      if (renderSequence !== wordExplosionRenderSequence) return;
       // 定位完成后才显示弹窗，避免在屏幕左侧闪现
       tooltip.style.visibility = 'visible';
+      setExplosionAuxiliaryVisibility(true);
     });
   });
 }
