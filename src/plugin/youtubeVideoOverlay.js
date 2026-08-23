@@ -1118,9 +1118,13 @@
         const isMobileYouTube = window.location.hostname === 'm.youtube.com';
         if (isMobileYouTube) {
             console.log('移动 YouTube：先在原播放器中获取字幕，再创建覆盖层');
-            await getYoutubeSubtitles();
+            const loadedSubtitles = await getYoutubeSubtitles();
             if (requestId !== overlayCreationRequestId || window.location.href !== requestedUrl) {
                 console.log('字幕获取期间视频已变化，取消覆盖层创建');
+                return;
+            }
+            if (!Array.isArray(loadedSubtitles) || loadedSubtitles.length === 0) {
+                console.error('移动 YouTube 字幕未加载成功，保留原生播放器以便重试');
                 return;
             }
             videoElement = document.querySelector('video');

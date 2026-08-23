@@ -401,6 +401,25 @@ function clickYouTubeSubtitleButton(button) {
   return true;
 }
 
+function waitForYouTubeSubtitleButtonState(pressed, timeoutMs = 2000) {
+  return new Promise(resolve => {
+    const startedAt = Date.now();
+    const check = () => {
+      const button = getYouTubeSubtitleButton();
+      if (button && isYouTubeSubtitleButtonPressed(button) === pressed) {
+        resolve(button);
+        return;
+      }
+      if (Date.now() - startedAt >= timeoutMs) {
+        resolve(button || null);
+        return;
+      }
+      setTimeout(check, 100);
+    };
+    check();
+  });
+}
+
 // YouTube 字幕触发器
 async function triggerYouTubeSubtitles(force = false, closeAfter = false) {
   console.log('尝试触发 YouTube 字幕...');
@@ -421,12 +440,19 @@ async function triggerYouTubeSubtitles(force = false, closeAfter = false) {
     if (isPressed && force) {
       console.log('强制刷新字幕: 关闭再开启');
       clickYouTubeSubtitleButton(subtitleButton);
-      await new Promise(resolve => setTimeout(resolve, 150));
-      clickYouTubeSubtitleButton(getYouTubeSubtitleButton() || subtitleButton);
+      const disabledButton = await waitForYouTubeSubtitleButtonState(false);
+      if (disabledButton && !isYouTubeSubtitleButtonPressed(disabledButton)) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        clickYouTubeSubtitleButton(disabledButton);
+        await waitForYouTubeSubtitleButtonState(true);
+      } else {
+        console.warn('字幕按钮没有确认进入关闭状态，保持当前开启状态并等待响应');
+      }
       console.log('字幕已重新开启');
     } else if (!isPressed) {
       console.log('开启字幕');
       clickYouTubeSubtitleButton(subtitleButton);
+      await waitForYouTubeSubtitleButtonState(true);
     } else if (closeAfter) {
       console.log('关闭字幕');
       clickYouTubeSubtitleButton(subtitleButton);
@@ -498,21 +524,37 @@ function getAvailableSubtitleTracks() {
 
 async function forceSubtitleAndGetJsonUrl(closeAfterGet = true) {
   console.log('触发字幕并等待原始字幕响应...');
-  await triggerYouTubeSubtitles(true, false);
+  const maxAttempts = 3;
+  let capturedResult = null;
+  let url = null;
 
-  const capturedResult = await window.waitForCapturedSubtitleData(10000);
-  let url = capturedResult?.url || window.getBestCapturedSubtitleUrl();
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    console.log(`第 ${attempt}/${maxAttempts} 次触发 YouTube 字幕`);
+    await triggerYouTubeSubtitles(true, false);
+    capturedResult = await window.waitForCapturedSubtitleData(5000);
+    url = capturedResult?.url || window.getBestCapturedSubtitleUrl();
 
-  if (!capturedResult && url) {
-    console.log('未捕获到原始响应数据，仅补充验证一次最佳字幕URL');
-    if (!(await window.isValidJsonUrl(url))) {
-      console.log('最佳字幕URL无法返回有效JSON字幕数据');
-      return null;
+    if (capturedResult) {
+      break;
+    }
+
+    if (url) {
+      console.log('未捕获到原始响应数据，验证本次字幕URL');
+      if (await window.isValidJsonUrl(url)) {
+        break;
+      }
+      console.warn('本次字幕URL无有效JSON数据，继续重新触发');
+      url = null;
+    }
+
+    if (attempt < maxAttempts) {
+      console.warn('字幕按钮已操作，但未产生字幕请求，准备重新触发');
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
   }
 
   if (!url) {
-    console.log('等待字幕响应超时，且没有捕获到字幕URL');
+    console.log(`连续 ${maxAttempts} 次触发后仍未捕获到字幕URL`);
     return null;
   }
 

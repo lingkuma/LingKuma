@@ -74,6 +74,25 @@
     });
   }
 
+  function waitForSubtitleButtonState(pressed, timeoutMs = 2000) {
+    return new Promise(resolve => {
+      const startedAt = Date.now();
+      const check = () => {
+        const button = getMobileSubtitleButton();
+        if (button && isSubtitleButtonPressed(button) === pressed) {
+          resolve(button);
+          return;
+        }
+        if (Date.now() - startedAt >= timeoutMs) {
+          resolve(button || null);
+          return;
+        }
+        setTimeout(check, 100);
+      };
+      check();
+    });
+  }
+
   document.addEventListener('lingkuma_youtube_caption_control', async event => {
     const requestId = event.detail?.requestId;
     const action = event.detail?.action;
@@ -86,11 +105,15 @@
 
     if (button && action === 'refresh' && wasPressed) {
       button.click();
-      await new Promise(resolve => setTimeout(resolve, 150));
-      button = await waitForMobileSubtitleButton(2000) || button;
-      button.click();
+      button = await waitForSubtitleButtonState(false) || button;
+      if (!isSubtitleButtonPressed(button)) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        button.click();
+        await waitForSubtitleButtonState(true);
+      }
     } else if (button && (action === 'ensure-on' || action === 'refresh') && !wasPressed) {
       button.click();
+      await waitForSubtitleButtonState(true);
     } else if (button && action === 'ensure-off' && wasPressed) {
       button.click();
     }
