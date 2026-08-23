@@ -314,6 +314,11 @@
 
                   if (url) {
                     console.log(`成功获取字幕URL: ${url}`);
+                    const capturedData = window.getCapturedSubtitleData?.(url);
+                    if (capturedData && Array.isArray(capturedData.events)) {
+                      console.log('使用原始 YouTube 请求捕获的字幕数据');
+                      return capturedData;
+                    }
                     return await getTrackData(url);
                   } else {
                     console.log('无法获取字幕URL');

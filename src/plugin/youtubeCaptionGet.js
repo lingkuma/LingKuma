@@ -4,6 +4,23 @@
 
   // 存储捕获到的字幕 URL
   const capturedSubtitleUrls = new Set();
+  const capturedSubtitleData = new Map();
+  const subtitleDataWaiters = new Set();
+  const subtitleUrlValidationPromises = new Map();
+
+  function cacheSubtitleData(url, data) {
+    if (!url || !Array.isArray(data?.events)) {
+      return false;
+    }
+
+    capturedSubtitleData.set(url, data);
+    console.log(`Content Script: 已缓存字幕响应数据，共 ${data.events.length} 个事件`);
+    for (const waiter of subtitleDataWaiters) {
+      waiter({ url, data });
+    }
+    subtitleDataWaiters.clear();
+    return true;
+  }
 
   // 跟踪当前视频ID
   let currentVideoId = null;
@@ -45,6 +62,8 @@
       currentVideoId = newVideoId;
       // 清空字幕URL缓存
       capturedSubtitleUrls.clear();
+      capturedSubtitleData.clear();
+      subtitleUrlValidationPromises.clear();
       // 同时清空页面上下文的缓存
       if (window.__capturedSubtitleUrls) {
         window.__capturedSubtitleUrls.clear();
@@ -62,6 +81,21 @@
     checkVideoChange();
 
     capturedSubtitleUrls.add(url);
+  });
+
+  document.addEventListener('subtitle_data_captured', function(event) {
+    const url = event.detail?.url;
+    const text = event.detail?.text;
+    if (!url || !text) {
+      return;
+    }
+
+    try {
+      const data = JSON.parse(text);
+      cacheSubtitleData(url, data);
+    } catch (error) {
+      console.warn('Content Script: 无法解析捕获的字幕响应:', error);
+    }
   });
 
   // 定期检查视频切换（作为备用机制）
@@ -91,6 +125,54 @@
     });
 
     return urls;
+  };
+
+  window.getCapturedSubtitleData = function(url) {
+    if (url && capturedSubtitleData.has(url)) {
+      return capturedSubtitleData.get(url);
+    }
+
+    for (const data of capturedSubtitleData.values()) {
+      return data;
+    }
+
+    return null;
+  };
+
+  window.cacheCapturedSubtitleData = cacheSubtitleData;
+
+  window.waitForCapturedSubtitleData = function(timeoutMs = 10000) {
+    for (const [url, data] of capturedSubtitleData.entries()) {
+      return Promise.resolve({ url, data });
+    }
+
+    return new Promise(resolve => {
+      const waiter = result => {
+        clearTimeout(timeoutId);
+        resolve(result);
+      };
+      const timeoutId = setTimeout(() => {
+        subtitleDataWaiters.delete(waiter);
+        resolve(null);
+      }, timeoutMs);
+      subtitleDataWaiters.add(waiter);
+    });
+  };
+
+  window.getBestCapturedSubtitleUrl = function() {
+    const urls = Array.from(capturedSubtitleUrls).reverse();
+    return urls.sort((a, b) => {
+      const score = url => (url.includes('pot=') ? 2 : 0) + (url.includes('fmt=json3') ? 1 : 0);
+      return score(b) - score(a);
+    })[0] || null;
+  };
+
+  window.getSubtitleUrlValidationPromise = function(url) {
+    return subtitleUrlValidationPromises.get(url);
+  };
+
+  window.setSubtitleUrlValidationPromise = function(url, promise) {
+    subtitleUrlValidationPromises.set(url, promise);
   };
 
   // 提供下载函数
@@ -173,28 +255,47 @@
 // 验证URL是否能返回有效的JSON数据
 window.isValidJsonUrl = async function(url) {
   try {
+    const capturedData = window.getCapturedSubtitleData?.(url);
+    if (capturedData && Array.isArray(capturedData.events)) {
+      console.log('已使用原始请求捕获的有效JSON字幕数据');
+      return true;
+    }
+
     // 确保URL包含json3格式
     const jsonUrl = url.includes('fmt=')
       ? url.replace(/fmt=[^&]+/, 'fmt=json3')
       : `${url}&fmt=json3`;
 
-    console.log(`正在验证URL: ${jsonUrl}`);
-    const response = await fetch(jsonUrl);
-    if (!response.ok) {
-      console.log(`URL返回非200状态码: ${response.status}`);
-      return false;
+    const existingValidation = window.getSubtitleUrlValidationPromise?.(jsonUrl);
+    if (existingValidation) {
+      console.log('该字幕URL已验证过，复用验证结果');
+      return await existingValidation;
     }
 
-    // 尝试解析为JSON
-    const text = await response.text();
-    try {
-      JSON.parse(text);
-      console.log('URL返回有效的JSON数据');
-      return true;
-    } catch (e) {
-      console.log('URL返回的数据不是有效的JSON');
-      return false;
-    }
+    console.log(`正在验证URL: ${jsonUrl}`);
+    const validationPromise = (async () => {
+      const response = await fetch(jsonUrl);
+      if (!response.ok) {
+        console.log(`URL返回非200状态码: ${response.status}`);
+        return false;
+      }
+
+      const text = await response.text();
+      try {
+        const data = JSON.parse(text);
+        const isSubtitleData = Array.isArray(data.events);
+        if (isSubtitleData) {
+          window.cacheCapturedSubtitleData?.(jsonUrl, data);
+        }
+        console.log(isSubtitleData ? 'URL返回有效的JSON字幕数据' : 'URL返回的JSON不含字幕事件');
+        return isSubtitleData;
+      } catch (e) {
+        console.log('URL返回的数据不是有效的JSON');
+        return false;
+      }
+    })();
+    window.setSubtitleUrlValidationPromise?.(jsonUrl, validationPromise);
+    return await validationPromise;
   } catch (error) {
     console.error('验证URL时出错:', error);
     return false;
@@ -325,92 +426,39 @@ function getAvailableSubtitleTracks() {
   }
 }
 
-function forceSubtitleAndGetJsonUrl(closeAfterGet = true){
-  // 返回一个Promise，以便可以等待结果
-  return new Promise((resolve) => {
-    console.log('等待6秒后触发字幕...');
-    // 等待6秒后再触发字幕
-    setTimeout(() => {
-      // 触发字幕，并设置是否在获取URL后关闭字幕
-      triggerYouTubeSubtitles(true, closeAfterGet);
+async function forceSubtitleAndGetJsonUrl(closeAfterGet = true) {
+  console.log('触发字幕并等待原始字幕响应...');
+  triggerYouTubeSubtitles(true, false);
 
-      // 最大等待时间（毫秒）
-      const maxWaitTime = 10000;
-      // 检查间隔（毫秒）
-      const checkInterval = 300;
-      // 开始时间
-      const startTime = Date.now();
+  const capturedResult = await window.waitForCapturedSubtitleData(10000);
+  let url = capturedResult?.url || window.getBestCapturedSubtitleUrl();
 
-      // 创建一个函数来检查是否捕获到URL
-      async function checkForUrls() {
-        // 获取捕获的URL
-        const capturedUrls = window.getSubtitleUrls();
-        console.log('检查捕获的字幕URL:', capturedUrls);
+  if (!capturedResult && url) {
+    console.log('未捕获到原始响应数据，仅补充验证一次最佳字幕URL');
+    if (!(await window.isValidJsonUrl(url))) {
+      console.log('最佳字幕URL无法返回有效JSON字幕数据');
+      return null;
+    }
+  }
 
-        if (capturedUrls && capturedUrls.length > 0) {
-          // 验证所有URL，找到第一个有效的
-          for (const url of capturedUrls) {
-            if (await window.isValidJsonUrl(url)) {
-              // 确保URL包含json3格式
-              const jsonUrl = url.includes('fmt=')
-                ? url.replace(/fmt=[^&]+/, 'fmt=json3')
-                : `${url}&fmt=json3`;
+  if (!url) {
+    console.log('等待字幕响应超时，且没有捕获到字幕URL');
+    return null;
+  }
 
-              console.log('成功获取到有效的JSON字幕URL:', jsonUrl);
-              resolve(jsonUrl);
-              return;
-            }
-          }
+  const jsonUrl = url.includes('fmt=')
+    ? url.replace(/fmt=[^&]+/, 'fmt=json3')
+    : `${url}&fmt=json3`;
 
-          console.log('捕获的URL中没有能返回有效JSON的URL');
+  if (closeAfterGet) {
+    const subtitleButton = document.querySelector('.ytp-subtitles-button');
+    if (subtitleButton?.getAttribute('aria-pressed') === 'true') {
+      subtitleButton.click();
+    }
+  }
 
-          // 如果还没有超时，继续等待可能出现的有效URL
-          if (Date.now() - startTime <= maxWaitTime) {
-            setTimeout(checkForUrls, checkInterval);
-            return;
-          }
-        }
-
-        // 检查是否超时
-        if (Date.now() - startTime > maxWaitTime) {
-          console.log('等待字幕URL超时，尝试从字幕轨道获取');
-          // 如果超时，尝试从字幕轨道获取
-          const tracks = getAvailableSubtitleTracks();
-          console.log('获取到的字幕轨道:', tracks);
-
-          if (tracks && tracks.length > 0) {
-            // 获取第一个字幕轨道的baseUrl
-            const firstTrack = tracks[0];
-            const baseUrl = firstTrack.baseUrl;
-
-            // 验证baseUrl是否有效
-            if (await window.isValidJsonUrl(baseUrl)) {
-              // 确保URL包含json3格式
-              const jsonUrl = baseUrl.includes('fmt=')
-                ? baseUrl.replace(/fmt=[^&]+/, 'fmt=json3')
-                : `${baseUrl}&fmt=json3`;
-
-              console.log('从字幕轨道获取有效的JSON字幕URL:', jsonUrl);
-              resolve(jsonUrl);
-            } else {
-              console.log('字幕轨道URL无法返回有效的JSON数据');
-              resolve(null);
-            }
-          } else {
-            console.log('无法获取字幕URL');
-            resolve(null);
-          }
-          return;
-        }
-
-        // 如果还没有捕获到URL且未超时，继续等待
-        setTimeout(checkForUrls, checkInterval);
-      }
-
-      // 开始检查
-      setTimeout(checkForUrls, 1000); // 先等待1秒，让字幕触发生效
-    }, 500); // 等待6秒后再触发字幕
-  });
+  console.log('成功获取到JSON字幕:', capturedResult ? '原始响应数据' : jsonUrl);
+  return jsonUrl;
 }
 
 
