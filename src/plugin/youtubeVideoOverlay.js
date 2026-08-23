@@ -28,8 +28,10 @@
     let originalNextSibling = null;
     let originalVideoStyle = null;
     let overlayCreationInProgress = false;
+    let overlayCreationRequestId = 0;
     let isOverlayActive = false;
     let currentUrl = window.location.href;
+    let urlMonitoringIntervalId = null;
     let floatButton = null;
     let floatButtonHost = null;
     let floatButtonShadowRoot = null;
@@ -987,22 +989,18 @@
     });
 
     chrome.storage.local.get({
-        youtubeVideoOverlay: false,
         youtubeDisplayMode: 'theater',
         youtubeCommaSentencing: false,
         youtubeSubtitleOffset: 'normal',
         youtubeReadingSubtitleAutoFollow: true
     }, function(result) {
         readingSubtitleAutoFollow = result.youtubeReadingSubtitleAutoFollow !== false;
-        if (result.youtubeVideoOverlay) {
-            console.log("YouTube 视频覆盖层已启用");
-            currentDisplayMode = result.youtubeDisplayMode || 'theater';
-            window.youtubeCommaSentencingEnabled = result.youtubeCommaSentencing || false;
-            subtitleOffsetMode = result.youtubeSubtitleOffset || 'normal';
-            initializeOverlay();
-            setupUrlMonitoring();
-        }
+        currentDisplayMode = result.youtubeDisplayMode || 'theater';
+        window.youtubeCommaSentencingEnabled = result.youtubeCommaSentencing || false;
+        subtitleOffsetMode = result.youtubeSubtitleOffset || 'normal';
+        chrome.storage.local.remove('youtubeVideoOverlay');
         createFloatButton();
+        setupUrlMonitoring();
     });
 
     function initializeOverlay() {
@@ -1011,12 +1009,21 @@
             return;
         }
 
+        const requestedUrl = window.location.href;
         cleanupOverlay();
 
-        waitForElement('#movie_player', createOverlay, 100, 30000);
+        waitForElement('#movie_player', () => {
+            if (window.location.href !== requestedUrl) {
+                console.log('视频地址已变化，取消本次覆盖层创建');
+                return;
+            }
+            createOverlay(requestedUrl);
+        }, 100, 30000);
     }
 
     function cleanupOverlay() {
+        overlayCreationRequestId += 1;
+        overlayCreationInProgress = false;
         stopSubtitleUpdate();
 
         if (overlayContainer) {
@@ -1056,19 +1063,20 @@
 
         document.body.style.overflow = '';
         isOverlayActive = false;
-        chrome.storage.local.set({ youtubeVideoOverlay: false });
         updateFloatButtonState();
     }
 
     function setupUrlMonitoring() {
-        setInterval(() => {
+        if (urlMonitoringIntervalId !== null) {
+            return;
+        }
+
+        urlMonitoringIntervalId = setInterval(() => {
             const newUrl = window.location.href;
             if (newUrl !== currentUrl) {
                 console.log("检测到URL变化:", currentUrl, "->", newUrl);
                 currentUrl = newUrl;
-                setTimeout(() => {
-                    initializeOverlay();
-                }, 1500);
+                cleanupOverlay();
             }
             updateFloatButtonVisibility();
         }, 1000);
@@ -1091,11 +1099,12 @@
         })();
     }
 
-    async function createOverlay() {
+    async function createOverlay(requestedUrl = window.location.href) {
         if (overlayCreationInProgress) {
             return;
         }
         overlayCreationInProgress = true;
+        const requestId = ++overlayCreationRequestId;
 
         try {
         console.log("创建 YouTube 视频覆盖层...");
@@ -1110,6 +1119,10 @@
         if (isMobileYouTube) {
             console.log('移动 YouTube：先在原播放器中获取字幕，再创建覆盖层');
             await getYoutubeSubtitles();
+            if (requestId !== overlayCreationRequestId || window.location.href !== requestedUrl) {
+                console.log('字幕获取期间视频已变化，取消覆盖层创建');
+                return;
+            }
             videoElement = document.querySelector('video');
             if (!videoElement) {
                 console.log("获取字幕后未找到视频元素");
@@ -1205,7 +1218,6 @@
         document.body.style.overflow = 'hidden';
         overlayContainer = overlay;
         isOverlayActive = true;
-        chrome.storage.local.set({ youtubeVideoOverlay: true });
         updateFloatButtonState();
 
         Object.assign(originalVideo.style, {
@@ -1265,7 +1277,9 @@
             video.addEventListener('play', playHandler);
         }
         } finally {
-            overlayCreationInProgress = false;
+            if (requestId === overlayCreationRequestId) {
+                overlayCreationInProgress = false;
+            }
         }
     }
 
