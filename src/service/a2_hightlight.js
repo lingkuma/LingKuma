@@ -10,6 +10,8 @@ const COMPANION_FEATURE_MAX_RETRIES = 120;
 const YOUTUBE_MUTATION_FLUSH_DELAY = 180;
 const YOUTUBE_SUBTITLE_TEXT_SELECTOR =
   '.ytAttributedStringHost.ytAttributedStringWhiteSpacePreWrap';
+const YOUTUBE_TITLE_TEXT_SELECTOR =
+  '#title-row > #title > h1 > yt-formatted-string.ytd-watch-metadata';
 const YOUTUBE_HIGHLIGHT_IDENTIFIERS = [
   'ytp-caption-window-container',
   'untertitle-drag-container',
@@ -983,7 +985,8 @@ class ScopeObserver {
 //注意isAllowedYouTubeElement函数！也要同步添加
 if (window.location.hostname.includes('youtube.com')) {
   if (!parent || typeof parent.closest !== 'function' ||
-      !parent.closest('span.ytAttributedStringHost.ytAttributedStringWhiteSpacePreWrap')) {
+      (!parent.closest('span.ytAttributedStringHost.ytAttributedStringWhiteSpacePreWrap') &&
+       !parent.closest(YOUTUBE_TITLE_TEXT_SELECTOR))) {
     return;
   }
   // 定义YouTube上允许处理的元素类名和ID
@@ -2283,7 +2286,8 @@ if (window.location.hostname.includes('youtube.com')) {
     return Boolean(
       element &&
       typeof element.closest === 'function' &&
-      element.closest('span.ytAttributedStringHost.ytAttributedStringWhiteSpacePreWrap')
+      (element.closest('span.ytAttributedStringHost.ytAttributedStringWhiteSpacePreWrap') ||
+       element.closest(YOUTUBE_TITLE_TEXT_SELECTOR))
     );
     if (element && typeof element.closest === 'function' &&
         element.closest(YOUTUBE_SUBTITLE_TEXT_SELECTOR)) {
