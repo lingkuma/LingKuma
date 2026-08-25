@@ -8,6 +8,8 @@ function isOrionIOSRuntime() {
 const COMPANION_FEATURE_RETRY_DELAY = 500;
 const COMPANION_FEATURE_MAX_RETRIES = 120;
 const YOUTUBE_MUTATION_FLUSH_DELAY = 180;
+const YOUTUBE_SUBTITLE_TEXT_SELECTOR =
+  '.ytAttributedStringHost.ytAttributedStringWhiteSpacePreWrap';
 const YOUTUBE_HIGHLIGHT_IDENTIFIERS = [
   'ytp-caption-window-container',
   'untertitle-drag-container',
@@ -980,6 +982,10 @@ class ScopeObserver {
 // 检查父元素是否在忽略列表中
 //注意isAllowedYouTubeElement函数！也要同步添加
 if (window.location.hostname.includes('youtube.com')) {
+  if (!parent || typeof parent.closest !== 'function' ||
+      !parent.closest('span.ytAttributedStringHost.ytAttributedStringWhiteSpacePreWrap')) {
+    return;
+  }
   // 定义YouTube上允许处理的元素类名和ID
   const allowedYoutubeIdentifiers = [
     'ytp-caption-window-container',
@@ -1019,7 +1025,11 @@ if (window.location.hostname.includes('youtube.com')) {
   ];
 
   // 检查元素是否属于允许的类或ID
-  let isAllowedElement = false;
+  let isAllowedElement = Boolean(
+    parent &&
+    typeof parent.closest === 'function' &&
+    parent.closest(YOUTUBE_SUBTITLE_TEXT_SELECTOR)
+  );
 
   if (parent) {
     // 检查当前元素及其所有父元素
@@ -2270,6 +2280,15 @@ if (window.location.hostname.includes('youtube.com')) {
   isAllowedYouTubeTextNode(textNode) {
     if (!this.isYouTubePage) return true;
     let element = textNode?.parentElement;
+    return Boolean(
+      element &&
+      typeof element.closest === 'function' &&
+      element.closest('span.ytAttributedStringHost.ytAttributedStringWhiteSpacePreWrap')
+    );
+    if (element && typeof element.closest === 'function' &&
+        element.closest(YOUTUBE_SUBTITLE_TEXT_SELECTOR)) {
+      return true;
+    }
     while (element && element !== document.body && element !== document.documentElement) {
       const id = element.id || '';
       const className = typeof element.className === 'string' ? element.className : '';

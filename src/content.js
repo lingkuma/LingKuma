@@ -169,6 +169,11 @@ function showWordLimitNotification(message) {
 // 检查元素是否为 YouTube 上允许处理的元素
 // =======================
 function isAllowedYouTubeElement(parent) {
+  return Boolean(
+    parent &&
+    typeof parent.closest === 'function' &&
+    parent.closest('span.ytAttributedStringHost.ytAttributedStringWhiteSpacePreWrap')
+  );
   // 定义YouTube上允许处理的元素类名和ID
   const allowedYoutubeIdentifiers = [
     'ytp-caption-window-container',
@@ -188,9 +193,6 @@ function isAllowedYouTubeElement(parent) {
     'overlay-subtitle-list-container',
     'overlay-subtitle-list',
     'subtitle-item',
-    // YouTube comments use custom elements rather than the subtitle tree.
-    // Keep these nodes available to getSentenceForWord so A4/A7 can resolve
-    // the sentence after a highlighted comment word is clicked.
     'ytd-comment-thread-renderer',
     'ytd-comment-view-model',
     'yt-attributed-string',
@@ -199,7 +201,11 @@ function isAllowedYouTubeElement(parent) {
   ];
 
   // 检查元素是否属于允许的类或ID
-  let isAllowedElement = false;
+  let isAllowedElement = Boolean(
+    parent &&
+    typeof parent.closest === 'function' &&
+    parent.closest('.ytAttributedStringHost.ytAttributedStringWhiteSpacePreWrap')
+  );
 
   if (parent) {
     // 检查当前元素及其所有父元素
