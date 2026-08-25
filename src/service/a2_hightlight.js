@@ -986,7 +986,8 @@ class ScopeObserver {
 if (window.location.hostname.includes('youtube.com')) {
   if (!parent || typeof parent.closest !== 'function' ||
       (!parent.closest('span.ytAttributedStringHost.ytAttributedStringWhiteSpacePreWrap') &&
-       !parent.closest(YOUTUBE_TITLE_TEXT_SELECTOR))) {
+       !parent.closest(YOUTUBE_TITLE_TEXT_SELECTOR) &&
+       !parent.closest('p.YtmCommentRendererText > span.ytAttributedStringHost'))) {
     return;
   }
   // 定义YouTube上允许处理的元素类名和ID
@@ -2287,7 +2288,8 @@ if (window.location.hostname.includes('youtube.com')) {
       element &&
       typeof element.closest === 'function' &&
       (element.closest('span.ytAttributedStringHost.ytAttributedStringWhiteSpacePreWrap') ||
-       element.closest(YOUTUBE_TITLE_TEXT_SELECTOR))
+       element.closest(YOUTUBE_TITLE_TEXT_SELECTOR) ||
+       element.closest('p.YtmCommentRendererText > span.ytAttributedStringHost'))
     );
     if (element && typeof element.closest === 'function' &&
         element.closest(YOUTUBE_SUBTITLE_TEXT_SELECTOR)) {

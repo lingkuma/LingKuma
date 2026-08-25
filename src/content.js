@@ -173,7 +173,8 @@ function isAllowedYouTubeElement(parent) {
     parent &&
     typeof parent.closest === 'function' &&
     (parent.closest('span.ytAttributedStringHost.ytAttributedStringWhiteSpacePreWrap') ||
-     parent.closest('#title-row > #title > h1 > yt-formatted-string.ytd-watch-metadata'))
+     parent.closest('#title-row > #title > h1 > yt-formatted-string.ytd-watch-metadata') ||
+     parent.closest('p.YtmCommentRendererText > span.ytAttributedStringHost'))
   );
   // 定义YouTube上允许处理的元素类名和ID
   const allowedYoutubeIdentifiers = [
