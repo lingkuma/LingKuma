@@ -1669,7 +1669,9 @@
         }
 
         try {
-            const subtitleData = await getYoutubeSubtitlesAPI(videoId);
+            // The subtitle loader resolves the current player track itself;
+            // passing the video id here makes it look like a timedtext URL.
+            const subtitleData = await getYoutubeSubtitlesAPI();
             if (subtitleData) {
                 console.log("字幕数据已加载");
                 subtitles = subtitleData;

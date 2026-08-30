@@ -158,14 +158,41 @@
   };
 
   window.getCapturedSubtitleData = function(url) {
-    if (url && capturedSubtitleData.has(url)) {
+    if (!url) {
+      for (const data of capturedSubtitleData.values()) {
+        return data;
+      }
+      return null;
+    }
+
+    if (capturedSubtitleData.has(url)) {
       return capturedSubtitleData.get(url);
     }
 
-    for (const data of capturedSubtitleData.values()) {
-      return data;
+    // A captured response may differ only in fmt or signed URL parameters.
+    // Match the requested language/translation track, never an unrelated
+    // cached response (for example de->en when de was requested).
+    let target;
+    try {
+      target = new URL(url, location.origin);
+    } catch (error) {
+      return null;
     }
-
+    for (const [candidateUrl, data] of capturedSubtitleData.entries()) {
+      try {
+        const candidate = new URL(candidateUrl, location.origin);
+        if (candidate.pathname === target.pathname &&
+          candidate.searchParams.get('lang') === target.searchParams.get('lang') &&
+          (candidate.searchParams.get('tlang') || '') === (target.searchParams.get('tlang') || '') &&
+          (candidate.searchParams.get('kind') || '') === (target.searchParams.get('kind') || '') &&
+          (candidate.searchParams.get('vss_id') || candidate.searchParams.get('vssId') || '') ===
+            (target.searchParams.get('vss_id') || target.searchParams.get('vssId') || '')) {
+          return data;
+        }
+      } catch (error) {
+        // Ignore malformed captured URLs and continue searching.
+      }
+    }
     return null;
   };
 
