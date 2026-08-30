@@ -6,7 +6,9 @@
   const capturedSubtitleUrls = new Set();
   const capturedSubtitleData = new Map();
   const subtitleDataWaiters = new Set();
+  const subtitleMatchingDataWaiters = new Set();
   const subtitleUrlValidationPromises = new Map();
+  let availableSubtitleTracks = [];
 
   function cacheSubtitleData(url, data) {
     if (!url || !Array.isArray(data?.events)) {
@@ -19,6 +21,9 @@
       waiter({ url, data });
     }
     subtitleDataWaiters.clear();
+    for (const waiter of subtitleMatchingDataWaiters) {
+      waiter({ url, data });
+    }
     return true;
   }
 
@@ -98,6 +103,31 @@
     }
   });
 
+  document.addEventListener('lingkuma_subtitle_tracks_result', function(event) {
+    availableSubtitleTracks = Array.isArray(event.detail?.tracks) ? event.detail.tracks : [];
+    const waiter = subtitleTrackWaiters.get(event.detail?.requestId);
+    if (waiter) {
+      subtitleTrackWaiters.delete(event.detail.requestId);
+      waiter(availableSubtitleTracks);
+    }
+  });
+
+  document.addEventListener('lingkuma_subtitle_track_fetch_result', function(event) {
+    const waiter = subtitleFetchWaiters.get(event.detail?.requestId);
+    if (waiter) {
+      subtitleFetchWaiters.delete(event.detail.requestId);
+      waiter(event.detail);
+    }
+  });
+
+  document.addEventListener('lingkuma_subtitle_track_select_result', function(event) {
+    const waiter = subtitleSelectWaiters.get(event.detail?.requestId);
+    if (waiter) {
+      subtitleSelectWaiters.delete(event.detail.requestId);
+      waiter(event.detail);
+    }
+  });
+
   // 定期检查视频切换（作为备用机制）
   setInterval(checkVideoChange, 1000);
 
@@ -159,10 +189,47 @@
     });
   };
 
+  window.waitForCapturedSubtitleDataMatching = function(url, timeoutMs = 5000) {
+    const target = new URL(url, location.origin);
+    const matches = candidateUrl => {
+      try {
+        const candidate = new URL(candidateUrl, location.origin);
+        return candidate.searchParams.get('lang') === target.searchParams.get('lang') &&
+          (candidate.searchParams.get('tlang') || '') === (target.searchParams.get('tlang') || '');
+      } catch (error) {
+        return candidateUrl === url;
+      }
+    };
+
+    for (const [candidateUrl, data] of capturedSubtitleData.entries()) {
+      if (matches(candidateUrl)) {
+        return Promise.resolve({ url: candidateUrl, data });
+      }
+    }
+
+    return new Promise(resolve => {
+      const waiter = result => {
+        if (!matches(result?.url)) {
+          return;
+        }
+        clearTimeout(timeoutId);
+        subtitleMatchingDataWaiters.delete(waiter);
+        resolve(result);
+      };
+      const timeoutId = setTimeout(() => {
+        subtitleMatchingDataWaiters.delete(waiter);
+        resolve(null);
+      }, timeoutMs);
+      subtitleMatchingDataWaiters.add(waiter);
+    });
+  };
+
   window.getBestCapturedSubtitleUrl = function() {
     const urls = Array.from(capturedSubtitleUrls).reverse();
     return urls.sort((a, b) => {
-      const score = url => (url.includes('pot=') ? 2 : 0) + (url.includes('fmt=json3') ? 1 : 0);
+      const score = url => (url.includes('pot=') ? 2 : 0) +
+        (url.includes('fmt=json3') ? 1 : 0) -
+        (url.includes('tlang=') ? 4 : 0);
       return score(b) - score(a);
     })[0] || null;
   };
@@ -173,6 +240,10 @@
 
   window.setSubtitleUrlValidationPromise = function(url, promise) {
     subtitleUrlValidationPromises.set(url, promise);
+  };
+
+  window.getAvailableSubtitleTracks = function() {
+    return availableSubtitleTracks.slice();
   };
 
   // 提供下载函数
@@ -251,6 +322,174 @@
   };
 
 })();
+
+const subtitleTrackWaiters = new Map();
+const subtitleFetchWaiters = new Map();
+const subtitleSelectWaiters = new Map();
+let subtitleRequestId = 0;
+
+function requestPageSubtitleTracks(timeoutMs = 5000) {
+  const requestId = `lingkuma-tracks-${Date.now()}-${++subtitleRequestId}`;
+  return new Promise(resolve => {
+    const timeoutId = setTimeout(() => {
+      subtitleTrackWaiters.delete(requestId);
+      resolve(window.getAvailableSubtitleTracks?.() || []);
+    }, timeoutMs);
+    subtitleTrackWaiters.set(requestId, tracks => {
+      clearTimeout(timeoutId);
+      resolve(tracks);
+    });
+    document.dispatchEvent(new CustomEvent('lingkuma_subtitle_tracks_request', {
+      detail: { requestId }
+    }));
+  });
+}
+
+function requestPageSubtitleTrack(url, timeoutMs = 12000) {
+  const requestId = `lingkuma-track-fetch-${Date.now()}-${++subtitleRequestId}`;
+  return new Promise(resolve => {
+    const timeoutId = setTimeout(() => {
+      subtitleFetchWaiters.delete(requestId);
+      resolve({ requestId, url, ok: false, error: '请求超时' });
+    }, timeoutMs);
+    subtitleFetchWaiters.set(requestId, result => {
+      clearTimeout(timeoutId);
+      resolve(result);
+    });
+    document.dispatchEvent(new CustomEvent('lingkuma_subtitle_track_fetch', {
+      detail: { requestId, url }
+    }));
+  });
+}
+
+function requestPageSubtitleTrackSelection(url, metadata = {}, timeoutMs = 5000) {
+  const requestId = `lingkuma-track-select-${Date.now()}-${++subtitleRequestId}`;
+  return new Promise(resolve => {
+    const timeoutId = setTimeout(() => {
+      subtitleSelectWaiters.delete(requestId);
+      resolve({ requestId, url, switched: false, error: '切换请求超时' });
+    }, timeoutMs);
+    subtitleSelectWaiters.set(requestId, result => {
+      clearTimeout(timeoutId);
+      resolve(result);
+    });
+    document.dispatchEvent(new CustomEvent('lingkuma_subtitle_track_select', {
+      detail: { requestId, url, metadata }
+    }));
+  });
+}
+
+function normalizeSubtitleJsonUrl(url) {
+  if (!url) {
+    return null;
+  }
+  const normalized = new URL(url, location.origin);
+  normalized.searchParams.set('fmt', 'json3');
+  return normalized.toString();
+}
+
+function getCapturedSubtitleLabel(url) {
+  try {
+    const parsed = new URL(url);
+    const language = parsed.searchParams.get('lang') || '未知语言';
+    const translation = parsed.searchParams.get('tlang');
+    return translation ? `监听结果: ${language} -> ${translation}` : `监听结果: ${language}`;
+  } catch (error) {
+    return '监听到的字幕';
+  }
+}
+
+window.getYoutubeSubtitleOptions = async function() {
+  const tracks = await requestPageSubtitleTracks(4500);
+  const options = [];
+  const seen = new Set();
+  const addOption = (option) => {
+    const url = normalizeSubtitleJsonUrl(option.url);
+    if (!url || seen.has(url)) {
+      return;
+    }
+    seen.add(url);
+    options.push({ ...option, url });
+  };
+
+  tracks.forEach(track => {
+    if (!track.baseUrl) {
+      return;
+    }
+    const baseOption = {
+      url: track.baseUrl,
+      label: `${track.name || track.languageCode || '未知'}${track.kind === 'asr' ? ' (自动)' : ''}${track.translationLanguageCode ? ' (翻译)' : ''}`,
+      source: 'player',
+      languageCode: track.languageCode || '',
+      kind: track.kind || '',
+      vssId: track.vssId || '',
+      translationLanguageCode: track.translationLanguageCode || ''
+    };
+    addOption(baseOption);
+
+  });
+
+  (window.getSubtitleUrls?.() || []).forEach(url => {
+    addOption({
+      url,
+      label: getCapturedSubtitleLabel(url),
+      source: 'captured'
+    });
+  });
+
+  return options;
+};
+
+window.selectYoutubeSubtitle = async function(url, option = null) {
+  const normalizedUrl = normalizeSubtitleJsonUrl(url);
+  if (!normalizedUrl) {
+    return null;
+  }
+
+  window.lingkumaSelectedSubtitleUrl = normalizedUrl;
+  const selectedOption = option || (await window.getYoutubeSubtitleOptions?.() || [])
+    .find(candidate => candidate.url === normalizedUrl);
+  let nativeTrackSwitched = false;
+  if (selectedOption?.source === 'player') {
+    console.log('请求切换 YouTube 原生字幕轨道:', {
+      label: selectedOption.label,
+      languageCode: selectedOption.languageCode,
+      kind: selectedOption.kind,
+      vssId: selectedOption.vssId,
+      translationLanguageCode: selectedOption.translationLanguageCode
+    });
+    const switchResult = await requestPageSubtitleTrackSelection(normalizedUrl, selectedOption);
+    if (switchResult?.switched) {
+      console.log('YouTube 原生字幕切换请求已提交，等待新的字幕响应');
+      const capturedResult = await window.waitForCapturedSubtitleDataMatching(normalizedUrl, 5000);
+      nativeTrackSwitched = Boolean(capturedResult?.url);
+      if (!nativeTrackSwitched) {
+        console.warn('YouTube 未返回目标轨道字幕响应，仅更新悬浮层');
+      }
+    } else {
+      console.warn('YouTube 原生字幕未切换，仅更新悬浮层:', switchResult?.error || '未知错误');
+    }
+  }
+  if (!window.getCapturedSubtitleData?.(normalizedUrl)) {
+    const result = await requestPageSubtitleTrack(normalizedUrl);
+    if (!result?.ok) {
+      if (nativeTrackSwitched) {
+        const capturedResult = await window.waitForCapturedSubtitleData?.(5000);
+        if (capturedResult?.url) {
+          window.lingkumaSelectedSubtitleUrl = normalizeSubtitleJsonUrl(capturedResult.url);
+          return window.lingkumaSelectedSubtitleUrl;
+        }
+      }
+      console.warn('无法加载所选字幕:', result?.error || normalizedUrl);
+      return null;
+    }
+  }
+  window.lingkumaNativeSubtitleSwitched = nativeTrackSwitched;
+  document.dispatchEvent(new CustomEvent('lingkuma_subtitle_selection_changed', {
+    detail: { url: normalizedUrl }
+  }));
+  return normalizedUrl;
+};
 
 // 验证URL是否能返回有效的JSON数据
 window.isValidJsonUrl = async function(url) {
@@ -487,42 +726,114 @@ async function triggerYouTubeSubtitles(force = false, closeAfter = false) {
   return false;
 }
 
-// 提供一个函数来获取当前可用的字幕轨道
+// 提供一个函数来获取当前可用的字幕轨道。
+// YouTube 将翻译字幕作为 timedtext 请求的 tlang 参数处理，播放器返回的
+// captionTracks 则是视频实际提供的源字幕列表。优先使用后者可以避免
+// 读取到播放器当前 UI 选择的翻译语言。
 function getAvailableSubtitleTracks() {
+  return window.getAvailableSubtitleTracks?.() || [];
+}
+
+function getSubtitleTrackName(track) {
+  return track?.name?.simpleText || track?.name?.runs?.map(run => run.text).join('') ||
+    track?.languageName?.simpleText || track?.languageCode || '未知';
+}
+
+function chooseSourceSubtitleTrack(tracks, preferredLanguageCode, defaultTrackIndex) {
+  if (!Array.isArray(tracks) || tracks.length === 0) {
+    return null;
+  }
+
+  const sourceTracks = tracks.filter(track => {
+    try {
+      return !new URL(track.baseUrl).searchParams.has('tlang');
+    } catch (error) {
+      return true;
+    }
+  });
+  const candidates = sourceTracks.length > 0 ? sourceTracks : tracks;
+  if (Number.isInteger(defaultTrackIndex)) {
+    const defaultTrack = tracks[defaultTrackIndex];
+    if (defaultTrack && candidates.includes(defaultTrack)) {
+      return defaultTrack;
+    }
+  }
+  const preferred = preferredLanguageCode && candidates.find(track =>
+    track.languageCode === preferredLanguageCode ||
+    track.languageCode?.startsWith(`${preferredLanguageCode}-`)
+  );
+  if (preferred) {
+    return preferred;
+  }
+
+  // Manual captions carry no `kind: asr`; use them before auto-generated text.
+  return candidates.find(track => track.kind !== 'asr') || candidates[0];
+}
+
+async function getPlayerSourceSubtitleUrl(preferredLanguageCode) {
+  const tracks = await requestPageSubtitleTracks();
+  const defaultTrackIndex = tracks.findIndex(track => !track.translationLanguageCode);
+  const track = chooseSourceSubtitleTrack(tracks, preferredLanguageCode, defaultTrackIndex);
+  if (track?.baseUrl) {
+    const url = new URL(track.baseUrl, location.origin);
+    url.searchParams.set('fmt', 'json3');
+    url.searchParams.delete('tlang');
+    console.log(`选用源字幕轨道: ${track.name || getSubtitleTrackName(track)} (${track.languageCode || 'unknown'})`);
+    return {
+      url: url.toString(),
+      track
+    };
+  }
+  return null;
+}
+
+async function fetchPlayerSourceSubtitle(preferredLanguageCode) {
+  const selected = await getPlayerSourceSubtitleUrl(preferredLanguageCode);
+  if (!selected) {
+    return null;
+  }
+
   try {
-    const player = document.querySelector('#movie_player');
-    if (!player) {
-      console.log('未找到视频播放器');
-      return null;
+    const result = await requestPageSubtitleTrack(selected.url);
+    if (!result?.ok) {
+      throw new Error(result?.error || '页面上下文获取字幕失败');
     }
-
-    // 尝试获取播放器响应数据
-    const playerResponse = player.getPlayerResponse();
-    if (!playerResponse) {
-      console.log('无法获取播放器响应数据');
-      return null;
-    }
-
-    // 提取字幕轨道信息
-    const captionTracks = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-    if (!captionTracks || captionTracks.length === 0) {
-      console.log('该视频没有可用的字幕');
-      return null;
-    }
-
-    console.log(`找到 ${captionTracks.length} 个字幕轨道:`);
-    captionTracks.forEach((track, index) => {
-      console.log(`[${index}] ${track.name?.simpleText || '未知'} (${track.languageCode})`);
-    });
-
-    return captionTracks;
+    return selected.url;
   } catch (error) {
-    console.error('获取字幕轨道时出错:', error);
+    console.warn('直接获取播放器源字幕失败，将回退到网络监听:', error);
     return null;
   }
 }
 
-async function forceSubtitleAndGetJsonUrl(closeAfterGet = true) {
+async function forceSubtitleAndGetJsonUrl(closeAfterGet = true, options = {}) {
+  // 支持 forceSubtitleAndGetJsonUrl({ closeAfterGet, languageCode })，同时保持
+  // 旧调用 forceSubtitleAndGetJsonUrl(true/false) 的兼容性。
+  if (typeof closeAfterGet === 'object') {
+    options = closeAfterGet;
+    closeAfterGet = options.closeAfterGet !== false;
+  }
+
+  const selectedUrl = options.trackUrl || window.lingkumaSelectedSubtitleUrl;
+  let directUrl = null;
+  if (selectedUrl) {
+    const normalizedUrl = normalizeSubtitleJsonUrl(selectedUrl);
+    if (window.getCapturedSubtitleData?.(normalizedUrl)) {
+      directUrl = normalizedUrl;
+    } else {
+      const result = await requestPageSubtitleTrack(normalizedUrl);
+      if (result?.ok) {
+        directUrl = normalizedUrl;
+      }
+    }
+  }
+  if (!directUrl) {
+    directUrl = await fetchPlayerSourceSubtitle(options.languageCode);
+  }
+  if (directUrl) {
+    console.log('已从播放器响应直接获取源字幕，不触发 YouTube CC');
+    return directUrl;
+  }
+
   console.log('触发字幕并等待原始字幕响应...');
   const maxAttempts = 3;
   let capturedResult = null;
@@ -539,7 +850,15 @@ async function forceSubtitleAndGetJsonUrl(closeAfterGet = true) {
     }
 
     if (url) {
-      console.log('未捕获到原始响应数据，验证本次字幕URL');
+      console.log('已捕获字幕URL，交给页面上下文重放并读取响应');
+      const replayResult = await requestPageSubtitleTrack(url);
+      if (replayResult?.ok) {
+        capturedResult = await window.waitForCapturedSubtitleData(1000);
+        if (capturedResult?.url || window.getCapturedSubtitleData?.(url)) {
+          break;
+        }
+      }
+      console.log('页面上下文重放失败，验证本次字幕URL');
       if (await window.isValidJsonUrl(url)) {
         break;
       }

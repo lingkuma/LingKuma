@@ -96,6 +96,7 @@
             skipForward: '<path d="m5 4 11 8-11 8V4Z"/><path d="M19 5v14"/>',
             replay: '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/>',
             layout: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M12 10v10"/>',
+            captions: '<path d="M4 5h16v11H4z"/><path d="M8 20h8"/><path d="M8 10h.01M12 10h4M8 13h6"/>',
             clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
             settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.07a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.53-1H3v-4h.07A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 8.97 4.6 1.7 1.7 0 0 0 10 3.07V3h4v.07a1.7 1.7 0 0 0 1.03 1.53 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9 1.7 1.7 0 0 0 20.93 10H21v4h-.07a1.7 1.7 0 0 0-1.53 1Z"/>',
             autoPause: '<circle cx="12" cy="12" r="9"/><path d="M10 8v8"/><path d="M14 8v8"/>'
@@ -1046,6 +1047,11 @@
             settingsSelector.remove();
         }
 
+        const subtitleSelector = document.getElementById('subtitle-selector');
+        if (subtitleSelector) {
+            subtitleSelector.remove();
+        }
+
         if (keydownHandler) {
             document.removeEventListener('keydown', keydownHandler);
             keydownHandler = null;
@@ -1372,10 +1378,12 @@
         return videoId;
     }
 
-    async function getYoutubeSubtitlesAPI() {
+    async function getYoutubeSubtitlesAPI(selectedUrl = null) {
         try {
             console.log('开始获取字幕URL...');
-            const url = await window.forceSubtitleAndGetJsonUrl();
+            const url = await window.forceSubtitleAndGetJsonUrl(selectedUrl
+                ? { trackUrl: selectedUrl, closeAfterGet: false }
+                : undefined);
             if (url) {
                 console.log(`成功获取字幕URL: ${url}`);
                 const capturedData = window.getCapturedSubtitleData?.(url);
@@ -2153,9 +2161,109 @@
         controlBar.appendChild(replayBtn);
         controlBar.appendChild(nextBtn);
         controlBar.appendChild(modeBtn);
+        const subtitleBtn = createControlButton('captions', '选择字幕', () => {
+            showSubtitleSelector();
+        });
+        controlBar.appendChild(subtitleBtn);
         controlBar.appendChild(settingsBtn);
 
         return controlBar;
+    }
+
+    async function showSubtitleSelector() {
+        const existingSelector = document.getElementById('subtitle-selector');
+        if (existingSelector) {
+            existingSelector.remove();
+            return;
+        }
+
+        const selector = document.createElement('div');
+        selector.id = 'subtitle-selector';
+        Object.assign(selector.style, {
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            backgroundColor: YOUTUBE_OVERLAY_UI.ivory,
+            color: YOUTUBE_OVERLAY_UI.charcoal,
+            borderRadius: '14px',
+            boxShadow: '0 0 0 1px ' + YOUTUBE_OVERLAY_UI.borderWarm + ', 0 18px 48px rgba(20, 20, 19, 0.16)',
+            zIndex: '114515',
+            padding: '18px',
+            width: 'min(420px, calc(100vw - 28px))',
+            maxHeight: 'min(70vh, 520px)',
+            overflowY: 'auto',
+            boxSizing: 'border-box'
+        });
+
+        const title = document.createElement('h3');
+        title.textContent = '选择字幕';
+        Object.assign(title.style, { margin: '0 0 12px', fontSize: '17px' });
+        selector.appendChild(title);
+
+        const status = document.createElement('p');
+        status.textContent = '正在读取播放器字幕列表...';
+        Object.assign(status.style, { margin: '0 0 10px', color: YOUTUBE_OVERLAY_UI.stone, fontSize: '12px' });
+        selector.appendChild(status);
+
+        const list = document.createElement('div');
+        Object.assign(list.style, { display: 'flex', flexDirection: 'column', gap: '7px' });
+        selector.appendChild(list);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = '关闭';
+        Object.assign(closeBtn.style, {
+            marginTop: '14px', padding: '8px 12px', width: '100%', border: 'none', borderRadius: '10px',
+            backgroundColor: YOUTUBE_OVERLAY_UI.nearBlack, color: YOUTUBE_OVERLAY_UI.ivory, cursor: 'pointer'
+        });
+        closeBtn.addEventListener('click', () => selector.remove());
+        selector.appendChild(closeBtn);
+        document.body.appendChild(selector);
+
+        try {
+            const options = await window.getYoutubeSubtitleOptions?.() || [];
+            if (!selector.isConnected) return;
+            list.replaceChildren();
+            status.textContent = options.length ? '选择后会重新加载悬浮字幕。' : '暂未发现字幕轨道，请先播放或开启一次字幕。';
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option.label;
+                button.title = option.source === 'captured' ? '使用已监听到的字幕响应' : '使用播放器字幕轨道';
+                Object.assign(button.style, {
+                    padding: '10px 12px', textAlign: 'left', border: '1px solid ' + YOUTUBE_OVERLAY_UI.borderWarm,
+                    borderRadius: '9px', backgroundColor: option.url === window.lingkumaSelectedSubtitleUrl ? YOUTUBE_OVERLAY_UI.warmSand : YOUTUBE_OVERLAY_UI.parchment,
+                    color: YOUTUBE_OVERLAY_UI.charcoal, cursor: 'pointer'
+                });
+                button.addEventListener('click', async () => {
+                    console.log('点击字幕选择项:', option);
+                    button.disabled = true;
+                    status.textContent = '正在加载所选字幕...';
+                    const selectedUrl = await window.selectYoutubeSubtitle?.(option.url, option);
+                    if (selectedUrl) {
+                        const data = await getYoutubeSubtitlesAPI(selectedUrl);
+                        if (data) {
+                            subtitles = data;
+                            rebuiltSubtitles = rebuildSubtitles(data);
+                            subtitleListInitialized = false;
+                            subtitleListItems = [];
+                            lastSubtitleText = '';
+                            lastOverlaySubtitleText = '';
+                            status.textContent = window.lingkumaNativeSubtitleSwitched
+                                ? '播放器字幕和悬浮字幕已切换。'
+                                : '仅悬浮字幕已切换。';
+                            setTimeout(() => selector.remove(), 250);
+                            return;
+                        }
+                    }
+                    button.disabled = false;
+                    status.textContent = '字幕加载失败，请选择其他轨道。';
+                });
+                list.appendChild(button);
+            });
+        } catch (error) {
+            status.textContent = '读取字幕列表失败。';
+            console.warn('读取字幕列表失败:', error);
+        }
     }
 
     function createControlButton(icon, title, onClick) {
