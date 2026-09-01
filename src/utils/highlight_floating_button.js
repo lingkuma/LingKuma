@@ -1,7 +1,33 @@
 (function() {
-  if (window.self !== window.top) {
+  function isYouTubeHost(hostname) {
+    return /(^|\.)youtube(?:-nocookie)?\.com$/i.test(hostname || '');
+  }
+
+
+  function shouldSkipFrameButton() {
+    if (window.self === window.top) {
+      return false;
+    }
+
+    // YouTube 主站的内部 frame 不应出现额外按钮；外部页面嵌入的 YouTube frame 仍可独立使用。
+    try {
+      let topIsYouTube = false;
+      try {
+        topIsYouTube = isYouTubeHost(window.top.location.hostname);
+      } catch (error) {
+        // 跨域时无法读取 top.location，继续使用当前 frame 信息。
+      }
+      return topIsYouTube;
+    } catch (error) {
+      return true;
+    }
+  }
+
+  if (shouldSkipFrameButton()) {
     return;
   }
+
+  const isTopFrame = window.self === window.top;
 
   const FLOATING_BUTTON_ENABLED_KEY = 'wordHighlightFloatingButtonEnabled';
   const HIGHLIGHT_ENABLED_KEY = 'enablePlugin';
@@ -348,6 +374,19 @@
       }
     });
   }
+
+  function registerFrameAndSyncRuntime() {
+    if (isTopFrame) {
+      requestHighlightRuntimeSync();
+      return;
+    }
+
+    chrome.runtime.sendMessage({ action: 'registerHighlightFrame' }, () => {
+      // The frame state is reset before asking whether runtime injection is needed.
+      requestHighlightRuntimeSync();
+    });
+  }
+
   function toggleHighlight() {
     const enabled = !currentHighlightEnabled;
     updateHighlightState(enabled);
@@ -1150,7 +1189,10 @@
   }
 
   function initializeFloatingButton() {
-    requestHighlightRuntimeSync();
+    console.debug('[LingKuma] button initialized', chrome.runtime.lastError ? chrome.runtime.lastError.message : null);
+
+
+    registerFrameAndSyncRuntime();
 
     chrome.storage.local.get({
       [FLOATING_BUTTON_ENABLED_KEY]: true,
@@ -1158,7 +1200,9 @@
       [POSITION_KEY]: null,
       [PAGE_THEME_OVERRIDES_KEY]: {}
     }, (result) => {
-      currentHighlightEnabled = result[HIGHLIGHT_ENABLED_KEY] !== false;
+      currentHighlightEnabled = isTopFrame
+        ? result[HIGHLIGHT_ENABLED_KEY] !== false
+        : false;
       const pageThemeOverride = (result[PAGE_THEME_OVERRIDES_KEY] || {})[getPageThemeKey()];
       const pageThemeIsDark = normalizePageThemeOverride(pageThemeOverride);
       currentPageThemeIsDark = pageThemeIsDark !== null

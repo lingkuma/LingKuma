@@ -39,9 +39,7 @@
         "<all_urls>"
       ],
       "js": [
-        "src/utils/highlight_floating_button.js",
-        "src/service/a1_loadKnowWords.js",
-        "src/service/a2_hightlight.js"
+        "src/utils/highlight_floating_button.js"
       ],
       "css": ["content.css"],
       "all_frames": true,

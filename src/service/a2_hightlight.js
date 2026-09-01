@@ -1,4 +1,6 @@
 // 在类顶部添加日语分词器引用
+// A2 是所有后续高亮/提示模块依赖的基础脚本，保持在 manifest 中静态加载。
+globalThis.__lingkumaA2Loaded = true;
 let JapaneseTokenizer = null;
 
 function isOrionIOSRuntime() {
@@ -3407,6 +3409,10 @@ function highlightAllWords() {
     }
   });
 }
+
+// 动态注入时显式暴露入口，供 A1 以及后续运行时脚本跨文件调用。
+globalThis.highlightAllWords = highlightAllWords;
+globalThis.ScopeObserver = ScopeObserver;
 
 
 

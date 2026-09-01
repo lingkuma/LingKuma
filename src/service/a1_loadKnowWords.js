@@ -67,31 +67,31 @@ if (shouldSkipLingKumaFrame) {
         // value
         // : 
         // "britain"
-let knownWords = new Set();
+var knownWords = new Set();
 
-let wordDetails = [];
-let wordRangesMap = new Map(); 
-let tooltipEl = null;
+var wordDetails = [];
+var wordRangesMap = new Map();
+var tooltipEl = null;
 // 新增全局变量，用于存储当前选中的单词
-let currentTooltipWord = null;
-let globalDarkMode = false;
+var currentTooltipWord = null;
+var globalDarkMode = false;
 
 // 新增全局变量，用于控制自动展开及保存最新鼠标事件
 
 
 
-let lastMouseEvent = null;
+var lastMouseEvent = null;
 // 添加全局变量
-let analysisWindow = null;
-let currentHighlight = null;
+var analysisWindow = null;
+var currentHighlight = null;
 // 新增高亮管理器相关变量
-let highlightManager = null;
+var highlightManager = null;
 
 
-let highlightChineseEnabled = true;
-let highlightJapaneseEnabled = true;
-let highlightKoreanEnabled = true;
-let highlightAlphabeticEnabled = true;
+var highlightChineseEnabled = true;
+var highlightJapaneseEnabled = true;
+var highlightKoreanEnabled = true;
+var highlightAlphabeticEnabled = true;
 
 const HIGHLIGHT_RUNTIME_STORAGE_KEYS = [
   'highlightChineseEnabled',
@@ -148,7 +148,7 @@ function startHighlightRuntimeFromStorage() {
     }
 
     // 继续执行原有的高亮初始化逻辑
-    highlightAllWords();
+    invokeHighlightAllWords();
   });
 }
 
@@ -162,6 +162,11 @@ function startHighlightRuntimeFromStorage() {
 initPlugin();
 
 function getInitialHighlightEnabled(result) {
+  // iframe 的高亮完全由该 frame 内的悬浮按钮按需激活；不能因为全局开关或顶层页面设置而自动启动。
+  if (window.self !== window.top) {
+    return false;
+  }
+
   const scope = result.wordHighlightFloatingButtonScope === 'page' ? 'page' : 'global';
   if (scope !== 'page') {
     return result.enablePlugin !== false;
@@ -240,8 +245,14 @@ function initPlugin() {
       console.log('Highlight toggle message:', message.enabled);
       if (message.enabled) {
         console.log('Highlight toggle message:', message.enabled);
-        // Reapply highlight after rechecking page scope and blacklist for this frame.
-        startHighlightRuntimeFromStorage();
+        // iframe 状态由 background 按 frame 保存在内存中，不写入页面 URL storage。
+        // 这种局部激活必须绕过顶层 page-scope override 检查。
+        if (message.frameLocal === true) {
+          invokeHighlightAllWords();
+        } else {
+          // Reapply highlight after rechecking page scope and blacklist for this frame.
+          startHighlightRuntimeFromStorage();
+        }
       } else if (highlightManager) {
         highlightManager.highlightEnabled = false;
         if (typeof highlightManager.removeAllHighlights === 'function') {
@@ -259,6 +270,15 @@ function initPlugin() {
       highlightManager = null;
     }
   });
+}
+
+function invokeHighlightAllWords() {
+  const highlightEntry = globalThis.highlightAllWords;
+  if (typeof highlightEntry === 'function') {
+    highlightEntry();
+  } else {
+    console.debug('[LingKuma] A2 尚未完成加载，跳过本次高亮初始化');
+  }
 }
 
 // 辅助函数：转义正则中需要的特殊字符
@@ -313,5 +333,3 @@ function isUrlInBlacklist(url, blacklistPatterns) {
     
     return false;
 }
-
-

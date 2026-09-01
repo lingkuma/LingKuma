@@ -42,6 +42,8 @@ const HIGHLIGHT_RUNTIME_FILES = [
   'src/plugin/min/de-compromise.min.js',
   'src/utils/language-detector/eld.extrasmall.global.js',
   'src/plugin/pos-highlight.js',
+  'src/service/a1_loadKnowWords.js',
+  'src/service/a2_hightlight.js',
   'src/service/a3_aiFragen.js',
   'src/service/a4_tooltip_new.js',
   'src/service/a5_custom_word_selection.js',
@@ -56,6 +58,34 @@ const HIGHLIGHT_RUNTIME_FILES = [
 
 const injectedHighlightTabs = new Set();
 const injectingHighlightTabs = new Map();
+// iframe 状态只保存在内存中：每个 frame 默认关闭，刷新/销毁后自然失效。
+const frameHighlightStates = new Map();
+
+function getFrameStateKey(tabId, frameId) {
+  return `${tabId}:${frameId}`;
+}
+
+function isFrameId(frameId) {
+  return Number.isInteger(frameId) && frameId >= 0;
+}
+
+function clearTabInjectionPromises(tabId) {
+  const prefix = `${tabId}:`;
+  for (const key of injectingHighlightTabs.keys()) {
+    if (key === String(tabId) || key.startsWith(prefix)) {
+      injectingHighlightTabs.delete(key);
+    }
+  }
+}
+
+function clearFrameHighlightStates(tabId) {
+  const prefix = `${tabId}:`;
+  for (const key of frameHighlightStates.keys()) {
+    if (key.startsWith(prefix)) {
+      frameHighlightStates.delete(key);
+    }
+  }
+}
 
 function storageLocalGet(defaults) {
   return new Promise(resolve => chrome.storage.local.get(defaults, resolve));
@@ -73,16 +103,19 @@ function getTabById(tabId) {
   return new Promise(resolve => chrome.tabs.get(tabId, tab => resolve(chrome.runtime.lastError ? null : tab)));
 }
 
-function sendMessageToTab(tabId, message) {
+function sendMessageToTab(tabId, message, frameId = null) {
   return new Promise(resolve => {
     if (!tabId) {
       resolve(false);
       return;
     }
 
-    chrome.tabs.sendMessage(tabId, message, () => {
-      resolve(!chrome.runtime.lastError);
-    });
+    const callback = () => resolve(!chrome.runtime.lastError);
+    if (isFrameId(frameId)) {
+      chrome.tabs.sendMessage(tabId, message, { frameId }, callback);
+    } else {
+      chrome.tabs.sendMessage(tabId, message, callback);
+    }
   });
 }
 
@@ -120,9 +153,13 @@ function isYouTubeTab(tab) {
   }
 }
 
-function getHighlightRuntimeTarget(tab, frameIds = null) {
+function getHighlightRuntimeTarget(tab, frameIds = null, frameId = null) {
   if (!tab || !Number.isInteger(tab.id)) {
     return null;
+  }
+
+  if (isFrameId(frameId)) {
+    return { tabId: tab.id, frameIds: [frameId] };
   }
 
   if (isYouTubeTab(tab)) {
@@ -139,7 +176,7 @@ async function getHighlightPageKey(tabId) {
   return getHighlightPageKeyFromUrl(tab?.url);
 }
 
-async function getHighlightRuntimeMissingFrameIds(tabId) {
+async function getHighlightRuntimeMissingFrameIds(tabId, frameId = null) {
   if (!chrome.scripting?.executeScript) {
     return null;
   }
@@ -150,7 +187,7 @@ async function getHighlightRuntimeMissingFrameIds(tabId) {
       return null;
     }
     const results = await chrome.scripting.executeScript({
-      target: getHighlightRuntimeTarget(tab),
+      target: getHighlightRuntimeTarget(tab, null, frameId),
       func: sentinel => globalThis[sentinel] === true,
       args: [HIGHLIGHT_RUNTIME_SENTINEL]
     });
@@ -180,19 +217,19 @@ async function getHighlightRuntimeMissingFrameIds(tabId) {
   }
 }
 
-async function isHighlightRuntimeLoaded(tabId) {
-  const missingFrameIds = await getHighlightRuntimeMissingFrameIds(tabId);
+async function isHighlightRuntimeLoaded(tabId, frameId = null) {
+  const missingFrameIds = await getHighlightRuntimeMissingFrameIds(tabId, frameId);
   return Array.isArray(missingFrameIds) && missingFrameIds.length === 0;
 }
 
-async function markHighlightRuntimeLoaded(tabId, frameIds = null) {
+async function markHighlightRuntimeLoaded(tabId, frameIds = null, frameId = null) {
   try {
     const tab = await getTabById(tabId);
     if (!tab) {
       return;
     }
     await chrome.scripting.executeScript({
-      target: getHighlightRuntimeTarget(tab, frameIds),
+      target: getHighlightRuntimeTarget(tab, frameIds, frameId),
       func: sentinel => {
         globalThis[sentinel] = true;
       },
@@ -203,25 +240,26 @@ async function markHighlightRuntimeLoaded(tabId, frameIds = null) {
   }
 }
 
-async function injectHighlightRuntime(tabId) {
+async function injectHighlightRuntime(tabId, frameId = null) {
   const tab = await getTabById(tabId);
   if (!isInjectableTab(tab) || !chrome.scripting?.executeScript) {
     return false;
   }
 
-  const pendingInjection = injectingHighlightTabs.get(tabId);
+  const injectionKey = isFrameId(frameId) ? getFrameStateKey(tabId, frameId) : String(tabId);
+  const pendingInjection = injectingHighlightTabs.get(injectionKey);
   if (pendingInjection) {
     return pendingInjection;
   }
 
   const injectionPromise = (async () => {
     try {
-      const missingFrameIds = await getHighlightRuntimeMissingFrameIds(tabId);
+      const missingFrameIds = await getHighlightRuntimeMissingFrameIds(tabId, frameId);
       if (Array.isArray(missingFrameIds) && missingFrameIds.length === 0) {
         return true;
       }
 
-      const target = getHighlightRuntimeTarget(tab, missingFrameIds);
+      const target = getHighlightRuntimeTarget(tab, missingFrameIds, frameId);
 
       await chrome.scripting.executeScript({
         target,
@@ -230,20 +268,21 @@ async function injectHighlightRuntime(tabId) {
 
       await markHighlightRuntimeLoaded(
         tabId,
-        Array.isArray(missingFrameIds) && missingFrameIds.length > 0 ? missingFrameIds : null
+        Array.isArray(missingFrameIds) && missingFrameIds.length > 0 ? missingFrameIds : null,
+        frameId
       );
       return true;
     } catch (error) {
       console.debug('[background.js] inject highlight runtime skipped:', tab.url, error?.message || error);
       return false;
     } finally {
-      if (injectingHighlightTabs.get(tabId) === injectionPromise) {
-        injectingHighlightTabs.delete(tabId);
+      if (injectingHighlightTabs.get(injectionKey) === injectionPromise) {
+        injectingHighlightTabs.delete(injectionKey);
       }
     }
   })();
 
-  injectingHighlightTabs.set(tabId, injectionPromise);
+  injectingHighlightTabs.set(injectionKey, injectionPromise);
   return injectionPromise;
 }
 
@@ -266,7 +305,16 @@ async function setPageOverride(tabId, value) {
   await storageLocalSet({ [HIGHLIGHT_PAGE_OVERRIDES_KEY]: overrides });
 }
 
-async function getHighlightControlState(tabId) {
+async function getHighlightControlState(tabId, frameId = null) {
+  if (isFrameId(frameId) && frameId !== 0) {
+    return {
+      scope: 'frame',
+      enabled: frameHighlightStates.get(getFrameStateKey(tabId, frameId)) === true,
+      globalEnabled: false,
+      frameId
+    };
+  }
+
   const result = await storageLocalGet({
     [HIGHLIGHT_ENABLED_KEY]: false,
     [HIGHLIGHT_SCOPE_KEY]: 'page',
@@ -284,26 +332,59 @@ async function getHighlightControlState(tabId) {
   return { scope, enabled, globalEnabled };
 }
 
-async function teardownHighlightRuntime(tabId) {
-  await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: false });
-  await sendMessageToTab(tabId, { action: 'teardownHighlightRuntime' });
+async function teardownHighlightRuntime(tabId, frameId = 0) {
+  await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: false }, frameId);
+  await sendMessageToTab(tabId, { action: 'teardownHighlightRuntime' }, frameId);
 }
 
-async function pauseHighlightRuntime(tabId) {
-  await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: false });
+async function pauseHighlightRuntime(tabId, frameId = 0) {
+  await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: false }, frameId);
 }
 
-async function setPageHighlightEnabled(tabId, enabled) {
+async function setPageHighlightEnabled(tabId, enabled, frameId = 0) {
   await setPageOverride(tabId, enabled === true);
 
   if (enabled) {
-    await injectHighlightRuntime(tabId);
-    await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true });
+    await injectHighlightRuntime(tabId, frameId);
+    await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true }, frameId);
   } else {
-    await pauseHighlightRuntime(tabId);
+    await pauseHighlightRuntime(tabId, frameId);
   }
 
-  return getHighlightControlState(tabId);
+  return getHighlightControlState(tabId, frameId);
+}
+
+async function setFrameHighlightEnabled(tabId, frameId, enabled) {
+  if (!isFrameId(frameId) || frameId === 0) {
+    return setPageHighlightEnabled(tabId, enabled, 0);
+  }
+
+  const key = getFrameStateKey(tabId, frameId);
+  frameHighlightStates.set(key, enabled === true);
+
+  if (enabled === true) {
+    const loaded = await injectHighlightRuntime(tabId, frameId);
+    if (loaded && frameHighlightStates.get(key) === true) {
+      await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true, frameLocal: true }, frameId);
+    } else if (!loaded) {
+      frameHighlightStates.set(key, false);
+    }
+  } else {
+    await pauseHighlightRuntime(tabId, frameId);
+  }
+
+  return getHighlightControlState(tabId, frameId);
+}
+
+async function syncFrameHighlightRuntime(tabId, frameId) {
+  const state = await getHighlightControlState(tabId, frameId);
+  if (state.enabled) {
+    const loaded = await injectHighlightRuntime(tabId, frameId);
+    if (loaded && (await getHighlightControlState(tabId, frameId)).enabled) {
+      await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true, frameLocal: true }, frameId);
+    }
+  }
+  return state;
 }
 
 async function setGlobalHighlightEnabled(enabled) {
@@ -311,14 +392,18 @@ async function setGlobalHighlightEnabled(enabled) {
   await syncAllTabsHighlightRuntime({ forceActivate: enabled === true });
 }
 
-async function setHighlightFromFloatingButton(tabId, enabled) {
-  const state = await getHighlightControlState(tabId);
-  if (state.scope === 'global') {
-    await setGlobalHighlightEnabled(enabled);
-    return getHighlightControlState(tabId);
+async function setHighlightFromFloatingButton(tabId, enabled, frameId = 0) {
+  if (isFrameId(frameId) && frameId !== 0) {
+    return setFrameHighlightEnabled(tabId, frameId, enabled);
   }
 
-  return setPageHighlightEnabled(tabId, enabled);
+  const state = await getHighlightControlState(tabId, 0);
+  if (state.scope === 'global') {
+    await setGlobalHighlightEnabled(enabled);
+    return getHighlightControlState(tabId, 0);
+  }
+
+  return setPageHighlightEnabled(tabId, enabled, 0);
 }
 
 async function syncTabHighlightRuntime(tabId, options = {}) {
@@ -327,15 +412,15 @@ async function syncTabHighlightRuntime(tabId, options = {}) {
     return;
   }
 
-  const state = await getHighlightControlState(tabId);
+  const state = await getHighlightControlState(tabId, 0);
   if (state.enabled) {
-    const wasLoaded = await isHighlightRuntimeLoaded(tabId);
-    const loaded = await injectHighlightRuntime(tabId);
+    const wasLoaded = await isHighlightRuntimeLoaded(tabId, 0);
+    const loaded = await injectHighlightRuntime(tabId, 0);
     if (loaded && options.forceActivate === true && wasLoaded) {
-      await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true });
+      await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true }, 0);
     }
   } else {
-    await pauseHighlightRuntime(tabId);
+    await pauseHighlightRuntime(tabId, 0);
   }
 }
 
@@ -360,7 +445,8 @@ if (chrome.tabs?.onUpdated) {
   chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
     if (changeInfo.status === 'loading') {
       injectedHighlightTabs.delete(tabId);
-      injectingHighlightTabs.delete(tabId);
+      clearTabInjectionPromises(tabId);
+      clearFrameHighlightStates(tabId);
       clearLegacyPageOverride(tabId);
       return;
     }
@@ -374,7 +460,8 @@ if (chrome.tabs?.onUpdated) {
 if (chrome.tabs?.onRemoved) {
   chrome.tabs.onRemoved.addListener((tabId) => {
     injectedHighlightTabs.delete(tabId);
-    injectingHighlightTabs.delete(tabId);
+    clearTabInjectionPromises(tabId);
+    clearFrameHighlightStates(tabId);
     clearLegacyPageOverride(tabId);
   });
 }
@@ -3065,12 +3152,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   else if (message.action === 'getWordHighlightControlState') {
     const tabId = sender.tab?.id || message.tabId;
+    const frameId = isFrameId(sender.frameId) ? sender.frameId : 0;
     if (!tabId) {
       sendResponse({ scope: 'page', enabled: false, globalEnabled: false });
       return false;
     }
 
-    getHighlightControlState(tabId).then(state => {
+    getHighlightControlState(tabId, frameId).then(state => {
       sendResponse(state);
     }).catch(error => {
       console.error('[background.js] get highlight control state failed:', error);
@@ -3081,12 +3169,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   else if (message.action === 'ensureWordHighlightRuntime') {
     const tabId = sender.tab?.id || message.tabId;
+    const frameId = isFrameId(sender.frameId) ? sender.frameId : 0;
     if (!tabId) {
       sendResponse({ success: false, error: 'missing tab id' });
       return false;
     }
 
-    syncTabHighlightRuntime(tabId).then(() => getHighlightControlState(tabId)).then(state => {
+    const syncPromise = frameId === 0
+      ? syncTabHighlightRuntime(tabId)
+      : syncFrameHighlightRuntime(tabId, frameId);
+
+    syncPromise.then(state => state || getHighlightControlState(tabId, frameId)).then(state => {
       sendResponse({ success: true, ...state });
     }).catch(error => {
       console.error('[background.js] ensure highlight runtime failed:', error);
@@ -3097,13 +3190,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   else if (message.action === 'toggleWordHighlightFromFloatingButton') {
     const tabId = sender.tab?.id || message.tabId;
+    const frameId = isFrameId(sender.frameId) ? sender.frameId : 0;
     if (!tabId) {
       sendResponse({ success: false, error: 'missing tab id' });
       return false;
     }
 
     const requestedEnabled = message.enabled === true;
-    setHighlightFromFloatingButton(tabId, requestedEnabled).then(state => {
+    setHighlightFromFloatingButton(tabId, requestedEnabled, frameId).then(state => {
       sendResponse({ success: true, ...state });
     }).catch(error => {
       console.error('[background.js] floating highlight toggle failed:', error);
@@ -3111,6 +3205,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
 
     return true;
+  }
+  else if (message.action === 'registerHighlightFrame') {
+    const tabId = sender.tab?.id || message.tabId;
+    const frameId = isFrameId(sender.frameId) ? sender.frameId : 0;
+    if (tabId && frameId !== 0) {
+      frameHighlightStates.set(getFrameStateKey(tabId, frameId), false);
+    }
+    sendResponse({ success: true, frameId });
+    return false;
   }
   else if (message.action === 'getWordDetails') {
     const word = message.word;
@@ -5351,4 +5454,3 @@ function setupWebSocketHeaders() {
 }
 
 setupWebSocketHeaders();
-
