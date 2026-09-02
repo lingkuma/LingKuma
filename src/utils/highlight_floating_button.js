@@ -382,7 +382,8 @@
     }
 
     chrome.runtime.sendMessage({ action: 'registerHighlightFrame' }, () => {
-      // The frame state is reset before asking whether runtime injection is needed.
+      // Ask the background to lazily sync this newly-created frame with the
+      // shared top-level page state.
       requestHighlightRuntimeSync();
     });
   }

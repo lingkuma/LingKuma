@@ -162,11 +162,8 @@ function startHighlightRuntimeFromStorage() {
 initPlugin();
 
 function getInitialHighlightEnabled(result) {
-  // iframe 的高亮完全由该 frame 内的悬浮按钮按需激活；不能因为全局开关或顶层页面设置而自动启动。
-  if (window.self !== window.top) {
-    return false;
-  }
-
+  // iframe 与顶层页面共用同一套 page/global 开关。这样阅读器新建的
+  // 章节 frame 会在运行时注入后立即继承当前页面状态。
   const scope = result.wordHighlightFloatingButtonScope === 'page' ? 'page' : 'global';
   if (scope !== 'page') {
     return result.enablePlugin !== false;
@@ -245,14 +242,8 @@ function initPlugin() {
       console.log('Highlight toggle message:', message.enabled);
       if (message.enabled) {
         console.log('Highlight toggle message:', message.enabled);
-        // iframe 状态由 background 按 frame 保存在内存中，不写入页面 URL storage。
-        // 这种局部激活必须绕过顶层 page-scope override 检查。
-        if (message.frameLocal === true) {
-          invokeHighlightAllWords();
-        } else {
-          // Reapply highlight after rechecking page scope and blacklist for this frame.
-          startHighlightRuntimeFromStorage();
-        }
+        // Reapply highlight after rechecking the shared page/global state.
+        startHighlightRuntimeFromStorage();
       } else if (highlightManager) {
         highlightManager.highlightEnabled = false;
         if (typeof highlightManager.removeAllHighlights === 'function') {

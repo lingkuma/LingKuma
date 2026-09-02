@@ -58,8 +58,6 @@ const HIGHLIGHT_RUNTIME_FILES = [
 
 const injectedHighlightTabs = new Set();
 const injectingHighlightTabs = new Map();
-// iframe 状态只保存在内存中：每个 frame 默认关闭，刷新/销毁后自然失效。
-const frameHighlightStates = new Map();
 
 function getFrameStateKey(tabId, frameId) {
   return `${tabId}:${frameId}`;
@@ -74,15 +72,6 @@ function clearTabInjectionPromises(tabId) {
   for (const key of injectingHighlightTabs.keys()) {
     if (key === String(tabId) || key.startsWith(prefix)) {
       injectingHighlightTabs.delete(key);
-    }
-  }
-}
-
-function clearFrameHighlightStates(tabId) {
-  const prefix = `${tabId}:`;
-  for (const key of frameHighlightStates.keys()) {
-    if (key.startsWith(prefix)) {
-      frameHighlightStates.delete(key);
     }
   }
 }
@@ -306,15 +295,6 @@ async function setPageOverride(tabId, value) {
 }
 
 async function getHighlightControlState(tabId, frameId = null) {
-  if (isFrameId(frameId) && frameId !== 0) {
-    return {
-      scope: 'frame',
-      enabled: frameHighlightStates.get(getFrameStateKey(tabId, frameId)) === true,
-      globalEnabled: false,
-      frameId
-    };
-  }
-
   const result = await storageLocalGet({
     [HIGHLIGHT_ENABLED_KEY]: false,
     [HIGHLIGHT_SCOPE_KEY]: 'page',
@@ -329,7 +309,7 @@ async function getHighlightControlState(tabId, frameId = null) {
     : pageOverrides[String(tabId)] === true;
   const enabled = scope === 'page' ? pageEnabled : globalEnabled;
 
-  return { scope, enabled, globalEnabled };
+  return { scope, enabled, globalEnabled, ...(isFrameId(frameId) ? { frameId } : {}) };
 }
 
 async function teardownHighlightRuntime(tabId, frameId = 0) {
@@ -341,48 +321,31 @@ async function pauseHighlightRuntime(tabId, frameId = 0) {
   await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: false }, frameId);
 }
 
-async function setPageHighlightEnabled(tabId, enabled, frameId = 0) {
+async function setPageHighlightEnabled(tabId, enabled) {
   await setPageOverride(tabId, enabled === true);
 
   if (enabled) {
-    await injectHighlightRuntime(tabId, frameId);
-    await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true }, frameId);
+    await injectHighlightRuntime(tabId);
+    await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true });
   } else {
-    await pauseHighlightRuntime(tabId, frameId);
+    await pauseHighlightRuntime(tabId, null);
   }
 
-  return getHighlightControlState(tabId, frameId);
-}
-
-async function setFrameHighlightEnabled(tabId, frameId, enabled) {
-  if (!isFrameId(frameId) || frameId === 0) {
-    return setPageHighlightEnabled(tabId, enabled, 0);
-  }
-
-  const key = getFrameStateKey(tabId, frameId);
-  frameHighlightStates.set(key, enabled === true);
-
-  if (enabled === true) {
-    const loaded = await injectHighlightRuntime(tabId, frameId);
-    if (loaded && frameHighlightStates.get(key) === true) {
-      await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true, frameLocal: true }, frameId);
-    } else if (!loaded) {
-      frameHighlightStates.set(key, false);
-    }
-  } else {
-    await pauseHighlightRuntime(tabId, frameId);
-  }
-
-  return getHighlightControlState(tabId, frameId);
+  return getHighlightControlState(tabId, 0);
 }
 
 async function syncFrameHighlightRuntime(tabId, frameId) {
+  // Newly-created reader frames inherit the top-level page state. Their
+  // runtime is injected lazily into this frame only, avoiding a full reload
+  // of every existing frame while keeping the toggle consistent.
   const state = await getHighlightControlState(tabId, frameId);
   if (state.enabled) {
     const loaded = await injectHighlightRuntime(tabId, frameId);
     if (loaded && (await getHighlightControlState(tabId, frameId)).enabled) {
-      await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true, frameLocal: true }, frameId);
+      await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true }, frameId);
     }
+  } else {
+    await pauseHighlightRuntime(tabId, frameId);
   }
   return state;
 }
@@ -393,17 +356,15 @@ async function setGlobalHighlightEnabled(enabled) {
 }
 
 async function setHighlightFromFloatingButton(tabId, enabled, frameId = 0) {
-  if (isFrameId(frameId) && frameId !== 0) {
-    return setFrameHighlightEnabled(tabId, frameId, enabled);
-  }
-
+  // A button click from any frame updates the shared page/global setting;
+  // frameId is retained for message compatibility and state reporting.
   const state = await getHighlightControlState(tabId, 0);
   if (state.scope === 'global') {
     await setGlobalHighlightEnabled(enabled);
     return getHighlightControlState(tabId, 0);
   }
 
-  return setPageHighlightEnabled(tabId, enabled, 0);
+  return setPageHighlightEnabled(tabId, enabled);
 }
 
 async function syncTabHighlightRuntime(tabId, options = {}) {
@@ -414,13 +375,15 @@ async function syncTabHighlightRuntime(tabId, options = {}) {
 
   const state = await getHighlightControlState(tabId, 0);
   if (state.enabled) {
-    const wasLoaded = await isHighlightRuntimeLoaded(tabId, 0);
-    const loaded = await injectHighlightRuntime(tabId, 0);
+    // Keep all currently available reader frames in lockstep with the page.
+    // YouTube is still restricted to frame 0 by getHighlightRuntimeTarget().
+    const wasLoaded = await isHighlightRuntimeLoaded(tabId);
+    const loaded = await injectHighlightRuntime(tabId);
     if (loaded && options.forceActivate === true && wasLoaded) {
-      await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true }, 0);
+      await sendMessageToTab(tabId, { action: 'toggleHighlight', enabled: true });
     }
   } else {
-    await pauseHighlightRuntime(tabId, 0);
+    await pauseHighlightRuntime(tabId, null);
   }
 }
 
@@ -446,7 +409,6 @@ if (chrome.tabs?.onUpdated) {
     if (changeInfo.status === 'loading') {
       injectedHighlightTabs.delete(tabId);
       clearTabInjectionPromises(tabId);
-      clearFrameHighlightStates(tabId);
       clearLegacyPageOverride(tabId);
       return;
     }
@@ -461,7 +423,6 @@ if (chrome.tabs?.onRemoved) {
   chrome.tabs.onRemoved.addListener((tabId) => {
     injectedHighlightTabs.delete(tabId);
     clearTabInjectionPromises(tabId);
-    clearFrameHighlightStates(tabId);
     clearLegacyPageOverride(tabId);
   });
 }
@@ -3209,9 +3170,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   else if (message.action === 'registerHighlightFrame') {
     const tabId = sender.tab?.id || message.tabId;
     const frameId = isFrameId(sender.frameId) ? sender.frameId : 0;
-    if (tabId && frameId !== 0) {
-      frameHighlightStates.set(getFrameStateKey(tabId, frameId), false);
-    }
     sendResponse({ success: true, frameId });
     return false;
   }
