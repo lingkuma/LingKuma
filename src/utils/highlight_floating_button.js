@@ -633,6 +633,16 @@
         animation: lk-button-pop 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
       }
 
+      /* 临时性能诊断：停用悬浮按钮的持续/点击关键帧动画。
+       * 保留布局、拖拽和 hover 的 transition，便于确认 CPU/GPU 峰值是否由特效造成。 */
+      .lk-floating-highlight,
+      .lk-floating-highlight *,
+      .lk-floating-highlight .spark::before,
+      .lk-current-page-theme {
+        -webkit-animation: none !important;
+        animation: none !important;
+      }
+
       .lk-floating-highlight[data-highlight="on"] {
         --active: 1;
         --play-state: running;
