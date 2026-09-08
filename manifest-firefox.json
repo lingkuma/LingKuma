@@ -45,6 +45,16 @@
       "all_frames": true,
       "match_about_blank": true,
       "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://dashboard.lingkuma.org/dashboard/*"
+      ],
+      "js": [
+        "src/service/a0_afdian.js"
+      ],
+      "all_frames": false,
+      "run_at": "document_start"
     }
   ],
   "action": {

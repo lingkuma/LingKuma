@@ -41,6 +41,14 @@
 
   }, {
     "matches": [
+      "https://dashboard.lingkuma.org/dashboard/*"
+    ],
+    "js": ["src/service/a0_afdian.js"],
+    "all_frames": false,
+    "run_at": "document_start"
+
+  }, {
+    "matches": [
       "*://youtube.com/*",
       "*://*.youtube.com/*"
     ],
