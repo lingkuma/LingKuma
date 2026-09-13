@@ -1074,6 +1074,12 @@
   }
 
   function createButton(savedPosition, pageThemeOverride = null) {
+    // Only the top-level page displays the control; iframe contexts still
+    // register and synchronize state through initializeFloatingButton().
+    if (!isTopFrame) {
+      return;
+    }
+
     if (document.getElementById(ROOT_ID)) {
       return;
     }
