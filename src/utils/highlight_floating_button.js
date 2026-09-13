@@ -1118,7 +1118,7 @@
     buttonStack.className = 'lk-floating-stack';
     let youtubeSlot = null;
 
-    if (/^https?:\/\/(?:www\.)?youtube\.com\//i.test(location.href)) {
+    if (/^https?:\/\/(?:www\.|m\.)?youtube\.com\//i.test(location.href)) {
       youtubeSlot = document.createElement('div');
       youtubeSlot.className = 'lk-floating-slot lk-floating-slot--youtube';
       const youtubeButton = document.createElement('button');
