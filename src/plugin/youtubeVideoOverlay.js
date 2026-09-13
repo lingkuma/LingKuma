@@ -3038,6 +3038,9 @@
         const shouldAutoFollow = readingSubtitleAutoFollow && video && !video.paused && !video.ended;
 
         if (!subtitleListInitialized) {
+            // Rebuilding after a track switch must remove the previous track's
+            // DOM nodes before appending the new sentence list.
+            subtitleList.replaceChildren();
             const sentences = extractAllSentences(rebuiltSubtitles);
             subtitleListItems = [];
 
