@@ -4488,12 +4488,16 @@ function findWordAndSentenceAtPosition(x, y) {
           });
           console.log('[WordExplosion] getSentenceForWord 返回:', sentence);
 
-          if (sentence) {
+          // Overlay subtitle items can be a single sentence without terminal
+          // punctuation; content.js may therefore return an empty boundary.
+          // Use the owning text node as the sentence in that case.
+          const resolvedSentence = sentence || textNode.textContent?.trim();
+          if (resolvedSentence) {
             console.log('[WordExplosion] 成功找到句子和单词:', { word: foundWord.word, sentence: sentence.substring(0, 50) + '...' });
             return {
               word: foundWord.word,
               wordLower: foundWord.wordLower,
-              sentence: sentence,
+              sentence: resolvedSentence,
               rect: foundWord.rect,
               textNode: textNode,
               range: foundWord.range,

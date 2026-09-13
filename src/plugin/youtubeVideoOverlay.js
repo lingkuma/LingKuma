@@ -3005,8 +3005,10 @@
     function createSubtitleListContainer() {
         const container = document.createElement('div');
         container.id = 'overlay-subtitle-list-container';
+        container.style.pointerEvents = 'auto';
         const subtitleList = document.createElement('div');
         subtitleList.id = 'overlay-subtitle-list';
+        subtitleList.style.pointerEvents = 'auto';
         Object.assign(subtitleList.style, {
             display: 'flex',
             flexDirection: 'column',
@@ -3049,6 +3051,7 @@
             sentences.forEach((sentence, index) => {
                 const item = document.createElement('div');
                 item.className = 'subtitle-item';
+                item.style.pointerEvents = 'auto';
                 item.dataset.startTime = sentence.startTime;
                 item.dataset.endTime = sentence.endTime;
                 Object.assign(item.style, {
