@@ -931,6 +931,12 @@
             </span>
             <span class="text">SYNC</span>
         `;
+        // The visible YouTube control is created by the default shared
+        // floating-button script. Keep this legacy control hidden to avoid a
+        // duplicate while retaining its overlay event/state logic.
+        if (document.getElementById('lingkuma-word-highlight-floating-root')) {
+            floatButton.style.display = 'none';
+        }
 
         const floatButtonSlot = document.createElement('div');
         floatButtonSlot.className = 'lk-youtube-sync-slot';
