@@ -2117,6 +2117,8 @@
     function createControlButtons() {
         const controlBar = document.createElement('div');
         controlBar.id = 'overlay-control-bar';
+        controlBar.addEventListener('pointerdown', (event) => event.stopPropagation());
+        controlBar.addEventListener('click', (event) => event.stopPropagation());
         styleControlBar(controlBar);
 
         const autoPauseBtn = createControlButton('autoPause', 'Auto Pause', () => {

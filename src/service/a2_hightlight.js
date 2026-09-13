@@ -339,10 +339,11 @@ class ScopeObserver {
     ScopeObserver.IGNORED_SELECTORS = [
       '.textBasedSub', // 添加textBasedSub类
       '[data-no-highlight]', // 用户可以通过添加此属性手动排除元素
-      '.vocab-tooltip', // 屏蔽搜索弹窗
+      '.vocab-too#youtube-video-overlayltip', // 屏蔽搜索弹窗
       '.custom-word-tooltip', // 屏蔽自定义词组弹窗
       '.custom-word-selection-popup', // 屏蔽自定义词组选择弹窗
       '.custom-word-query-button', // 屏蔽自定义词组查询按钮
+      '#overlay-control-bar',
       'video',
       'canvas'
     ];
@@ -989,7 +990,8 @@ if (window.location.hostname.includes('youtube.com')) {
   if (!parent || typeof parent.closest !== 'function' ||
       (!parent.closest('span.ytAttributedStringHost.ytAttributedStringWhiteSpacePreWrap') &&
        !parent.closest(YOUTUBE_TITLE_TEXT_SELECTOR) &&
-       !parent.closest('p.YtmCommentRendererText > span.ytAttributedStringHost'))) {
+       !parent.closest('p.YtmCommentRendererText > span.ytAttributedStringHost') &&
+       !parent.closest('#youtube-video-overlay'))) {
     return;
   }
   // 定义YouTube上允许处理的元素类名和ID
@@ -2286,15 +2288,11 @@ if (window.location.hostname.includes('youtube.com')) {
   isAllowedYouTubeTextNode(textNode) {
     if (!this.isYouTubePage) return true;
     let element = textNode?.parentElement;
-    return Boolean(
-      element &&
-      typeof element.closest === 'function' &&
-      (element.closest('span.ytAttributedStringHost.ytAttributedStringWhiteSpacePreWrap') ||
-       element.closest(YOUTUBE_TITLE_TEXT_SELECTOR) ||
-       element.closest('p.YtmCommentRendererText > span.ytAttributedStringHost'))
-    );
     if (element && typeof element.closest === 'function' &&
-        element.closest(YOUTUBE_SUBTITLE_TEXT_SELECTOR)) {
+        (element.closest(YOUTUBE_SUBTITLE_TEXT_SELECTOR) ||
+         element.closest('span.ytAttributedStringHost.ytAttributedStringWhiteSpacePreWrap') ||
+         element.closest(YOUTUBE_TITLE_TEXT_SELECTOR) ||
+         element.closest('p.YtmCommentRendererText > span.ytAttributedStringHost'))) {
       return true;
     }
     while (element && element !== document.body && element !== document.documentElement) {
