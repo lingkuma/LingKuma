@@ -484,6 +484,10 @@
         top: ${BUTTON_HEIGHT + BUTTON_STACK_GAP}px;
       }
 
+      .lk-floating-slot--youtube {
+        top: ${(BUTTON_HEIGHT + BUTTON_STACK_GAP) * 2}px;
+      }
+
       .lk-floating-stack[data-dock="left"] .lk-floating-slot {
         opacity: 0.42;
         transform: translate3d(-${SIDE_DOCK_OFFSET}px, 0, 0);
@@ -519,6 +523,11 @@
       .lk-floating-stack[data-dock="top"] .lk-floating-slot--theme,
       .lk-floating-stack[data-dock="bottom"] .lk-floating-slot--theme {
         left: ${BUTTON_HEIGHT + BUTTON_STACK_GAP}px;
+      }
+
+      .lk-floating-stack[data-dock="top"] .lk-floating-slot--youtube,
+      .lk-floating-stack[data-dock="bottom"] .lk-floating-slot--youtube {
+        left: ${(BUTTON_HEIGHT + BUTTON_STACK_GAP) * 2}px;
       }
 
       .lk-floating-stack[data-dock="left"] .lk-floating-slot:hover,
@@ -977,6 +986,7 @@
 
     const baseX = currentPosition?.x ?? buttonStack.getBoundingClientRect().left;
     const baseY = currentPosition?.y ?? buttonStack.getBoundingClientRect().top;
+    const controlButton = event.currentTarget;
     pointerState = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -990,8 +1000,9 @@
     if (shadowRoot?.activeElement && shadowRoot.activeElement !== buttonWrap) {
       shadowRoot.activeElement.blur();
     }
-    delete buttonWrap.dataset.collapseAfterClick;
-    buttonWrap.setPointerCapture(event.pointerId);
+    delete controlButton.dataset.collapseAfterClick;
+    controlButton.setPointerCapture(event.pointerId);
+    pointerState.button = controlButton;
     event.preventDefault();
   }
 
@@ -1006,8 +1017,8 @@
       pointerState.moved = true;
       buttonStack.dataset.dragging = 'true';
       buttonStack.dataset.dock = 'none';
-      buttonWrap.dataset.dragging = 'true';
-      delete buttonWrap.dataset.collapseAfterClick;
+      pointerState.button.dataset.dragging = 'true';
+      delete pointerState.button.dataset.collapseAfterClick;
     }
 
     if (!pointerState.moved) {
@@ -1033,12 +1044,13 @@
 
     const wasMoved = pointerState.moved;
     const previousDock = pointerState.dock;
+    const controlButton = pointerState.button || buttonWrap;
     pointerState = null;
     delete buttonStack.dataset.dragging;
-    delete buttonWrap.dataset.dragging;
+    delete controlButton.dataset.dragging;
 
     try {
-      buttonWrap.releasePointerCapture(event.pointerId);
+      controlButton.releasePointerCapture(event.pointerId);
     } catch (error) {
       // Pointer capture may already be released by the browser.
     }
@@ -1050,11 +1062,25 @@
       const dock = currentPosition?.dock || previousDock || 'none';
       buttonStack.dataset.dock = dock;
       if (dock === 'none') {
-        delete buttonWrap.dataset.collapseAfterClick;
+        delete controlButton.dataset.collapseAfterClick;
       } else {
-        buttonWrap.dataset.collapseAfterClick = 'true';
+        controlButton.dataset.collapseAfterClick = 'true';
       }
-      toggleHighlight();
+      if (controlButton.dataset.youtube === 'true') {
+        const startOverlay = () => chrome.runtime.sendMessage({ action: 'ensureWordHighlightRuntime' }, () => {
+          if (chrome.runtime.lastError) return;
+          window.setTimeout(() => chrome.runtime.sendMessage({ action: 'toggleYoutubeVideoOverlay' }, response => {
+            if (!chrome.runtime.lastError && response?.overlayActive !== undefined) {
+              controlButton.dataset.overlay = response.overlayActive ? 'on' : 'off';
+            }
+          }), 50);
+        });
+        chrome.runtime.sendMessage({ action: 'getWordHighlightControlState' }, state => {
+          if (!chrome.runtime.lastError && state?.enabled !== true) {
+            chrome.runtime.sendMessage({ action: 'toggleWordHighlightFromFloatingButton', enabled: true }, startOverlay);
+          } else startOverlay();
+        });
+      } else toggleHighlight();
     }
 
     event.preventDefault();
@@ -1090,6 +1116,25 @@
 
     buttonStack = document.createElement('div');
     buttonStack.className = 'lk-floating-stack';
+    let youtubeSlot = null;
+
+    if (/^https?:\/\/(?:www\.)?youtube\.com\//i.test(location.href)) {
+      youtubeSlot = document.createElement('div');
+      youtubeSlot.className = 'lk-floating-slot lk-floating-slot--youtube';
+      const youtubeButton = document.createElement('button');
+      youtubeButton.className = 'lk-floating-highlight';
+      youtubeButton.dataset.youtube = 'true';
+      youtubeButton.type = 'button';
+      youtubeButton.textContent = 'SYNC';
+      youtubeButton.title = 'YouTube overlay';
+      youtubeButton.addEventListener('pointerdown', handlePointerDown);
+      youtubeButton.addEventListener('pointermove', handlePointerMove);
+      youtubeButton.addEventListener('pointerup', handlePointerUp);
+      youtubeButton.addEventListener('pointercancel', handlePointerUp);
+      youtubeButton.addEventListener('pointerleave', handlePointerLeave);
+      youtubeButton.addEventListener('keydown', handleKeyDown);
+      youtubeSlot.append(youtubeButton);
+    }
 
     highlightSlot = document.createElement('div');
     highlightSlot.className = 'lk-floating-slot lk-floating-slot--highlight';
@@ -1151,6 +1196,7 @@
     highlightSlot.append(buttonWrap);
     themeSlot.append(themeButtonWrap);
     buttonStack.append(highlightSlot, themeSlot);
+    if (youtubeSlot) buttonStack.append(youtubeSlot);
     shadowRoot.append(createStyles(), buttonStack);
 
     const mountRoot = document.documentElement || document.body;

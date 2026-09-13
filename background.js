@@ -3149,6 +3149,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     return true;
   }
+  else if (message.action === 'toggleYoutubeVideoOverlay') {
+    const tabId = sender.tab?.id;
+    if (!tabId) {
+      sendResponse({ success: false, error: 'missing tab id' });
+      return false;
+    }
+    sendMessageToTab(tabId, { action: 'toggleYoutubeVideoOverlay' }).then(() => {
+      sendResponse({ success: true });
+    }).catch(error => {
+      sendResponse({ success: false, error: error?.message || String(error) });
+    });
+    return true;
+  }
   else if (message.action === 'toggleWordHighlightFromFloatingButton') {
     const tabId = sender.tab?.id || message.tabId;
     const frameId = isFrameId(sender.frameId) ? sender.frameId : 0;
