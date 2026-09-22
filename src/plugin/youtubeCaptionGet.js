@@ -372,7 +372,7 @@ function requestPageSubtitleTracks(timeoutMs = 5000) {
   });
 }
 
-function requestPageSubtitleTrack(url, timeoutMs = 12000) {
+function requestPageSubtitleTrack(url, metadata = null, timeoutMs = 20000) {
   const requestId = `lingkuma-track-fetch-${Date.now()}-${++subtitleRequestId}`;
   return new Promise(resolve => {
     const timeoutId = setTimeout(() => {
@@ -384,9 +384,31 @@ function requestPageSubtitleTrack(url, timeoutMs = 12000) {
       resolve(result);
     });
     document.dispatchEvent(new CustomEvent('lingkuma_subtitle_track_fetch', {
-      detail: { requestId, url }
+      detail: { requestId, url, metadata: metadata || {} }
     }));
   });
+}
+
+// timedtext URL 中不会携带 vssId/kind 等全部信息，这里统一从 URL 或轨道对象
+// 推导出页面上下文构造「真实可用 URL」所需的最小元数据。
+function getSubtitleRequestMetadata(url, track = null) {
+  const metadata = {};
+  if (track) {
+    metadata.languageCode = track.languageCode || '';
+    metadata.kind = track.kind || '';
+    metadata.vssId = track.vssId || '';
+    metadata.translationLanguageCode = track.translationLanguageCode || '';
+  }
+  try {
+    const parsed = new URL(url, location.origin);
+    metadata.languageCode = metadata.languageCode || parsed.searchParams.get('lang') || '';
+    metadata.kind = metadata.kind || parsed.searchParams.get('kind') || '';
+    metadata.translationLanguageCode = metadata.translationLanguageCode ||
+      parsed.searchParams.get('tlang') || '';
+  } catch (error) {
+    // URL 无法解析时仅使用传入的轨道信息。
+  }
+  return metadata;
 }
 
 function requestPageSubtitleTrackSelection(url, metadata = {}, timeoutMs = 5000) {
@@ -498,7 +520,10 @@ window.selectYoutubeSubtitle = async function(url, option = null) {
     }
   }
   if (!window.getCapturedSubtitleData?.(normalizedUrl)) {
-    const result = await requestPageSubtitleTrack(normalizedUrl);
+    const result = await requestPageSubtitleTrack(
+      normalizedUrl,
+      getSubtitleRequestMetadata(normalizedUrl, selectedOption)
+    );
     if (!result?.ok) {
       if (nativeTrackSwitched) {
         const capturedResult = await window.waitForCapturedSubtitleData?.(5000);
@@ -540,14 +565,26 @@ window.isValidJsonUrl = async function(url) {
 
     console.log(`正在验证URL: ${jsonUrl}`);
     const validationPromise = (async () => {
-      const response = await fetch(jsonUrl);
-      if (!response.ok) {
-        console.log(`URL返回非200状态码: ${response.status}`);
+      // 隔离世界直接 fetch timedtext 缺少 pot 校验所需的客户端请求头，会拿到
+      // 空响应。优先交给页面上下文重建 URL 并携带请求头获取。
+      const pageResult = await requestPageSubtitleTrack(jsonUrl, getSubtitleRequestMetadata(jsonUrl));
+      if (pageResult?.ok) {
+        console.log('页面上下文已获取有效JSON字幕数据');
+        return true;
+      }
+      if (pageResult && typeof pageResult.error === 'string' && pageResult.error !== '请求超时') {
+        console.log(`页面上下文获取字幕失败: ${pageResult.error}`);
         return false;
       }
 
-      const text = await response.text();
       try {
+        const response = await fetch(jsonUrl);
+        if (!response.ok) {
+          console.log(`URL返回非200状态码: ${response.status}`);
+          return false;
+        }
+
+        const text = await response.text();
         const data = JSON.parse(text);
         const isSubtitleData = Array.isArray(data.events);
         if (isSubtitleData) {
@@ -700,6 +737,17 @@ async function triggerYouTubeSubtitles(force = false, closeAfter = false) {
     );
     console.log(`找到字幕按钮${isMobileButton ? '（移动播放器）' : ''}`);
 
+    // 移动播放器的 CC 按钮是 Polymer 组件，合成 click 事件不会真正切换状态，
+    // 必须走播放器 API，否则既不会产生 timedtext 请求也拿不到 pot。
+    if (isMobileButton || location.hostname.startsWith('m.')) {
+      const pageResult = await requestPageYouTubeCaptionControl(force ? 'refresh' : 'ensure-on');
+      if (pageResult?.found) {
+        console.log('移动播放器：已通过播放器 API 操作字幕', pageResult);
+        return true;
+      }
+      console.warn('移动播放器：页面上下文未能操作字幕，继续尝试点击按钮');
+    }
+
     const isPressed = isYouTubeSubtitleButtonPressed(subtitleButton);
     console.log(`字幕当前状态: ${isPressed ? '开启' : '关闭'}`);
 
@@ -821,11 +869,14 @@ async function fetchPlayerSourceSubtitle(preferredLanguageCode) {
   }
 
   try {
-    const result = await requestPageSubtitleTrack(selected.url);
+    const result = await requestPageSubtitleTrack(
+      selected.url,
+      getSubtitleRequestMetadata(selected.url, selected.track)
+    );
     if (!result?.ok) {
       throw new Error(result?.error || '页面上下文获取字幕失败');
     }
-    return selected.url;
+    return result.url || selected.url;
   } catch (error) {
     console.warn('直接获取播放器源字幕失败，将回退到网络监听:', error);
     return null;
@@ -847,9 +898,13 @@ async function forceSubtitleAndGetJsonUrl(closeAfterGet = true, options = {}) {
     if (window.getCapturedSubtitleData?.(normalizedUrl)) {
       directUrl = normalizedUrl;
     } else {
-      const result = await requestPageSubtitleTrack(normalizedUrl);
+      const result = await requestPageSubtitleTrack(
+        normalizedUrl,
+        getSubtitleRequestMetadata(normalizedUrl)
+      );
       if (result?.ok) {
-        directUrl = normalizedUrl;
+        // 页面上下文会重建带 pot/设备参数的真实 URL，返回它可保证命中缓存。
+        directUrl = result.url || normalizedUrl;
       }
     }
   }
@@ -878,12 +933,16 @@ async function forceSubtitleAndGetJsonUrl(closeAfterGet = true, options = {}) {
 
     if (url) {
       console.log('已捕获字幕URL，交给页面上下文重放并读取响应');
-      const replayResult = await requestPageSubtitleTrack(url);
+      const replayResult = await requestPageSubtitleTrack(url, getSubtitleRequestMetadata(url));
       if (replayResult?.ok) {
+        url = replayResult.url || url;
         capturedResult = await window.waitForCapturedSubtitleData(1000);
         if (capturedResult?.url || window.getCapturedSubtitleData?.(url)) {
           break;
         }
+      } else {
+        console.warn('页面上下文重放失败:', replayResult?.error || '未知错误',
+          replayResult?.attempts || '');
       }
       console.log('页面上下文重放失败，验证本次字幕URL');
       if (await window.isValidJsonUrl(url)) {
