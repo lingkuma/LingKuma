@@ -101,7 +101,7 @@
   }
 
   function getPlayerResponse() {
-    const player = document.querySelector('#movie_player');
+    const player = getPlayerElement();
     const playerResponse = typeof player?.getPlayerResponse === 'function'
       ? player.getPlayerResponse()
       : null;
@@ -132,16 +132,16 @@
   }
 
     // ---------------------------------------------------------------------------
-  // timedtext 请求所需的客户端/设备参数与身份请求头
+  // timedtext 请求所需的客户端参数与 pot
   //
-  // YouTube 目前对 /api/timedtext 强制校验 Proof-of-Origin Token（pot /
-  // potc=1）。仅凭 URL 重放时，服务器会返回「HTTP 200 + 空响应体」或者挂起，
-  // 因为 poc 校验失败。实测必须同时满足：
-  //   1. baseUrl 自带 signature/expire/ei/caps/opi/exp/xoaf
-  //   2. 带上 pot 与 potc=1（pot 由播放器在请求过字幕后生成）
-  //   3. 带上与 pot 匹配的客户端参数（c / cver / cbr / cbrver / cplatform ...）
-  //   4. 带上播放器使用的客户端身份请求头（X-YouTube-Client-Name 等）
-  // 缺少 3、4 任一项都会得到空响应，且桌面端同样如此。
+  // 实测（桌面 WEB + 手机 MWEB，多次交叉对照）得到的最小可用条件：
+  //   1. baseUrl 必须保留 signature/expire/ei/caps/opi/exp/xoaf
+  //   2. 必须带 potc=1 与 pot（pot 由播放器在请求过字幕后签发生成）
+  //   3. 必须带与 pot 匹配的客户端参数（c / cver / cbr / cbrver / cplatform ...）
+  // 缺少 pot 或客户端参数时，服务器会返回「HTTP 200 + 空请求体」或长时间挂起，
+  // 而不是 4xx，所以极易被误判成「响应不是 JSON」。
+  // 客户端身份请求头（X-YouTube-Client-*）并非必需，但带上更贴近真实播放器请求，
+  // 可降低被判定为异常调用的概率。
   // ---------------------------------------------------------------------------
 
   const DEVICE_PARAM_KEYS = [
@@ -149,7 +149,25 @@
     'c', 'cver', 'cplayer', 'cmodel', 'cos', 'cosver', 'cplatform'
   ];
 
-  const BLOCKED_REQUEST_HEADERS = /^(referer|user-agent|origin|cookie|content-length|accept-encoding|host|connection|accept-charset)/i;
+  // 这些头带时间戳或会话指纹，跨请求复用反而可能被判异常，因此只复用稳定字段。
+  const REUSABLE_REQUEST_HEADERS = [
+    'X-YouTube-Client-Name', 'X-YouTube-Client-Version', 'X-Goog-Visitor-Id',
+    'X-YouTube-Device', 'X-YouTube-Page-Label', 'X-YouTube-Page-CL'
+  ];
+
+  function getObservedTimedtextParams() {
+    const captured = window.__capturedSubtitleUrls;
+    if (!captured || captured.size === 0) {
+      return [];
+    }
+    return Array.from(captured).map(url => {
+      try {
+        return new URL(url, location.origin).searchParams;
+      } catch (error) {
+        return null;
+      }
+    }).filter(Boolean);
+  }
 
   function getLastObservedTimedtextUrl() {
     const captured = window.__capturedSubtitleUrls;
@@ -160,14 +178,50 @@
     return urls[urls.length - 1];
   }
 
+  // 在播放器元素上查找公开 API。不同平台/引擎的播放器容器选择器不一致，
+  // iOS WebKit 上 #movie_player 不一定存在。
+  function getPlayerElement() {
+    const selectors = ['#movie_player', '.html5-video-player', 'ytd-player #movie_player', 'ytm-player'];
+    for (const selector of selectors) {
+      const element = document.querySelector(selector);
+      if (element && typeof element.getPlayerResponse === 'function') {
+        return element;
+      }
+    }
+    return document.querySelector('#movie_player') || document.querySelector('.html5-video-player');
+  }
+
+  // 从播放器已发出的真实 timedtext 请求里取 pot，作为 getAudioTrack() 的兜底。
+  function getObservedPot(languageCode, kind) {
+    const candidates = getObservedTimedtextParams();
+    for (let index = candidates.length - 1; index >= 0; index -= 1) {
+      const params = candidates[index];
+      const candidateLang = params.get('lang') || '';
+      const candidateKind = params.get('kind') || '';
+      const matchesLanguage = !languageCode || !candidateLang || candidateLang === languageCode;
+      const matchesKind = (kind || '') === candidateKind;
+      if (!matchesKind && candidateKind) {
+        continue;
+      }
+      if (!matchesLanguage) {
+        continue;
+      }
+      const pot = params.get('pot');
+      if (pot) {
+        return { pot, potc: params.get('potc') || '1' };
+      }
+    }
+    return null;
+  }
+
   function getDeviceParams() {
     const params = {};
 
     // 优先复用播放器真实请求里的客户端参数，它们与 pot 的签发客户端一致。
     try {
-      const observedUrl = getLastObservedTimedtextUrl();
-      if (observedUrl) {
-        const observed = new URL(observedUrl, location.origin).searchParams;
+      const observedParams = getObservedTimedtextParams();
+      const observed = observedParams[observedParams.length - 1];
+      if (observed) {
         DEVICE_PARAM_KEYS.forEach(key => {
           const value = observed.get(key);
           if (value) {
@@ -220,13 +274,13 @@
   function getTimedtextHeaders() {
     const headers = {};
 
-    // 复用播放器真实 timedtext 请求的请求头（去掉浏览器不允许脚本设置的字段）。
+    // 只复用稳定字段的请求头（浏览器禁止脚本设置的字段一律不碰）。
     const observed = window.__capturedSubtitleRequestHeaders || {};
-    Object.keys(observed).forEach(name => {
-      if (BLOCKED_REQUEST_HEADERS.test(name) || /^sec-/i.test(name) || name.startsWith(':')) {
-        return;
+    REUSABLE_REQUEST_HEADERS.forEach(name => {
+      const value = observed[name];
+      if (typeof value === 'string' && value) {
+        headers[name] = value;
       }
-      headers[name] = observed[name];
     });
 
     // 用当前页面的实时身份覆盖，避免使用过期值。
@@ -252,32 +306,93 @@
   }
 
   function getFreshPot(track) {
+    // 1) 首选播放器当前音频轨的字幕 URL —— 播放器请求过字幕后这里会带上 pot。
     try {
-      const player = document.querySelector('#movie_player');
-      if (!player || typeof player.getAudioTrack !== 'function') {
-        return null;
+      const player = getPlayerElement();
+      if (player && typeof player.getAudioTrack === 'function') {
+        const audioTracks = player.getAudioTrack()?.captionTracks || [];
+        const match = audioTracks.find(item => item.vssId && track.vssId && item.vssId === track.vssId) ||
+          audioTracks.find(item => (item.kind || '') === (track.kind || '') &&
+            item.languageCode === track.languageCode) ||
+          audioTracks.find(item => item.languageCode === track.languageCode) ||
+          audioTracks[0];
+        if (match?.url) {
+          const params = new URL(match.url, location.origin).searchParams;
+          const pot = params.get('pot');
+          if (pot) {
+            return { pot, potc: params.get('potc') || '1' };
+          }
+        }
       }
-      const audioTracks = player.getAudioTrack()?.captionTracks || [];
-      if (audioTracks.length === 0) {
-        return null;
-      }
-      const match = audioTracks.find(item => item.vssId && track.vssId && item.vssId === track.vssId) ||
-        audioTracks.find(item => (item.kind || '') === (track.kind || '') &&
-          item.languageCode === track.languageCode) ||
-        audioTracks.find(item => item.languageCode === track.languageCode) ||
-        audioTracks[0];
-      if (!match?.url) {
-        return null;
-      }
-      const params = new URL(match.url, location.origin).searchParams;
-      const pot = params.get('pot');
-      if (!pot) {
-        return null;
-      }
-      return { pot, potc: params.get('potc') || '1' };
     } catch (error) {
-      return null;
+      // getAudioTrack 在部分平台/引擎上不可用，继续走兜底。
     }
+
+    // 2) 兜底：从拦截到的播放器真实请求里取 pot。
+    return getObservedPot(track.languageCode, track.kind);
+  }
+
+  // 播放器只有在「请求过一次字幕」之后才会签发 pot。若当前没有任何 pot，
+  // 打开原生字幕显示，三种入口依次兜底：播放器 API → setOption → 原生按钮。
+  function activateNativeCaptions(languageCode, kind) {
+    if (isPlayerCaptionsOn() === true) {
+      return true;
+    }
+    if (togglePlayerSubtitles()) {
+      return true;
+    }
+    const player = getPlayerElement();
+    if (player && typeof player.setOption === 'function' && languageCode) {
+      try {
+        player.setOption('captions', 'track',
+          kind ? { languageCode, kind } : { languageCode });
+        return true;
+      } catch (error) {
+        // 继续尝试点击原生按钮。
+      }
+    }
+    const button = getMobileSubtitleButton() || document.querySelector('.ytp-subtitles-button');
+    if (button) {
+      button.click();
+      return true;
+    }
+    return false;
+  }
+
+  // 播放器只有在「请求过一次字幕」之后才会签发 pot。若当前没有任何 pot，
+  // 主动打开一次原生字幕来触发请求，并等待 pot 出现。
+  async function ensurePotAvailable(languageCode, kind, timeoutMs = 4000) {
+    if (getFreshPot({ languageCode, kind })) {
+      return true;
+    }
+
+    console.log('页面上下文：尚未取得 pot，先开启原生字幕以触发播放器请求');
+
+    const waitForPot = async ms => {
+      const deadline = Date.now() + ms;
+      while (Date.now() < deadline) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        if (getFreshPot({ languageCode, kind })) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      if (attempt > 0 && isPlayerCaptionsOn() === true) {
+        // 字幕已开着却始终没有 pot，说明需要一次「关闭再开启」来产生新请求。
+        togglePlayerSubtitles();
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+      activateNativeCaptions(languageCode, kind);
+      if (await waitForPot(Math.round(timeoutMs / 2))) {
+        return true;
+      }
+    }
+
+    console.warn('页面上下文：开启原生字幕后仍未取得 pot');
+    return false;
   }
 
   // 用播放器返回的 captionTracks 重建一条「真实可用」的 timedtext URL。
@@ -363,7 +478,9 @@
     }
   }
 
-  async function fetchTimedtextText(url, timeoutMs = 15000) {
+  // 服务器在 pot 校验失败时不会返回 4xx，而是返回空体或长时间不响应。
+  // 正常响应实测 0.3~1.7s（偶发 10s+），因此超时不宜过长，便于尽快重试。
+  async function fetchTimedtextText(url, timeoutMs = 12000) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -382,7 +499,7 @@
   }
 
   function isPlayerCaptionsOn() {
-    const player = document.querySelector('#movie_player');
+    const player = getPlayerElement();
     if (!player || typeof player.getOption !== 'function') {
       return null;
     }
@@ -395,7 +512,7 @@
   }
 
   function togglePlayerSubtitles() {
-    const player = document.querySelector('#movie_player');
+    const player = getPlayerElement();
     if (!player || typeof player.toggleSubtitles !== 'function') {
       return false;
     }
@@ -428,7 +545,7 @@
 
     // 移动播放器的 CC 按钮常常无法用合成事件触发（Polymer 组件只响应真实
     // 触摸），因此把玩家 API 作为主路径，按钮点击仅作为兜底。
-    const player = document.querySelector('#movie_player');
+    const player = getPlayerElement();
     const canUsePlayerApi = Boolean(player && typeof player.toggleSubtitles === 'function');
     let button = canUsePlayerApi ? getMobileSubtitleButton() : await waitForMobileSubtitleButton();
     const wasPressed = isSubtitleButtonPressed(button);
@@ -499,20 +616,33 @@
       return;
     }
 
-    const built = buildTimedtextUrl(requestedUrl, metadata);
-    const candidates = [];
-    if (built?.url) {
-      candidates.push({ label: 'player-track', url: built.url });
-    }
-    if (requestedUrl.includes('/api/timedtext')) {
-      candidates.push({ label: 'observed-url', url: requestedUrl });
-    }
+    let built = buildTimedtextUrl(requestedUrl, metadata);
+    const trackMeta = {
+      languageCode: built?.languageCode || metadata.languageCode || '',
+      kind: built?.kind || metadata.kind || ''
+    };
 
     const attempts = [];
     let succeededUrl = null;
     let succeededText = null;
 
     for (let round = 0; round < 3 && !succeededText; round += 1) {
+      // 播放器没请求过字幕时没有 pot，先开启原生字幕触发一次请求再重建 URL。
+      if (!built?.hasPot || round > 0) {
+        const potReady = await ensurePotAvailable(trackMeta.languageCode, trackMeta.kind);
+        if (potReady) {
+          built = buildTimedtextUrl(requestedUrl, metadata) || built;
+        }
+      }
+
+      const candidates = [];
+      if (built?.url) {
+        candidates.push({ label: 'player-track', url: built.url });
+      }
+      if (requestedUrl.includes('/api/timedtext')) {
+        candidates.push({ label: 'observed-url', url: requestedUrl });
+      }
+
       for (const candidate of candidates) {
         try {
           const text = await fetchTimedtextText(candidate.url);
@@ -521,7 +651,8 @@
             attempts.push({
               label: candidate.label,
               round: round + 1,
-              reason: text ? '响应不是有效的字幕 JSON' : '响应为空（pot 校验失败）'
+              hasPot: candidate.url.includes('pot='),
+              reason: text ? '响应不是有效的字幕 JSON' : '响应为空（pot 校验失败或服务端限流）'
             });
             continue;
           }
@@ -532,12 +663,14 @@
           attempts.push({
             label: candidate.label,
             round: round + 1,
+            hasPot: candidate.url.includes('pot='),
             reason: String(error?.message || error)
           });
         }
       }
+
       if (!succeededText && round < 2) {
-        await new Promise(resolve => setTimeout(resolve, 700));
+        await new Promise(resolve => setTimeout(resolve, 600));
       }
     }
 
@@ -549,6 +682,7 @@
       return;
     }
 
+    const error = attempts[attempts.length - 1]?.reason || '未知错误';
     console.warn('页面上下文：直接获取指定字幕失败:', attempts);
     document.dispatchEvent(new CustomEvent('lingkuma_subtitle_track_fetch_result', {
       detail: {
@@ -556,8 +690,10 @@
         url: requestedUrl,
         builtUrl: built?.url || null,
         hasPot: Boolean(built?.hasPot),
+        playerFound: Boolean(getPlayerElement()),
+        hasPlayerResponse: Boolean(getPlayerResponse()?.captions),
         ok: false,
-        error: attempts[attempts.length - 1]?.reason || '未知错误',
+        error,
         attempts
       }
     }));
@@ -571,7 +707,7 @@
     let errorMessage = '';
 
     try {
-      const player = document.querySelector('#movie_player');
+      const player = getPlayerElement();
       const parsedUrl = url ? new URL(url) : null;
       const languageCode = metadata.languageCode || parsedUrl?.searchParams.get('lang') || '';
       const translationLanguageCode = metadata.translationLanguageCode || parsedUrl?.searchParams.get('tlang') || '';

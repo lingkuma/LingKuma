@@ -37,11 +37,19 @@
   }
 
   // 在内容脚本中直接注入脚本到页面
+  // 注意：Safari / iOS 上的 WebKit 扩展运行时只保证 browser.* 命名空间，
+  // chrome.* 可能不存在，因此这里做一次兼容解析，保证页面上下文脚本仍能注入。
   try {
+    const runtime = (typeof chrome !== 'undefined' && chrome.runtime)
+      ? chrome.runtime
+      : ((typeof browser !== 'undefined' && browser.runtime) ? browser.runtime : null);
+    if (!runtime || typeof runtime.getURL !== 'function') {
+      throw new Error('扩展运行时不可用，无法解析页面上下文脚本地址');
+    }
     // 创建script元素
     const script = document.createElement('script');
     // 设置脚本源为扩展中的文件
-    script.src = chrome.runtime.getURL('src/plugin/youtubeCaptionInjected.js');
+    script.src = runtime.getURL('src/plugin/youtubeCaptionInjected.js');
     // 设置加载完成后移除脚本元素
     script.onload = function() {
       this.remove();
@@ -372,7 +380,9 @@ function requestPageSubtitleTracks(timeoutMs = 5000) {
   });
 }
 
-function requestPageSubtitleTrack(url, metadata = null, timeoutMs = 20000) {
+// 页面上下文内部最多会做 3 轮 × 2 个候选 URL 的尝试（单次 12s 超时），
+// 这里的等待上限要留足，否则会在页面还在重试时就误报「请求超时」。
+function requestPageSubtitleTrack(url, metadata = null, timeoutMs = 35000) {
   const requestId = `lingkuma-track-fetch-${Date.now()}-${++subtitleRequestId}`;
   return new Promise(resolve => {
     const timeoutId = setTimeout(() => {
@@ -381,6 +391,20 @@ function requestPageSubtitleTrack(url, metadata = null, timeoutMs = 20000) {
     }, timeoutMs);
     subtitleFetchWaiters.set(requestId, result => {
       clearTimeout(timeoutId);
+      // 保留最近一次失败原因，便于在没有 DevTools 的环境（如 iOS）里直接从
+      // 字幕选择面板看到是 pot 失败、播放器缺失还是超时。
+      if (result && result.ok === false) {
+        window.lingkumaLastSubtitleError = result.error || '未知错误';
+        window.lingkumaLastSubtitleDiagnostics = {
+          error: result.error,
+          hasPot: result.hasPot,
+          hasPlayerResponse: result.hasPlayerResponse,
+          playerFound: result.playerFound,
+          attempts: result.attempts
+        };
+      } else if (result && result.ok) {
+        window.lingkumaLastSubtitleError = null;
+      }
       resolve(result);
     });
     document.dispatchEvent(new CustomEvent('lingkuma_subtitle_track_fetch', {
@@ -565,9 +589,13 @@ window.isValidJsonUrl = async function(url) {
 
     console.log(`正在验证URL: ${jsonUrl}`);
     const validationPromise = (async () => {
-      // 隔离世界直接 fetch timedtext 缺少 pot 校验所需的客户端请求头，会拿到
-      // 空响应。优先交给页面上下文重建 URL 并携带请求头获取。
-      const pageResult = await requestPageSubtitleTrack(jsonUrl, getSubtitleRequestMetadata(jsonUrl));
+      // 隔离世界直接 fetch timedtext 无法构造带 pot 的 URL，只会拿到空响应。
+      // 优先交给页面上下文重建 URL 获取；非 YouTube 页面会很快超时并回退到裸 fetch。
+      const pageResult = await requestPageSubtitleTrack(
+        jsonUrl,
+        getSubtitleRequestMetadata(jsonUrl),
+        12000
+      );
       if (pageResult?.ok) {
         console.log('页面上下文已获取有效JSON字幕数据');
         return true;

@@ -5412,6 +5412,13 @@ function setupWebSocketHeaders() {
     }
   };
 
+  // Safari / iOS 的 WebKit 扩展运行时不提供 declarativeNetRequest，
+  // 这里必须提前退出，否则顶层调用抛错会中断背景脚本初始化。
+  if (!chrome.declarativeNetRequest || !chrome.declarativeNetRequest.updateDynamicRules) {
+    console.warn('[WS Headers] declarativeNetRequest 不可用，跳过 WebSocket 头规则');
+    return;
+  }
+
   chrome.declarativeNetRequest.updateDynamicRules({
     removeRuleIds: [WS_HEADER_RULE_ID],
     addRules: [wsHeaderRule]

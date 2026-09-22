@@ -2266,7 +2266,10 @@
                         }
                     }
                     button.disabled = false;
-                    status.textContent = '字幕加载失败，请选择其他轨道。';
+                    const failureReason = window.lingkumaLastSubtitleError;
+                    status.textContent = failureReason
+                        ? `字幕加载失败：${failureReason}。请选择其他轨道。`
+                        : '字幕加载失败，请选择其他轨道。';
                 });
                 list.appendChild(button);
             });
