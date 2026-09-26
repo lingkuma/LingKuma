@@ -452,6 +452,21 @@
             return result;
         }
 
+        // 构建发送给 AI 的文本：限制单词数（AI 输出有上限，长文本会被截断，
+        // 截断导致后半段拿不到标点、只能靠后续请求反复补）。剩余部分
+        // 由后续 5 秒窗口请求继续补齐。
+        function buildAIText(segmentWords, maxWords = 80) {
+            const sliced = [];
+            let count = 0;
+            for (let i = 0; i < segmentWords.length; i++) {
+                if (count >= maxWords) break;
+                sliced.push(segmentWords[i]);
+                const item = segmentWords[i];
+                if (item && item.data && !Array.isArray(item.data) && item.data.utf8) count++;
+            }
+            return mergeWordsIntoSentences(sliced);
+        }
+
         // 获取时间戳附近的单词
         function getWordsAroundTimestamp(timestamp, subtitles, wordCount = 50) {
             // 找到最接近时间戳的单词索引
@@ -898,13 +913,18 @@
 
             let insertedCount = 0;
             let kk = 0; // expectedTokens 指针
+            const failedAlignments = [];
             for (let i = 0; i < tokens.length; i++) {
                 const token = tokens[i];
 
                 // 剥掉 token 开头的包裹符号，提取尾部标点
                 let base = token.replace(/^["'“”‘’(\[]+/, '');
                 let punct = '';
-                while (base.length > 1 && allowedPunct.test(base[base.length - 1])) {
+                // 剥尾部标点必须用完整标点集（含逗号）：即使逗号模式关闭、
+                // 逗号不插入，也要把它从 token 上剥掉。否则 "desk," 这种
+                // token 永远对不上字幕里的 "desk"，对齐指针失步，
+                // 后面一整段的标点全部丢失，还会触发重复的 AI 请求。
+                while (base.length > 1 && /[,.!?:;。、？！]/.test(base[base.length - 1])) {
                     punct = base[base.length - 1] + punct;
                     base = base.slice(0, -1);
                 }
@@ -920,23 +940,38 @@
                 }
 
                 if (matchedK === -1) {
+                    if (failedAlignments.length < 8) {
+                        failedAlignments.push({
+                            token: base,
+                            字幕期望附近: expectedTokens.slice(Math.max(0, kk - 1), kk + 4).map(t => t.text)
+                        });
+                    }
                     continue; // 对不上的 token 跳过（AI 可能改写了该词）
                 }
 
                 kk = matchedK + 1;
 
                 if (punct) {
-                    const owner = expectedTokens[matchedK].owner;
-                    const nextArrayIndex = wordItems[owner].originalIndex + 1;
-                    if (nextArrayIndex < updatedSubtitles.length &&
-                        Array.isArray(updatedSubtitles[nextArrayIndex])) {
-                        updatedSubtitles[nextArrayIndex] = [punct];
-                        insertedCount++;
+                    // 只插入当前模式允许的标点（非逗号模式丢弃逗号）
+                    const insertable = punct.split('').filter(ch => allowedPunct.test(ch)).join('');
+                    if (insertable) {
+                        const owner = expectedTokens[matchedK].owner;
+                        const nextArrayIndex = wordItems[owner].originalIndex + 1;
+                        if (nextArrayIndex < updatedSubtitles.length &&
+                            Array.isArray(updatedSubtitles[nextArrayIndex])) {
+                            updatedSubtitles[nextArrayIndex] = [insertable];
+                            insertedCount++;
+                        } else if (failedAlignments.length < 8) {
+                            failedAlignments.push({ token: base, 槽位异常: nextArrayIndex });
+                        }
                     }
                 }
             }
 
             console.log(`AI标点插入: ${insertedCount} 个`);
+            if (failedAlignments.length > 0) {
+                console.warn("AI对齐失败明细:", failedAlignments);
+            }
             if (insertedCount === 0 && tokens.length > 0 && expectedTokens.length > 0) {
                 console.warn("AI标点插入为0，AI前5个token:", tokens.slice(0, 5),
                     "字幕前5个token:", expectedTokens.slice(0, 5).map(t => t.text));
@@ -976,26 +1011,25 @@
             }
         }
 
-        // 判断句段是否需要 AI 添加标点
-        // 关键：句段末尾的标点数组只是"句段边界"标记（分句时用下一个原生标点收尾），
-        // 不算句内有标点。之前的逻辑把这个边界标点也算进去，导致只要扫描窗口内
-        // 存在任何一个原生标点，AI 就永远不会触发。
-        // 现在的逻辑：排除末尾边界标点后，句段内完全没有标点、且单词数达到阈值，才交给 AI。
+        // 判断句段是否需要 AI 添加标点。
+        // 核心语义：句段末尾带终结标点 = 这个句子已经被处理完（原生标点
+        // 或 AI 之前插入的都算），直接跳过。只有句段没有终结标点
+        // （即扫描窗口边缘的未处理区域）才需要 AI 补标点。
+        // 之前把末尾标点排除后只查句内，导致 AI 刚补完句号的句子
+        // 又被判定为"无标点"，每个句子都会被重复请求一次。
         function segmentNeedsAIPunctuation(segmentWords, minWordCount = 8) {
             if (!segmentWords || segmentWords.length === 0) return false;
 
-            let words = segmentWords;
-            const lastItem = words[words.length - 1];
+            const lastItem = segmentWords[segmentWords.length - 1];
             if (lastItem && Array.isArray(lastItem.data) && lastItem.data.length > 0) {
-                words = words.slice(0, -1);
+                return false; // 已有终结标点，句子已处理
             }
 
             let wordCount = 0;
-            for (let i = 0; i < words.length; i++) {
-                const item = words[i];
+            for (let i = 0; i < segmentWords.length; i++) {
+                const item = segmentWords[i];
                 if (!item || !item.data) continue;
                 if (Array.isArray(item.data)) {
-                    // 句段内部出现标点数组 => 句内已有标点，不需要 AI
                     if (item.data.length > 0 && /[,.!?;:。，！？]/.test(item.data[0])) {
                         return false;
                     }
@@ -1193,7 +1227,7 @@
                             lastRequestTime = now;
 
                             // 合并单词成句子
-                            const mergedText = mergeWordsIntoSentences(currentSentence.words);
+                            const mergedText = buildAIText(currentSentence.words);
 
                             // 异步处理AI请求
                             sendToAIForPunctuation(mergedText).then(punctuatedText => {
@@ -1325,7 +1359,7 @@
                             lastRequestTime = now;
 
                             // 合并单词成句子
-                            const mergedText = mergeWordsIntoSentences(currentSentence.words);
+                            const mergedText = buildAIText(currentSentence.words);
 
                             // 异步处理AI请求
                             sendToAIForPunctuation(mergedText).then(punctuatedText => {

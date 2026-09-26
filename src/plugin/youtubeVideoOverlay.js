@@ -1716,20 +1716,22 @@
 
     // ==================== AI 标点（与 youtubeCaptionFix.js 同套逻辑） ====================
 
-    // 判断句段是否需要 AI 添加标点：排除句末边界标点后，
-    // 句段内完全没有标点、且单词数达到阈值，才交给 AI。
+    // 判断句段是否需要 AI 添加标点。
+    // 核心语义：句段末尾带终结标点 = 句子已被处理完（原生标点
+    // 或 AI 之前插入的都算），直接跳过。只有句段没有终结标点
+    // （即扫描窗口边缘的未处理区域）才需要 AI 补标点，
+    // 否则 AI 刚补完句号的句子会被再次请求。
     function segmentNeedsAIPunctuation(segmentWords, minWordCount = 8) {
         if (!segmentWords || segmentWords.length === 0) return false;
 
-        let words = segmentWords;
-        const lastItem = words[words.length - 1];
+        const lastItem = segmentWords[segmentWords.length - 1];
         if (lastItem && Array.isArray(lastItem.data) && lastItem.data.length > 0) {
-            words = words.slice(0, -1);
+            return false; // 已有终结标点，句子已处理
         }
 
         let wordCount = 0;
-        for (let i = 0; i < words.length; i++) {
-            const item = words[i];
+        for (let i = 0; i < segmentWords.length; i++) {
+            const item = segmentWords[i];
             if (!item || !item.data) continue;
             if (Array.isArray(item.data)) {
                 if (item.data.length > 0 && /[,.!?;:。，！？]/.test(item.data[0])) {
@@ -1872,12 +1874,16 @@
 
         let insertedCount = 0;
         let kk = 0;
+        const failedAlignments = [];
         for (let i = 0; i < tokens.length; i++) {
             const token = tokens[i];
 
             let base = token.replace(/^["'“”‘’(\[]+/, '');
             let punct = '';
-            while (base.length > 1 && allowedPunct.test(base[base.length - 1])) {
+            // 剥尾部标点必须用完整标点集（含逗号）：即使逗号模式关闭、
+            // 逗号不插入，也要把它从 token 上剥掉，否则 "desk," 永远对不上
+            // 字幕里的 "desk"，对齐失步导致后面的标点全部丢失并重复请求
+            while (base.length > 1 && /[,.!?:;。、？！]/.test(base[base.length - 1])) {
                 punct = base[base.length - 1] + punct;
                 base = base.slice(0, -1);
             }
@@ -1891,22 +1897,37 @@
                 }
             }
             if (matchedK === -1) {
+                if (failedAlignments.length < 8) {
+                    failedAlignments.push({
+                        token: base,
+                        字幕期望附近: expectedTokens.slice(Math.max(0, kk - 1), kk + 4).map(t => t.text)
+                    });
+                }
                 continue;
             }
             kk = matchedK + 1;
 
             if (punct) {
-                const owner = expectedTokens[matchedK].owner;
-                const nextArrayIndex = wordItems[owner].originalIndex + 1;
-                if (nextArrayIndex < updatedSubtitles.length &&
-                    Array.isArray(updatedSubtitles[nextArrayIndex])) {
-                    updatedSubtitles[nextArrayIndex] = [punct];
-                    insertedCount++;
+                // 只插入当前模式允许的标点（非逗号模式丢弃逗号）
+                const insertable = punct.split('').filter(ch => allowedPunct.test(ch)).join('');
+                if (insertable) {
+                    const owner = expectedTokens[matchedK].owner;
+                    const nextArrayIndex = wordItems[owner].originalIndex + 1;
+                    if (nextArrayIndex < updatedSubtitles.length &&
+                        Array.isArray(updatedSubtitles[nextArrayIndex])) {
+                        updatedSubtitles[nextArrayIndex] = [insertable];
+                        insertedCount++;
+                    } else if (failedAlignments.length < 8) {
+                        failedAlignments.push({ token: base, 槽位异常: nextArrayIndex });
+                    }
                 }
             }
         }
 
         console.log(`AI标点插入: ${insertedCount} 个`);
+        if (failedAlignments.length > 0) {
+            console.warn("AI对齐失败明细:", failedAlignments);
+        }
         if (insertedCount === 0 && tokens.length > 0 && expectedTokens.length > 0) {
             console.warn("AI标点插入为0，AI前5个token:", tokens.slice(0, 5),
                 "字幕前5个token:", expectedTokens.slice(0, 5).map(t => t.text));
@@ -1957,7 +1978,16 @@
                     isAIRequesting = true;
                     lastRequestTime = now;
 
-                    const mergedText = mergeWordsIntoSentences(currentSentence.words);
+                    // 限制发送长度，避免 AI 输出截断（详见 youtubeCaptionFix.js buildAIText）
+                    const aiWords = [];
+                    let aiWordCount = 0;
+                    for (let wi = 0; wi < currentSentence.words.length; wi++) {
+                        if (aiWordCount >= 80) break;
+                        aiWords.push(currentSentence.words[wi]);
+                        const wItem = currentSentence.words[wi];
+                        if (wItem && wItem.data && !Array.isArray(wItem.data) && wItem.data.utf8) aiWordCount++;
+                    }
+                    const mergedText = mergeWordsIntoSentences(aiWords);
                     sendToAIForPunctuation(mergedText).then(punctuatedText => {
                         const formattedText = formatAIResult(punctuatedText, currentSentence.words);
                         try {
