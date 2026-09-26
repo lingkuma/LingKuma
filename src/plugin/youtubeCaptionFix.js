@@ -24,6 +24,7 @@
     let subtitleUpdateInterval = null;
     let keydownHandler = null;
     let playHandler = null;
+    let seekedHandler = null;
 
     chrome.storage.local.get({
         youtubeCaptionFix: false,
@@ -85,6 +86,12 @@
         if (keydownHandler) {
             document.removeEventListener('keydown', keydownHandler);
             keydownHandler = null;
+        }
+
+        if (seekedHandler) {
+            const video = document.querySelector('video');
+            if (video) video.removeEventListener('seeked', seekedHandler);
+            seekedHandler = null;
         }
 
         // 移除UI元素
@@ -400,13 +407,28 @@
                         // 计算单词的结束时间（如果有下一个单词，则为下一个单词的开始时间；否则为段落结束时间）
                         let wordEndTime = paragraphStartTime + paragraph.dDurationMs;
 
-                        // 添加单词到结果数组
-                        words.push({
-                            utf8: wordText,
-                            tStartMs: wordStartTime,
-                            tEndMs: wordEndTime,
-                            punctuation: punctuation // 保存标点符号信息
-                        });
+                        // 一个 seg 可能包含多个单词（如 "There is a "，手动上传的
+                        // 字幕通常是短语块而不是 ASR 的逐词结构）。按空白拆成
+                        // 单个单词，时间按字符长度在该 seg 的时间范围内比例分配，
+                        // 原生标点记在最后一个单词上。这样数组才是真正的
+                        // [单词, 标点槽, 单词, 标点槽, ...] 结构，AI 才能把
+                        // 标点填进对应的空槽。
+                        const subWords = wordText.split(/\s+/).filter(Boolean);
+                        const totalChars = subWords.reduce((sum, w) => sum + w.length, 0) || 1;
+                        const span = Math.max(0, wordEndTime - wordStartTime);
+                        let cursor = wordStartTime;
+                        for (let s = 0; s < subWords.length; s++) {
+                            const share = span * (subWords[s].length / totalChars);
+                            const subStart = cursor;
+                            const subEnd = (s === subWords.length - 1) ? wordEndTime : cursor + share;
+                            cursor = subEnd;
+                            words.push({
+                                utf8: subWords[s],
+                                tStartMs: subStart,
+                                tEndMs: subEnd,
+                                punctuation: (s === subWords.length - 1) ? punctuation : null
+                            });
+                        }
                     });
                 }
             });
@@ -679,6 +701,32 @@
         // 创建日语处理器实例
         const japaneseProcessor = new JapaneseSubtitleProcessor();
 
+        // makeAIRequest 兜底：a3_aiFragen.js 若未注入成功（executeScript 批量注入时
+        // 任一文件顶层抛错会中断后续文件），这里直接通过 background 转发 AI 请求，
+        // 保证 AI 标点功能不依赖 a3_aiFragen.js 的注入状态。
+        function makeAIRequestSafe(params) {
+            if (typeof makeAIRequest === 'function') {
+                return makeAIRequest(params);
+            }
+            console.warn("youtubeCaptionFix: 全局 makeAIRequest 不可用（a3_aiFragen.js 可能未注入），直接通过 background 发起 AI 请求");
+            return new Promise((resolve, reject) => {
+                chrome.runtime.sendMessage({
+                    action: "makeAIRequest",
+                    requestData: params
+                }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        reject(new Error(chrome.runtime.lastError.message));
+                        return;
+                    }
+                    if (response && response.error) {
+                        reject(new Error(response.error));
+                        return;
+                    }
+                    resolve(response);
+                });
+            });
+        }
+
         // 发送文本到AI添加标点符号
         async function sendToAIForPunctuation(text) {
             // 设置 API 参数 - 已移除 baseUrl 和 apiKey，将由 makeAIRequest 处理
@@ -741,14 +789,21 @@
                 // word 和 sentence 在此场景下不相关，传 null
                 // stream 设置为 false
                 // model 从 requestBody 中获取，覆盖 makeAIRequest 中的默认模型
-                const data = await makeAIRequest({
-                    word: null,
-                    sentence: null,
-                    stream: false,
-                    messages: requestBody.messages,
-                    model: null,
-                    temperature: 0.3
-                });
+                // 加客户端超时：background 的 fetch 没有超时机制，
+                // 一旦请求挂住，isAIRequesting 会永久卡死，AI 标点从此全部失效。
+                const data = await Promise.race([
+                    makeAIRequestSafe({
+                        word: null,
+                        sentence: null,
+                        stream: false,
+                        messages: requestBody.messages,
+                        model: null,
+                        temperature: 0.3
+                    }),
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("AI 请求超时(45秒)，放弃本次标点请求")), 45000)
+                    )
+                ]);
 
                 // 处理响应 (逻辑与之前相同)
                 if (data.choices && data.choices.length > 0 && data.choices[0].message) {
@@ -812,99 +867,79 @@
             // 不改变原始subtitles数组，创建一个副本
             const updatedSubtitles = [...subtitles];
 
-            // 使用动态的标点符号正则表达式
-            const punctuationRegex = getPunctuationRegex();
+            // 允许插入的标点集合
+            const allowedPunct = window.youtubeCommaSentencingEnabled
+                ? /[,.!?:;。、？！]/
+                : /[.!?:;。？！]/;
 
-            // 根据设置构建匹配正则表达式
-            let regex;
-            if (window.youtubeCommaSentencingEnabled) {
-                // 包含逗号的完整标点符号集合
-                regex = /([^\s,.!?:;。、？！]+)([,.!?:;。、？！])/g;
-            } else {
-                // 不包含逗号，只使用句号等结束符号
-                regex = /([^\s.!?:;。？！]+)([.!?:;。？！])/g;
-            }
+            // 归一化：统一弯/直引号和大小写，避免 AI 返回的词与字幕词对不上
+            const norm = s => String(s).replace(/[’‘]/g, "'").replace(/[“”]/g, '"').toLowerCase();
 
-            let match;
-
-            // 保存已处理的单词索引，避免重复处理
-            const processedWordIndices = new Set();
-
-            // 首先处理[music]标记
-            const musicRegex = /\[music\]/g;
-            let musicMatch;
-            while ((musicMatch = musicRegex.exec(punctuatedText)) !== null) {
-                // 在words数组中查找[music]标记的位置
-                for (let i = 0; i < words.length; i++) {
-                    const wordItem = words[i];
-                    if (wordItem && wordItem.data && wordItem.data.utf8 === "[music]") {
-                        const originalIndex = wordItem.originalIndex;
-                        // 在[music]标记后添加句号
-                        const nextArrayIndex = originalIndex + 1;
-                        if (nextArrayIndex < updatedSubtitles.length &&
-                            Array.isArray(updatedSubtitles[nextArrayIndex])) {
-                            updatedSubtitles[nextArrayIndex] = ["。"];
-                            break;
-                        }
+            // 收集句段中的单词项（跳过标点数组项）。
+            // 注意：一个 seg 的 utf8 可能包含多个单词（如 "There is a "），
+            // 所以要按空白拆成扁平 token 序列，并记录每个 token 属于哪个 seg，
+            // 标点插入到它所属 seg 的槽位上。
+            const wordItems = [];
+            const expectedTokens = []; // { text, owner }
+            for (let i = 0; i < words.length; i++) {
+                const item = words[i];
+                if (item && item.data && !Array.isArray(item.data) && item.data.utf8) {
+                    const owner = wordItems.length;
+                    wordItems.push({ originalIndex: item.originalIndex, utf8: item.data.utf8 });
+                    const parts = item.data.utf8.trim().split(/\s+/).filter(Boolean);
+                    for (const p of parts) {
+                        expectedTokens.push({ text: p, owner: owner });
                     }
                 }
             }
 
-            // 逐个处理匹配到的标点符号
-            while ((match = regex.exec(punctuatedText)) !== null) {
-                const word = match[1]; // 标点符号前的单词
-                const punctuation = match[2]; // 标点符号本身
+            // AI 返回的文本按空白切分，与字幕 token 序列按顺序对齐。
+            const tokens = punctuatedText.split(/\s+/).filter(Boolean);
 
-                // 在words数组中查找匹配的单词
-                for (let i = 0; i < words.length; i++) {
-                    if (processedWordIndices.has(i)) continue; // 跳过已处理的单词
+            let insertedCount = 0;
+            let kk = 0; // expectedTokens 指针
+            for (let i = 0; i < tokens.length; i++) {
+                const token = tokens[i];
 
-                    const wordItem = words[i];
-                    if (wordItem && wordItem.data && wordItem.data.utf8 === word) {
-                        // 找到匹配的单词，将标点符号插入到其后的空数组中
-                        const originalIndex = wordItem.originalIndex;
-                        const nextArrayIndex = originalIndex + 1;
+                // 剥掉 token 开头的包裹符号，提取尾部标点
+                let base = token.replace(/^["'“”‘’(\[]+/, '');
+                let punct = '';
+                while (base.length > 1 && allowedPunct.test(base[base.length - 1])) {
+                    punct = base[base.length - 1] + punct;
+                    base = base.slice(0, -1);
+                }
+                if (base.length === 0) continue;
 
-                        // 确保下一个索引是空数组
-                        if (nextArrayIndex < updatedSubtitles.length &&
-                            Array.isArray(updatedSubtitles[nextArrayIndex])) {
-                            // 将标点符号添加到数组中
-                            updatedSubtitles[nextArrayIndex] = [punctuation];
-                            processedWordIndices.add(i); // 标记为已处理
-                            break;
-                        }
+                // 在 expectedTokens 的小窗口内寻找匹配（容忍 AI 微小改写导致的偏移）
+                let matchedK = -1;
+                for (let d = 0; d < 3 && kk + d < expectedTokens.length; d++) {
+                    if (norm(expectedTokens[kk + d].text) === norm(base)) {
+                        matchedK = kk + d;
+                        break;
+                    }
+                }
+
+                if (matchedK === -1) {
+                    continue; // 对不上的 token 跳过（AI 可能改写了该词）
+                }
+
+                kk = matchedK + 1;
+
+                if (punct) {
+                    const owner = expectedTokens[matchedK].owner;
+                    const nextArrayIndex = wordItems[owner].originalIndex + 1;
+                    if (nextArrayIndex < updatedSubtitles.length &&
+                        Array.isArray(updatedSubtitles[nextArrayIndex])) {
+                        updatedSubtitles[nextArrayIndex] = [punct];
+                        insertedCount++;
                     }
                 }
             }
 
-            // 处理句尾标点符号（如果文本以标点符号结尾）
-            let lastPuncMatch;
-            if (window.youtubeCommaSentencingEnabled) {
-                // 包含逗号的完整标点符号集合
-                lastPuncMatch = punctuatedText.match(/([^\s,.!?:;。、？！]+)([,.!?:;。、？！])$/);
-            } else {
-                // 不包含逗号，只使用句号等结束符号
-                lastPuncMatch = punctuatedText.match(/([^\s.!?:;。？！]+)([.!?:;。？！])$/);
-            }
-
-            if (lastPuncMatch) {
-                const lastWord = lastPuncMatch[1];
-                const lastPunc = lastPuncMatch[2];
-
-                // 在words数组中查找最后一个单词
-                for (let i = words.length - 1; i >= 0; i--) {
-                    const wordItem = words[i];
-                    if (wordItem && wordItem.data && wordItem.data.utf8 === lastWord) {
-                        const originalIndex = wordItem.originalIndex;
-                        const nextArrayIndex = originalIndex + 1;
-
-                        if (nextArrayIndex < updatedSubtitles.length &&
-                            Array.isArray(updatedSubtitles[nextArrayIndex])) {
-                            updatedSubtitles[nextArrayIndex] = [lastPunc];
-                            break;
-                        }
-                    }
-                }
+            console.log(`AI标点插入: ${insertedCount} 个`);
+            if (insertedCount === 0 && tokens.length > 0 && expectedTokens.length > 0) {
+                console.warn("AI标点插入为0，AI前5个token:", tokens.slice(0, 5),
+                    "字幕前5个token:", expectedTokens.slice(0, 5).map(t => t.text));
             }
 
             return updatedSubtitles;
@@ -939,6 +974,37 @@
                 console.error("获取字幕时发生错误:", error);
                 return [];
             }
+        }
+
+        // 判断句段是否需要 AI 添加标点
+        // 关键：句段末尾的标点数组只是"句段边界"标记（分句时用下一个原生标点收尾），
+        // 不算句内有标点。之前的逻辑把这个边界标点也算进去，导致只要扫描窗口内
+        // 存在任何一个原生标点，AI 就永远不会触发。
+        // 现在的逻辑：排除末尾边界标点后，句段内完全没有标点、且单词数达到阈值，才交给 AI。
+        function segmentNeedsAIPunctuation(segmentWords, minWordCount = 8) {
+            if (!segmentWords || segmentWords.length === 0) return false;
+
+            let words = segmentWords;
+            const lastItem = words[words.length - 1];
+            if (lastItem && Array.isArray(lastItem.data) && lastItem.data.length > 0) {
+                words = words.slice(0, -1);
+            }
+
+            let wordCount = 0;
+            for (let i = 0; i < words.length; i++) {
+                const item = words[i];
+                if (!item || !item.data) continue;
+                if (Array.isArray(item.data)) {
+                    // 句段内部出现标点数组 => 句内已有标点，不需要 AI
+                    if (item.data.length > 0 && /[,.!?;:。，！？]/.test(item.data[0])) {
+                        return false;
+                    }
+                } else if (item.data.utf8) {
+                    wordCount++;
+                }
+            }
+
+            return wordCount >= minWordCount;
         }
 
         // 获取当前时间戳对应的字幕片段
@@ -1035,6 +1101,15 @@
             // }
 
             if (isReplayMode) {
+                // 重播模式：不能直接返回捕获时的句子快照，否则 AI 事后插入的
+                // 标点永远显示不出来。这里按存储的索引从最新的 rebuiltSubtitles
+                // 实时取词，保证插入的标点能即时反映到显示上。
+                if (currentSubtitleInheiten && currentSubtitleInheiten.words) {
+                    const liveWords = currentSubtitleInheiten.words
+                        .filter(w => w && Number.isInteger(w.originalIndex) && w.originalIndex < rebuiltSubtitles.length)
+                        .map(w => ({ originalIndex: w.originalIndex, data: rebuiltSubtitles[w.originalIndex] }));
+                    return { words: liveWords, currentIndex: currentSubtitleInheiten.currentIndex };
+                }
                 return currentSubtitleInheiten;
             }
 
@@ -1057,17 +1132,10 @@
             if (!isAIRequesting && (now - lastRequestTime > 5000)) {
 
 
-                // 检查当前句子是否已经有标点符号
-                let hasExistingPunctuation = false;
-                for (let i = 0; i < currentSentence.words.length; i++) {
-                    const wordItem = currentSentence.words[i];
-                    // 检查是否存在标点符号数组
-                    if (wordItem && Array.isArray(wordItem.data) &&
-                        wordItem.data[0] && /[,.!?;:。，！？]/.test(wordItem.data[0])) {
-                        hasExistingPunctuation = true;
-                        console.log("当前句子已有标点符号，无需请求AI");
-                        break;
-                    }
+                // 检查当前句子是否需要 AI 添加标点（排除句段末尾的边界标点）
+                const hasExistingPunctuation = !segmentNeedsAIPunctuation(currentSentence.words);
+                if (hasExistingPunctuation) {
+                    console.log("当前句段已有标点或长度不足，无需请求AI");
                 }
 
                 // 只有当没有现有标点符号时才处理
@@ -1197,17 +1265,10 @@
             if (!isAIRequesting && (now - lastRequestTime > 5000)) {
 
 
-                // 检查当前句子是否已经有标点符号
-                let hasExistingPunctuation = false;
-                for (let i = 0; i < currentSentence.words.length; i++) {
-                    const wordItem = currentSentence.words[i];
-                    // 检查是否存在标点符号数组
-                    if (wordItem && Array.isArray(wordItem.data) &&
-                        wordItem.data[0] && /[,.!?;:。，！？]/.test(wordItem.data[0])) {
-                        hasExistingPunctuation = true;
-                        console.log("预加载：当前句子已有标点符号，无需请求AI");
-                        break;
-                    }
+                // 检查当前句子是否需要 AI 添加标点（排除句段末尾的边界标点）
+                const hasExistingPunctuation = !segmentNeedsAIPunctuation(currentSentence.words);
+                if (hasExistingPunctuation) {
+                    console.log("预加载：当前句段已有标点或长度不足，无需请求AI");
                 }
 
                 // 只有当没有现有标点符号时才请求AI
@@ -2060,8 +2121,15 @@
                             return;
                         }
 
-                        // 定期尝试更新视频元素引用
-                        if (!videoElement) {
+                        // 定期更新视频元素引用：YouTube 的 SPA 更新可能会重建 <video>，
+                        // 引用失效会导致 currentTime 冻结在旧值，字幕卡住不刷新
+                        const freshVideo = document.querySelector('video');
+                        if (freshVideo && freshVideo !== videoElement) {
+                            console.log("检测到视频元素被重建，更新引用");
+                            videoElement = freshVideo;
+                            if (playHandler) videoElement.addEventListener('play', playHandler);
+                            if (seekedHandler) videoElement.addEventListener('seeked', seekedHandler);
+                        } else if (!videoElement) {
                             videoElement = getVideoElement();
                         }
 
@@ -2078,7 +2146,12 @@
                             if(currentTime > 20000){
                                 // console.log("20秒之后才触发预加载", currentTime);
                                 // 预加载未来的字幕，但不需要使用返回值
-                                getTimeSubtitles(currentTime + 20000);
+                                // 独立 try/catch：预加载抛错不能连累后面的字幕显示更新
+                                try {
+                                    getTimeSubtitles(currentTime + 20000);
+                                } catch (preloadError) {
+                                    console.error("预加载出错(不影响字幕显示):", preloadError);
+                                }
                             }
 
                             // const preloadSubtitlesData = await getPreloadSubtitles();
@@ -2146,6 +2219,17 @@
             };
             document.addEventListener('keydown', keydownHandler);
 
+            // 用户手动拖动进度条（快进/快退）时退出重播模式。
+            // seek 不会触发 play 事件，只靠 playHandler 的话，
+            // 暂停状态下快进后字幕会永远卡在被重播的那一句上。
+            seekedHandler = function() {
+                if (isProgramTriggeredPlay) return;
+                if (isReplayMode) {
+                    console.log("用户跳转进度，重播模式关闭");
+                    isReplayMode = false;
+                }
+            };
+
             // 监听播放事件，只有用户手动播放时才退出重播模式
             playHandler = function() {
                 // 如果不是程序触发的播放，才退出重播模式
@@ -2159,6 +2243,7 @@
 
             if (videoElement) {
                 videoElement.addEventListener('play', playHandler);
+                videoElement.addEventListener('seeked', seekedHandler);
             } else {
                 // 如果第一次没找到视频元素，尝试定期检查
                 const videoCheckInterval = setInterval(() => {
@@ -2167,6 +2252,7 @@
                         clearInterval(videoCheckInterval);
                         console.log('已找到视频元素并设置事件监听');
                         videoElement.addEventListener('play', playHandler);
+                        videoElement.addEventListener('seeked', seekedHandler);
                     }
                 }, 2000);
             }
