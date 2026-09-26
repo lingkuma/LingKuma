@@ -46,6 +46,7 @@
     let currentSubtitleInheiten = '';
     let isProgramTriggeredPlay = false;
     let isAIRequesting = false;
+    let seekedHandler = null;
     let lastRequestTime = 0;
     let lastDisplayedTimestamp = -1;
     let cachedSegments = {};
@@ -1071,6 +1072,14 @@
             playHandler = null;
         }
 
+        if (seekedHandler) {
+            const video = getVideoElement();
+            if (video) {
+                video.removeEventListener('seeked', seekedHandler);
+            }
+            seekedHandler = null;
+        }
+
         restoreOriginalVideo();
 
         document.body.style.overflow = '';
@@ -1280,6 +1289,16 @@
         };
         document.addEventListener('keydown', keydownHandler);
 
+        // 用户手动拖动进度条（快进/快退）时退出重播模式。
+        // seek 不会触发 play 事件，否则暂停状态下快进后字幕会卡在被重播的那句上。
+        seekedHandler = function() {
+            if (isProgramTriggeredPlay) return;
+            if (isReplayMode) {
+                console.log("用户跳转进度，重播模式关闭");
+                isReplayMode = false;
+            }
+        };
+
         playHandler = function() {
             if (!isProgramTriggeredPlay) {
                 console.log("用户手动播放，重播模式关闭");
@@ -1291,6 +1310,7 @@
         const video = getVideoElement();
         if (video) {
             video.addEventListener('play', playHandler);
+            video.addEventListener('seeked', seekedHandler);
         }
         } finally {
             if (requestId === overlayCreationRequestId) {
@@ -1694,8 +1714,217 @@
         }
     }
 
+    // ==================== AI 标点（与 youtubeCaptionFix.js 同套逻辑） ====================
+
+    // 判断句段是否需要 AI 添加标点：排除句末边界标点后，
+    // 句段内完全没有标点、且单词数达到阈值，才交给 AI。
+    function segmentNeedsAIPunctuation(segmentWords, minWordCount = 8) {
+        if (!segmentWords || segmentWords.length === 0) return false;
+
+        let words = segmentWords;
+        const lastItem = words[words.length - 1];
+        if (lastItem && Array.isArray(lastItem.data) && lastItem.data.length > 0) {
+            words = words.slice(0, -1);
+        }
+
+        let wordCount = 0;
+        for (let i = 0; i < words.length; i++) {
+            const item = words[i];
+            if (!item || !item.data) continue;
+            if (Array.isArray(item.data)) {
+                if (item.data.length > 0 && /[,.!?;:。，！？]/.test(item.data[0])) {
+                    return false;
+                }
+            } else if (item.data.utf8) {
+                wordCount++;
+            }
+        }
+
+        return wordCount >= minWordCount;
+    }
+
+    // makeAIRequest 兜底：a3_aiFragen.js 若未注入成功，直接通过 background 转发
+    function makeAIRequestSafe(params) {
+        if (typeof makeAIRequest === 'function') {
+            return makeAIRequest(params);
+        }
+        console.warn("youtubeVideoOverlay: 全局 makeAIRequest 不可用，直接通过 background 发起 AI 请求");
+        return new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage({
+                action: "makeAIRequest",
+                requestData: params
+            }, (response) => {
+                if (chrome.runtime.lastError) {
+                    reject(new Error(chrome.runtime.lastError.message));
+                    return;
+                }
+                if (response && response.error) {
+                    reject(new Error(response.error));
+                    return;
+                }
+                resolve(response);
+            });
+        });
+    }
+
+    async function sendToAIForPunctuation(text) {
+        const result = await new Promise(resolve => chrome.storage.local.get('aiConfig', resolve));
+        const aiConfig = result?.aiConfig || {};
+        const customPrompt = aiConfig.aiYoutubeCaptionPrompt;
+
+        const defaultPrompt = `
+                    你将按照以下要求，为Youtube字幕添加适当的标点符号。
+                    1.每个逗号小段不要过长或者过短，要和正常的说话停顿相匹配，比如德语里的und,oder,aber,等等在很长的句子历史可以用逗号添加一个作为停顿的
+                    2.但不要添加或修改任何单词。
+                    3.仅添加标点符号，如逗号、句号、问号等。
+                    4.开始和结果的句子可能是其他句子的截断，可以酌情不添加标点符号。
+                    5.不要添加任何解释或者备注,直接返回带标点的文本。
+                    6.如果文本是日文，请保留原文中的空格，且不要换行。
+                    `;
+
+        const promptText = customPrompt ? customPrompt : defaultPrompt;
+
+        try {
+            // 客户端超时：background 的 fetch 没有超时机制，
+            // 请求挂住会让 isAIRequesting 永久卡死，后续标点全部失效
+            const data = await Promise.race([
+                makeAIRequestSafe({
+                    word: null,
+                    sentence: null,
+                    stream: false,
+                    messages: [
+                        { role: "system", content: promptText },
+                        { role: "user", content: text }
+                    ],
+                    model: null,
+                    temperature: 0.3
+                }),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error("AI 请求超时(45秒)")), 45000)
+                )
+            ]);
+
+            if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+                const punctuatedText = data.choices[0].message.content.trim();
+                console.log("AI 返回的带标点文本:", punctuatedText);
+                return punctuatedText;
+            }
+            console.error("API 返回了意外格式:", data);
+            throw new Error("无法从 API 响应中获取文本");
+        } catch (error) {
+            console.error("调用 AI API 时出错:", error);
+            return text;
+        }
+    }
+
+    function formatAIResult(text, words) {
+        if (!words || words.length === 0 || !text) {
+            return text;
+        }
+
+        let firstWord = null;
+        for (let i = 0; i < words.length; i++) {
+            if (words[i] && words[i].data && typeof words[i].data === 'object' && words[i].data.utf8) {
+                firstWord = words[i].data.utf8;
+                break;
+            }
+        }
+        if (!firstWord) {
+            return text;
+        }
+
+        const firstWordIndex = text.indexOf(firstWord);
+        let result = text;
+        if (firstWordIndex !== -1) {
+            result = text.substring(firstWordIndex);
+        }
+        result = result.replace(/[…\.]{3,}$/, '').trim();
+        result = result.replace(/\n/g, '');
+        return result;
+    }
+
+    // 将 AI 返回的标点插入字幕的空槽（顺序对齐，见 youtubeCaptionFix.js 同名函数）
+    function insertPunctuationIntoSubtitles(text, punctuatedText, words, subtitles) {
+        const updatedSubtitles = [...subtitles];
+
+        const allowedPunct = window.youtubeCommaSentencingEnabled
+            ? /[,.!?:;。、？！]/
+            : /[.!?:;。？！]/;
+
+        const norm = s => String(s).replace(/[’‘]/g, "'").replace(/[“”]/g, '"').toLowerCase();
+
+        // 字幕的 seg 可能包含多个单词，按空白拆成扁平 token 并记录所属 seg
+        const wordItems = [];
+        const expectedTokens = [];
+        for (let i = 0; i < words.length; i++) {
+            const item = words[i];
+            if (item && item.data && !Array.isArray(item.data) && item.data.utf8) {
+                const owner = wordItems.length;
+                wordItems.push({ originalIndex: item.originalIndex, utf8: item.data.utf8 });
+                const parts = item.data.utf8.trim().split(/\s+/).filter(Boolean);
+                for (const p of parts) {
+                    expectedTokens.push({ text: p, owner: owner });
+                }
+            }
+        }
+
+        const tokens = punctuatedText.split(/\s+/).filter(Boolean);
+
+        let insertedCount = 0;
+        let kk = 0;
+        for (let i = 0; i < tokens.length; i++) {
+            const token = tokens[i];
+
+            let base = token.replace(/^["'“”‘’(\[]+/, '');
+            let punct = '';
+            while (base.length > 1 && allowedPunct.test(base[base.length - 1])) {
+                punct = base[base.length - 1] + punct;
+                base = base.slice(0, -1);
+            }
+            if (base.length === 0) continue;
+
+            let matchedK = -1;
+            for (let d = 0; d < 3 && kk + d < expectedTokens.length; d++) {
+                if (norm(expectedTokens[kk + d].text) === norm(base)) {
+                    matchedK = kk + d;
+                    break;
+                }
+            }
+            if (matchedK === -1) {
+                continue;
+            }
+            kk = matchedK + 1;
+
+            if (punct) {
+                const owner = expectedTokens[matchedK].owner;
+                const nextArrayIndex = wordItems[owner].originalIndex + 1;
+                if (nextArrayIndex < updatedSubtitles.length &&
+                    Array.isArray(updatedSubtitles[nextArrayIndex])) {
+                    updatedSubtitles[nextArrayIndex] = [punct];
+                    insertedCount++;
+                }
+            }
+        }
+
+        console.log(`AI标点插入: ${insertedCount} 个`);
+        if (insertedCount === 0 && tokens.length > 0 && expectedTokens.length > 0) {
+            console.warn("AI标点插入为0，AI前5个token:", tokens.slice(0, 5),
+                "字幕前5个token:", expectedTokens.slice(0, 5).map(t => t.text));
+        }
+
+        return updatedSubtitles;
+    }
+
     function getCurrentSubtitles() {
         if (isReplayMode) {
+            // 重播模式：不能直接返回捕获时的句子快照，否则 AI 事后插入的
+            // 标点永远显示不出来。按存储的索引从最新的 rebuiltSubtitles 实时取词。
+            if (currentSubtitleInheiten && currentSubtitleInheiten.words) {
+                const liveWords = currentSubtitleInheiten.words
+                    .filter(w => w && Number.isInteger(w.originalIndex) && w.originalIndex < rebuiltSubtitles.length)
+                    .map(w => ({ originalIndex: w.originalIndex, data: rebuiltSubtitles[w.originalIndex] }));
+                return { words: liveWords, currentIndex: currentSubtitleInheiten.currentIndex };
+            }
             return currentSubtitleInheiten;
         }
 
@@ -1715,6 +1944,43 @@
             const nextSentence = getNextSentence(currentTime, rebuiltSubtitles);
             if (nextSentence) {
                 currentSentence = nextSentence;
+            }
+        }
+
+        // 检查当前句子是否需要 AI 添加标点（排除句末边界标点，句内无标点且足够长才触发）
+        const now = Date.now();
+        if (!isAIRequesting && (now - lastRequestTime > 5000) &&
+            currentSentence.words && currentSentence.words.length > 0) {
+            if (segmentNeedsAIPunctuation(currentSentence.words)) {
+                const cacheKey = `${currentSentence.words[0].originalIndex}-${currentSentence.words[currentSentence.words.length - 1].originalIndex}`;
+                if (!cachedSegments[cacheKey]) {
+                    isAIRequesting = true;
+                    lastRequestTime = now;
+
+                    const mergedText = mergeWordsIntoSentences(currentSentence.words);
+                    sendToAIForPunctuation(mergedText).then(punctuatedText => {
+                        const formattedText = formatAIResult(punctuatedText, currentSentence.words);
+                        try {
+                            const updatedSubtitles = insertPunctuationIntoSubtitles(
+                                mergedText, formattedText, currentSentence.words, rebuiltSubtitles);
+                            rebuiltSubtitles = updatedSubtitles;
+                            cachedSegments[cacheKey] = true;
+                            // 阅读模式的句子列表只在首次渲染，这里强制下一帧
+                            // 用插入标点后的数据重建列表，否则列表永远没有标点
+                            subtitleListInitialized = false;
+                            lastOverlaySubtitleText = '';
+                            console.log("AI标点符号添加成功");
+                        } catch (error) {
+                            console.error("处理AI结果时出错:", error);
+                            setTimeout(() => { delete cachedSegments[cacheKey]; }, 10000);
+                        }
+                        isAIRequesting = false;
+                    }).catch(error => {
+                        console.error("AI请求失败:", error);
+                        isAIRequesting = false;
+                        setTimeout(() => { delete cachedSegments[cacheKey]; }, 10000);
+                    });
+                }
             }
         }
 
