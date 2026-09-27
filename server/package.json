@@ -7,7 +7,12 @@
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": ["lingkuma", "vocabulary", "cloud", "sync"],
+  "keywords": [
+    "lingkuma",
+    "vocabulary",
+    "cloud",
+    "sync"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
@@ -20,6 +25,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
+  },
+  "overrides": {
+    "jws": "3.2.3"
   }
 }
-
