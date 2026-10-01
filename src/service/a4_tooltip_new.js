@@ -8939,8 +8939,10 @@ function getWordAtPoint(x, y) {
 
     // --- 修改：使用 Intl.Segmenter 处理西方文字 ---
     try {
-      const segmenter = new Intl.Segmenter("en", { granularity: "word" }); // 或者使用其他合适的语言代码
-      const segments = Array.from(segmenter.segment(text));
+      // 与 a2 高亮分词共用同一套合并逻辑（连字符词 five-factor 作为整体返回）
+      const segments = (typeof getMergedWesternSegments === 'function')
+        ? getMergedWesternSegments(text)
+        : Array.from(new Intl.Segmenter("en", { granularity: "word" }).segment(text));
 
       for (const segment of segments) {
         const segmentStart = segment.index;

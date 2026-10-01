@@ -3,6 +3,50 @@
 globalThis.__lingkumaA2Loaded = true;
 let JapaneseTokenizer = null;
 
+// =======================
+// 西文分词 + 连字符合并（five-factor / well-known / state-of-the-art）
+// Intl.Segmenter 按 UAX#29 会把 "five-factor" 切成 five / - / factor 三段，
+// 这里在分词结果的同一遍遍历内把 letter-'-letter 的相邻段合并为一个词。
+// 纯数字不合并（5-10 保持原样）；连字符变体（‐ ‐ – —）同样支持。
+// 高亮分词（a2）、批量查词（a2）、点击取词（a4）共用，保证三处边界一致。
+// =======================
+let WesternWordSegmenter = null; // 西文分词器单例，避免每个文本节点/每次点击重复构造
+function getWesternWordSegmenter() {
+  if (!WesternWordSegmenter) {
+    WesternWordSegmenter = new Intl.Segmenter("en", { granularity: "word" });
+  }
+  return WesternWordSegmenter;
+}
+
+function getMergedWesternSegments(text) {
+  const raw = Array.from(getWesternWordSegmenter().segment(text));
+  const merged = [];
+  const count = raw.length;
+  let i = 0;
+  while (i < count) {
+    const seg = raw[i];
+    let word = seg.segment;
+    if (seg.isWordLike) {
+      // 当前词以字母结尾，且紧随 "-字母词" 时持续合并（mother-in-law 链式也支持）
+      while (
+        /\p{L}$/u.test(word) &&
+        i + 2 < count &&
+        /^[-\u2010-\u2015]$/.test(raw[i + 1].segment) &&
+        raw[i + 2].isWordLike &&
+        /^\p{L}/u.test(raw[i + 2].segment)
+      ) {
+        word = word + raw[i + 1].segment + raw[i + 2].segment;
+        i += 2;
+      }
+      merged.push({ segment: word, index: seg.index, isWordLike: true });
+    } else {
+      merged.push({ segment: word, index: seg.index, isWordLike: false });
+    }
+    i++;
+  }
+  return merged;
+}
+
 function isOrionIOSRuntime() {
   return typeof window !== 'undefined' && window.orion_isIOS === true;
 }
@@ -842,9 +886,8 @@ class ScopeObserver {
           }
         }
       } else {
-        // 西方文本使用Intl.Segmenter
-        const segmenter = new Intl.Segmenter("en", { granularity: "word" });
-        const segments = segmenter.segment(text);
+        // 西方文本：共享分词器 + 连字符合并，保证 five-factor 作为整体查询状态
+        const segments = getMergedWesternSegments(text);
         for (const segment of segments) {
           if (segment.isWordLike) {
             const word = segment.segment.toLowerCase();
@@ -1683,10 +1726,8 @@ if (window.location.hostname.includes('youtube.com')) {
 
     // --- 修改开始: 使用 Intl.Segmenter 替换正则表达式 ---
     try {
-      // 使用 Intl.Segmenter 进行更准确的、基于语言环境的单词分割。
-      // 鉴于示例是德语，我们使用 "de" 区域设置。如果需要支持其他西文，可能需要动态选择或使用更通用的 "en"。
-      const segmenter = new Intl.Segmenter("en", { granularity: "word" });
-      const segments = segmenter.segment(text);
+      // 使用共享的分词器单例 + 连字符合并（与点击取词 a4 保持边界一致）
+      const segments = getMergedWesternSegments(text);
 
       const ranges = [];
       const darkModePrefix = this.isDarkMode ? "dark-" : "";
@@ -2413,9 +2454,8 @@ if (window.location.hostname.includes('youtube.com')) {
           }
         }
       } else {
-        // 西方文本使用Intl.Segmenter
-        const segmenter = new Intl.Segmenter("en", { granularity: "word" });
-        const segments = segmenter.segment(text);
+        // 西方文本：共享分词器 + 连字符合并，保证 five-factor 作为整体查询状态
+        const segments = getMergedWesternSegments(text);
         for (const segment of segments) {
           if (segment.isWordLike) {
             const word = segment.segment.toLowerCase();
