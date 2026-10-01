@@ -599,9 +599,20 @@ function getSentenceWordDetails(detail) {
     console.log("获取到的句子文本:", targetSentenceText);
 
     // 2. 分词
-    const sentenceSegmenter = new Intl.Segmenter(undefined, { granularity: 'word' });
-    const targetSegments = Array.from(sentenceSegmenter.segment(targetSentenceText));
-    const targetWords = targetSegments.filter(seg => seg.isWordLike).map(seg => seg.segment);
+    // 西文句子与 a2 高亮分词共用连字符合并逻辑（end-to-end / five-factor 作为整体参与爆炸）；
+    // CJK 句子保持原 Segmenter 行为。a2 未加载时降级为原始分词。
+    const isCJKSentence = /[\u4E00-\u9FFF\u3040-\u30FF\u31F0-\u31FF\uAC00-\uD7AF]/.test(targetSentenceText);
+    let targetWords;
+    if (!isCJKSentence && typeof getMergedWesternSegments === 'function') {
+      targetWords = getMergedWesternSegments(targetSentenceText)
+        .filter(seg => seg.isWordLike)
+        .map(seg => seg.segment);
+    } else {
+      const sentenceSegmenter = new Intl.Segmenter(undefined, { granularity: 'word' });
+      targetWords = Array.from(sentenceSegmenter.segment(targetSentenceText))
+        .filter(seg => seg.isWordLike)
+        .map(seg => seg.segment);
+    }
     console.log("[DEBUG] Segmented targetWords:", targetWords); // 添加日志
 
     if (targetWords.length === 0) {

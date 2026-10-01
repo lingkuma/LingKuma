@@ -2283,9 +2283,12 @@ async function extractUnknownWords(sentence, shouldTriggerQuery = true) {
   const wordMap = new Map();
 
   // ========== 第一步：提取单词 ==========
-  // 使用 Intl.Segmenter 分词
-  const segmenter = new Intl.Segmenter(undefined, { granularity: 'word' });
-  const segments = Array.from(segmenter.segment(sentence));
+  // 西文句子与 a2 高亮分词共用连字符合并（end-to-end / five-factor 作为整体提取）；
+  // CJK 句子保持原 Segmenter 行为；a2 未加载时降级为原始分词。
+  const isCJKSentence = /[\u4E00-\u9FFF\u3040-\u30FF\u31F0-\u31FF\uAC00-\uD7AF]/.test(sentence);
+  const segments = (!isCJKSentence && typeof getMergedWesternSegments === 'function')
+    ? getMergedWesternSegments(sentence)
+    : Array.from(new Intl.Segmenter(undefined, { granularity: 'word' }).segment(sentence));
 
   const words = segments
     .filter(seg => seg.isWordLike)
