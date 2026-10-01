@@ -5449,6 +5449,67 @@ function updateStatusToggleButton(tooltipEl, currentStatus) {
     console.error('未找到显示句子翻译按钮元素 .show-sentence-translation-btn');
   }
 
+  // “前往链接”二级跳转：若当前单词位于链接内，则把左上角的小鸟（发音）按钮
+  // 替换为链接图标，点击在新标签页打开链接；非链接单词保持原发音按钮不变。
+  const soundIconBtn = tooltipEl.querySelector(".sound-icon");
+  if (soundIconBtn) {
+    let tooltipLinkUrl = null;
+    try {
+      const linkEventTarget = lastMouseEvent && lastMouseEvent.target ? lastMouseEvent.target : null;
+      const linkAnchorEl = linkEventTarget && linkEventTarget.closest
+        ? linkEventTarget.closest('a[href]')
+        : null;
+      if (linkAnchorEl) {
+        tooltipLinkUrl = linkAnchorEl.href || linkAnchorEl.getAttribute('href') || null;
+      }
+    } catch (linkErr) {
+      console.warn('[A4] 检测单词所在链接失败:', linkErr);
+    }
+
+    if (tooltipLinkUrl) {
+      // 链接模式：隐藏小鸟图标，显示链接图标
+      const normalSvgIcon = soundIconBtn.querySelector('.normal-sound-icon');
+      if (normalSvgIcon) {
+        normalSvgIcon.style.display = 'none';
+      }
+      let linkIconSvg = soundIconBtn.querySelector('.link-mode-icon');
+      if (!linkIconSvg) {
+        linkIconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        linkIconSvg.setAttribute('class', 'link-mode-icon');
+        linkIconSvg.setAttribute('viewBox', '0 0 24 24');
+        linkIconSvg.innerHTML = '<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></g>';
+        soundIconBtn.appendChild(linkIconSvg);
+      }
+      linkIconSvg.style.display = '';
+      soundIconBtn.dataset.linkMode = 'true';
+      soundIconBtn.title = '前往链接';
+
+      // 本监听器先于 .sound-icon 的发音监听器注册，用 stopImmediatePropagation
+      // 阻止后续发音逻辑触发，改为在新标签页打开链接
+      soundIconBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+          window.open(tooltipLinkUrl, '_blank', 'noopener');
+        } catch (err) {
+          console.error('打开链接失败:', err);
+        }
+      });
+    } else {
+      // 非链接单词：确保恢复正常发音图标
+      soundIconBtn.dataset.linkMode = 'false';
+      soundIconBtn.title = '';
+      const normalSvgIcon = soundIconBtn.querySelector('.normal-sound-icon');
+      if (normalSvgIcon) {
+        normalSvgIcon.style.display = '';
+      }
+      const linkIconSvg = soundIconBtn.querySelector('.link-mode-icon');
+      if (linkIconSvg) {
+        linkIconSvg.style.display = 'none';
+      }
+    }
+  }
+
   // 添加最小化状态下句子解析按钮的点击事件
   const minimizedAnalysisBtn = tooltipEl.querySelector(".minimized-analysis-btn");
   if (minimizedAnalysisBtn) {
@@ -8279,6 +8340,26 @@ padding-top: 5px;
                         }
                         /* --- 修复结束 --- */
 
+                        /* --- 新增：链接模式下“前往链接”图标（替换左上角小鸟发音图标） --- */
+                        .link-mode-icon {
+                            width: 20px;
+                            height: 20px;
+                            transition: transform 0.2s ease-in-out;
+                        }
+
+                        .link-mode-icon:hover {
+                            transform: scale(1.1);
+                        }
+
+                        .link-mode-icon path {
+                            stroke: #000000 !important; /* 强制设置为黑色 */
+                        }
+
+                        .dark-mode .link-mode-icon path {
+                            stroke: #ffffff !important; /* 暗色模式下强制设置为白色 */
+                        }
+                        /* --- 链接图标样式结束 --- */
+
 
 
 
@@ -9923,6 +10004,61 @@ function handleA4PointerActivation(e) {
 
   return
 }
+
+// === 链接内点击拦截（二级跳转） ===
+// 当点击发生在链接 <a href> 内、且命中我们跟踪（高亮）的单词时：
+// 1) preventDefault 阻止原生页面跳转；
+// 2) 既有 pointerdown 逻辑（A4 查词弹窗 / A7 爆炸弹窗）正常触发；
+// 3) 由弹窗内的“前往链接”按钮在新标签页打开原始地址。
+// 未命中跟踪单词的链接点击完全放行，不影响正常网页使用。
+function lingkumaGetTrackedWordDetailAtPoint(x, y) {
+  try {
+    const word = getWordAtPoint(x, y);
+    if (!word) return null;
+    const wordRangesArrays = wordRangesMap.get(word.toLowerCase());
+    if (!wordRangesArrays) return null;
+    for (const detail of wordRangesArrays) {
+      const rect = detail.range.getBoundingClientRect();
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        return detail;
+      }
+    }
+  } catch (err) {
+    console.warn('[LingKuma] 链接内单词命中检测失败:', err);
+  }
+  return null;
+}
+
+document.addEventListener('click', (e) => {
+  // 只拦截左键普通点击；Ctrl/Cmd/Shift/Alt + 点击与中键保留原生行为（新标签页打开等）
+  if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+
+  // 插件关闭或黑名单页面时不拦截
+  if (typeof isPluginEnabled !== 'undefined' && !isPluginEnabled) return;
+  if (typeof isInBlacklist !== 'undefined' && isInBlacklist) return;
+
+  let anchorEl = null;
+  try {
+    if (e.target && e.target.closest) {
+      anchorEl = e.target.closest('a[href]');
+    } else if (e.composedPath) {
+      anchorEl = e.composedPath().find(
+        (n) => n && n.tagName === 'A' && n.getAttribute && n.getAttribute('href')
+      ) || null;
+    }
+  } catch (err) {
+    return;
+  }
+  if (!anchorEl) return;
+
+  // 只有点击命中跟踪单词时才接管，否则放行原生跳转
+  if (!lingkumaGetTrackedWordDetailAtPoint(e.clientX, e.clientY)) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+  console.log('[LingKuma] 已拦截链接内单词点击，可在弹窗中使用“前往链接”:', anchorEl.href);
+}, true);
+// === 链接内点击拦截结束 ===
 
 document.addEventListener('pointerdown', (e) => {
   if (!shouldUseA4TouchTapFlow(e)) {

@@ -32,6 +32,8 @@ let currentExplosionPosition = null; // 记录当前弹窗的定位信息：{ is
 let explosionResizeObserver = null; // 监听弹窗内容变化的ResizeObserver
 let wordExplosionFontSize = 14; // 爆炸弹窗字体大小，默认14px
 let wordExplosionMaxWidth = 772; // 爆炸弹窗最大宽度，默认772px
+let currentExplosionAnchorUrl = null; // 当前爆炸句子/单词所在链接的地址（用于“前往链接”按钮）
+let wordExplosionOpenLinkBtn = null; // “前往链接”按钮引用（弹窗容器只创建一次，按钮常驻、按需显示）
 
 const A7_STORAGE_CACHE_KEYS = [
   'enablePlugin',
@@ -486,10 +488,33 @@ function createWordExplosionTooltip() {
     handleMarkAllKnownClick();
   });
 
-  // 将左侧按钮添加到左侧容器（从上到下：Ask、Sidebar、一键已知）
+  // 添加“前往链接”按钮（仅当点击的单词/句子位于链接内时显示，用于二级跳转）
+  const openLinkBtn = document.createElement('button');
+  openLinkBtn.className = 'word-explosion-open-link-btn word-explosion-left-btn';
+  openLinkBtn.title = '前往链接';
+  openLinkBtn.style.display = 'none';
+  openLinkBtn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+      <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 3h6v6"/>
+        <path d="M10 14L21 3"/>
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+      </g>
+    </svg>
+  `;
+  openLinkBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (currentExplosionAnchorUrl) {
+      window.open(currentExplosionAnchorUrl, '_blank', 'noopener');
+    }
+  });
+  wordExplosionOpenLinkBtn = openLinkBtn;
+
+  // 将左侧按钮添加到左侧容器（从上到下：Ask、Sidebar、一键已知、前往链接）
   leftButtons.appendChild(analysisBtn);
   leftButtons.appendChild(sidebarBtn);
   leftButtons.appendChild(markAllKnownBtn);
+  leftButtons.appendChild(openLinkBtn);
 
   // 确保左侧按钮容器的鼠标事件正常
   leftButtons.addEventListener('mouseenter', () => {
@@ -1502,6 +1527,26 @@ function showWordExplosion(sentence, sentenceRect = null, sentenceInfo = null) {
   currentExplosionSentence = sentence;
   window.__wordExplosionSentenceRect = sentenceRect;
   currentExplosionSentenceInfo = sentenceInfo; // 保存句子详细信息用于逐词高亮
+
+  // === 链接检测：当前单词/句子位于链接内时，显示“前往链接”按钮（二级跳转） ===
+  currentExplosionAnchorUrl = null;
+  try {
+    const linkCheckNode = (sentenceInfo && sentenceInfo.range && sentenceInfo.range.startContainer) ||
+      (sentenceInfo && sentenceInfo.textNode) || null;
+    const linkAnchorEl = linkCheckNode && linkCheckNode.parentElement
+      ? linkCheckNode.parentElement.closest('a[href]')
+      : null;
+    if (linkAnchorEl) {
+      currentExplosionAnchorUrl = linkAnchorEl.href || linkAnchorEl.getAttribute('href') || null;
+    }
+  } catch (linkErr) {
+    console.warn('[WordExplosion] 检测句子所在链接失败:', linkErr);
+  }
+  if (wordExplosionOpenLinkBtn) {
+    wordExplosionOpenLinkBtn.style.display = currentExplosionAnchorUrl ? '' : 'none';
+    wordExplosionOpenLinkBtn.title = currentExplosionAnchorUrl || '前往链接';
+  }
+  // === 链接检测结束 ===
 
   // 重置翻译计数器
   lastSentenceTranslationCount = (explosionSentenceTranslationsCache[sentence] || []).length;
@@ -3856,8 +3901,11 @@ document.addEventListener('mousemove', (e) => {
     return;
   }
 
-  // 排除特定元素（按钮、输入框、链接等）
-  const excludedTags = ['BUTTON', 'INPUT', 'TEXTAREA', 'SELECT', 'A', 'IMG', 'VIDEO', 'AUDIO', 'CANVAS', 'SVG'];
+  // 排除特定元素（按钮、输入框、图片等）
+  // 注意：链接 <A> 不在此排除——链接内点击/悬停只有在命中跟踪单词时才触发爆炸弹窗
+  // （由 findWordAndSentenceAtPosition 判定），未命中则放行原生跳转。
+  // 原生跳转的拦截由 A4 中的 document 级 click 捕获监听器负责。
+  const excludedTags = ['BUTTON', 'INPUT', 'TEXTAREA', 'SELECT', 'IMG', 'VIDEO', 'AUDIO', 'CANVAS', 'SVG'];
   if (excludedTags.includes(target.tagName)) {
     return;
   }
@@ -4168,8 +4216,11 @@ async function handleA7PointerActivation(e) {
   // 只处理文本节点或包含文本的元素
   if (!eventTarget) return;
 
-  // 排除特定元素（按钮、输入框、链接等）
-  const excludedTags = ['BUTTON', 'INPUT', 'TEXTAREA', 'SELECT', 'A', 'IMG', 'VIDEO', 'AUDIO', 'CANVAS', 'SVG'];
+  // 排除特定元素（按钮、输入框、图片等）
+  // 注意：链接 <A> 不在此排除——链接内点击/悬停只有在命中跟踪单词时才触发爆炸弹窗
+  // （由 findWordAndSentenceAtPosition 判定），未命中则放行原生跳转。
+  // 原生跳转的拦截由 A4 中的 document 级 click 捕获监听器负责。
+  const excludedTags = ['BUTTON', 'INPUT', 'TEXTAREA', 'SELECT', 'IMG', 'VIDEO', 'AUDIO', 'CANVAS', 'SVG'];
   if (excludedTags.includes(eventTarget.tagName)) {
     return;
   }
