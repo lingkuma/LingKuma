@@ -299,7 +299,8 @@ function getSentenceTraversalParentFromRange(range, fallbackParent, minTextLengt
 const SENTENCE_ABBREVS = new Set([
   'dr', 'mr', 'mrs', 'ms', 'prof', 'sr', 'jr', 'st', 'vs', 'etc', 'eg', 'ie',
   'e.g', 'i.e', 'al', 'approx', 'dept', 'est', 'inc', 'ltd', 'fig', 'cf',
-  'p.m', 'a.m', 'rev', 'hon'
+  'p.m', 'a.m', 'rev', 'hon',
+  'jan', 'feb', 'mar', 'apr', 'jun', 'jul', 'aug', 'sept', 'sep', 'oct', 'nov', 'dec'
 ]);
 
 // 候选边界：终止符串 + 可选闭合引号/括号，后跟空白或文本末尾
@@ -333,9 +334,10 @@ function isRealSentenceEnd(text, match) {
   // 点后紧跟闭合引号 → 引号内语句已完整（如 he said."）
   if (closers) return true;
 
-  // 空白后紧跟小写字母 → 同句延续（Wait... what happened? / e.g. hammers）
+  // 空白后紧跟小写字母或数字 → 同句延续
+  // （Wait... what happened? / Sept. 17 / No. 5 / vol. 2 / pp. 12-15）
   const rest = text.slice(dotEnd + closers.length);
-  if (/^\s+[a-z]/.test(rest)) return false;
+  if (/^\s+[a-z0-9]/.test(rest)) return false;
 
   // 其余情况（下一个词大写/数字/CJK/引号开头）→ 正常断句
   return true;
