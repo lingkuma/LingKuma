@@ -290,6 +290,73 @@ function getSentenceTraversalParentFromRange(range, fallbackParent, minTextLengt
   return firstTextBoundary || fallbackParent || document.body;
 }
 
+// =======================
+// 句子边界检测（替代旧的 marker 列表双向搜索）
+// 思路：一次正则扫描找出所有"候选边界"（终止符串 + 可选闭合引号 + 空白/文本末尾），
+// 再对纯 '.' 的情况做验证，排除缩写词/首字母缩写/小数/省略号续句等误断。
+// '。！？!?；：' 等强终止符无条件断句，所有歧义集中在 '.' 上单独处理。
+// =======================
+const SENTENCE_ABBREVS = new Set([
+  'dr', 'mr', 'mrs', 'ms', 'prof', 'sr', 'jr', 'st', 'vs', 'etc', 'eg', 'ie',
+  'e.g', 'i.e', 'al', 'approx', 'dept', 'est', 'inc', 'ltd', 'fig', 'cf',
+  'p.m', 'a.m', 'rev', 'hon'
+]);
+
+// 候选边界：终止符串 + 可选闭合引号/括号，后跟空白或文本末尾
+const SENTENCE_CANDIDATE_RE = /([.!?…。！？；：;:]+)(["'”’」』）\]］]*)(?=\s|$)/g;
+
+function isRealSentenceEnd(text, match) {
+  const punct = match[1];
+  const closers = match[2];
+
+  // 强终止符：中文标点 / ! ? / 分号冒号 → 无条件断句
+  if (/[。！？!?；：;:]/.test(punct)) return true;
+
+  // 剩下纯点（. / ... / …）的情况，逐条排除误断
+  const dotEnd = match.index + punct.length;
+  const before = text.slice(0, dotEnd - 1);
+  const c1 = before[before.length - 1];
+
+  // 小数/版本号：$3.50、v1.2 → 点夹在数字之间
+  if (/\d/.test(c1) && /^\d/.test(text.slice(dotEnd))) return false;
+
+  // 首字母缩写：J. K. / U.S. → 点前是单个大写字母（其前是空白/开头/另一个点）
+  if (/[A-Z]/.test(c1)) {
+    const prev = before[before.length - 2];
+    if (prev === undefined || prev === '.' || /[\s"'“”「『‘'（(\[]/.test(prev)) return false;
+  }
+
+  // 已知缩写词：Dr. / Mr. / e.g. → 点前的完整词在缩写表中
+  const wm = before.match(/[A-Za-z.]+$/);
+  if (wm && SENTENCE_ABBREVS.has(wm[0].replace(/\.+$/, '').toLowerCase())) return false;
+
+  // 点后紧跟闭合引号 → 引号内语句已完整（如 he said."）
+  if (closers) return true;
+
+  // 空白后紧跟小写字母 → 同句延续（Wait... what happened? / e.g. hammers）
+  const rest = text.slice(dotEnd + closers.length);
+  if (/^\s+[a-z]/.test(rest)) return false;
+
+  // 其余情况（下一个词大写/数字/CJK/引号开头）→ 正常断句
+  return true;
+}
+
+// 扫描全文，返回已验证的边界数组 [{start, end}]；end 为终止符（含闭合引号）之后的位置
+function collectSentenceBoundaries(text) {
+  const boundaries = [];
+  SENTENCE_CANDIDATE_RE.lastIndex = 0;
+  let m;
+  while ((m = SENTENCE_CANDIDATE_RE.exec(text)) !== null) {
+    if (m[0].length === 0) { // 防御空匹配死循环
+      SENTENCE_CANDIDATE_RE.lastIndex++;
+      continue;
+    }
+    if (!isRealSentenceEnd(text, m)) continue;
+    boundaries.push({ start: m.index, end: m.index + m[1].length + m[2].length });
+  }
+  return boundaries;
+}
+
 function getSentenceForWord(detail) {
   // console.log('[getSentenceForWord] 函数被调用');
   // console.log('[getSentenceForWord] 传入的 detail:', {
@@ -560,147 +627,37 @@ function getSentenceForWord(detail) {
   // console.log('[getSentenceForWord] normalizedCharMap 长度:', normalizedCharMap.length);
 
 
-  // --- 步骤 7: 提取句子 (使用清理并标准化的 fullText 和精确的 offset) ---
-  let leftText = cleanedNormalizedFullText.slice(0, offset);
-  // console.log('[getSentenceForWord] 用于查找开始标记的 leftText:', leftText.substring(0, 100));
-  // console.log('[getSentenceForWord] leftText 长度:', leftText.length);
+  // --- 步骤 7: 提取句子 (基于统一扫描的句子边界) ---
+  // 一次正则扫描全文，得到所有经过验证的边界（已排除缩写/首字母缩写/小数等误断）
+  const boundaries = collectSentenceBoundaries(cleanedNormalizedFullText);
+
+  // 句首 = offset 之前最后一个边界的结束位置；没有则从文本开头算起
   let sentenceStart = 0;
-  let foundStartMarker = null;
-  // 确保 startMarkers 使用标准空格
-   const startMarkers = [
-    '. ', '? ', '! ',
-    '.] ', '?] ', '!] ',
-    '." ', '?" ', '!" ',
-    '。', '？', '！',
-    '。」', '？」', '！」',
-    '。』', '？』', '！』',
-    '。］', '？］', '！］',
-    '。）', '？）', '！）',')','）',
-    '。\n', '？\n', '！\n', // 注意：\n 理论上已被 normalizeText 替换为空格
-    '\n\n', // 注意：同上
-    '^',
-    '다. ', '까? ', '어! ',
-    '；', '; ',
-    '…… ', '... '
-  ];
-
-
-  let lastStartPos = -1;
-  let foundMarkerLength = 0; // 新增：记录找到的标记的长度
-  foundStartMarker = null; // 重置 foundStartMarker
-
-  // 重新排序 startMarkers，将更长或带空格的放前面，增加仅标点的作为后备
-  const orderedStartMarkers = [
-    '. ', '? ', '! ', '.] ', '?] ', '!] ', '." ', '?" ', '!" ', '다. ', '까? ', '어! ', '; ', '…… ', '... ', // 长/带空格
-    '.', '?', '!', '。', '？', '！', '。」', '？」', '！」', '。』', '？』', '！』', '。］', '？］', '！］', '。）', '？）', '！）', '；' ,// 短/无空格/CJK
-    ')','）',
-    '： ','：',
-  ];
-
-  // Find the last occurrence of any sentence-ending marker *before* the word
-  for (const marker of orderedStartMarkers) { // 使用排序后的列表
-      // 移除 normalizedMarker 逻辑，因为 cleanedNormalizedFullText 已处理
-      const pos = leftText.lastIndexOf(marker); // 直接在 leftText 中查找
-
-      if (pos > lastStartPos) { // 找到更靠后的标记
-          lastStartPos = pos;
-          foundMarkerLength = marker.length; // 记录这个标记的长度
-          // sentenceStart is the position *after* the found marker
-          // 使用标准化后的 marker 长度计算起始位置
-          // sentenceStart = pos + normalizedMarker.length; // 旧逻辑，移动到后面统一处理
-           // 记录找到的原始 marker
-          foundStartMarker = marker; // 记录是哪个标记确定了最终位置
-      }
-      // 不需要 else if (pos === lastStartPos)，因为 orderedStartMarkers 中长的优先，
-      // lastIndexOf 找到最后一个即可。
-  }
-
- // If no marker was found in leftText, the sentence likely starts at the beginning of the text.
- // Or, the marker logic failed.
- if (lastStartPos === -1) {
-     // 未找到标记，句子从文本开头算起
-     sentenceStart = 0; // Set start to the beginning of the full text
-     foundStartMarker = '^'; // Indicate it starts from the beginning
-     // 跳过开头的空白字符
-     while (sentenceStart < cleanedNormalizedFullText.length && /\s/.test(cleanedNormalizedFullText[sentenceStart])) {
-        sentenceStart++;
-     }
-   // console.log('[getSentenceForWord] 未找到句首标记，将 sentenceStart 设为 (跳过空格后):', sentenceStart);
- } else {
-    // 找到了标记，计算标记后的位置
-    let tentativeStart = lastStartPos + foundMarkerLength;
-    // 跳过标记后面可能存在的任何空白字符
-    while (tentativeStart < cleanedNormalizedFullText.length && /\s/.test(cleanedNormalizedFullText[tentativeStart])) {
-        tentativeStart++;
+  for (const b of boundaries) {
+    if (b.end <= offset) {
+      sentenceStart = b.end;
+    } else {
+      break;
     }
-    sentenceStart = tentativeStart; // 最终的句子起始位置
-
-    // Log the found marker and calculated start position
-    //console.log('[getSentenceForWord] 找到的句子开始标记:', foundStartMarker, '原始位置:', lastStartPos, '计算出的 sentenceStart (在标准化文本中，跳过空格后):', sentenceStart);
- }
-
-
-  // 回退逻辑: 如果找不到标记，仍然基于 offset 回退 -- 这部分逻辑已被上面的 if (lastStartPos === -1) 覆盖，不再需要
-  //  if (lastStartPos === -1) {
-  //     // 标准化后，换行符查找可能失效，这里直接使用回退
-  //     sentenceStart = Math.max(0, offset - 100);
-  //     foundStartMarker = null; // 明确未找到标记
-  //  }
-
-
-  // console.log("=== [Debug] (最终确定) 计算出的 sentenceStart (在标准化文本中):", sentenceStart);
-
-  // 向右查找句子结束位置 (在标准化文本上)
-  let rightText = cleanedNormalizedFullText.slice(offset);
-  // console.log('[getSentenceForWord] 用于查找结束标记的 rightText:', rightText.substring(0, 100));
-  // console.log('[getSentenceForWord] rightText 长度:', rightText.length);
-  let nextEnd = Infinity; // 在 rightText 中的索引
-   // 确保 endMarkers 使用标准空格，并优化列表
-  const endMarkers = [ // 同样，长/带空格的优先
-    '. ', '? ', '! ',
-    '。」', '！」', '？」', // CJK 带引号
-    '。』', '！』', '？』',
-    '。）', '！）', '？）',
-    '.', '?', '!', // 无空格后备
-    '。', '！', '？', // CJK 无引号
-    // '\n\n' // 理论上已被 normalizeText 替换为空格
-  ];
-  let foundEndMarker = null;
-  let foundEndMarkerLength = 0; // 新增：记录结束标记长度
-
-  for (const marker of endMarkers) {
-       // const normalizedMarker = marker.replace(/\n/g, ' '); // 移除，文本已标准化
-       const pos = rightText.indexOf(marker); // 在标准化文本中查找
-       if (pos !== -1 && pos < nextEnd) { // 找到更早结束的标记
-           // nextEnd 计算的是在 rightText 中的偏移
-           nextEnd = pos; // 记录标记开始的位置
-           // nextEnd = pos + normalizedMarker.length; // 旧逻辑：记录标记结束的位置
-           foundEndMarker = marker; // 记录原始 marker
-           foundEndMarkerLength = marker.length; // 记录标记长度
-       }
   }
-  // console.log('[getSentenceForWord] 找到的句子结束标记:', foundEndMarker, '在 rightText 中的起始位置:', nextEnd);
+  // 跳过边界后的空白字符
+  while (sentenceStart < cleanedNormalizedFullText.length && /\s/.test(cleanedNormalizedFullText[sentenceStart])) {
+    sentenceStart++;
+  }
 
-  // 优化句子长度处理逻辑 (基于标准化文本)
+  // 句尾 = offset 之后第一个边界的结束位置；没有则用 MAX_SENTENCE_LENGTH 兜底
   const MAX_SENTENCE_LENGTH = 600; // 修改：从 300 提高到 600，支持更长的句子
   const MIN_SENTENCE_LENGTH = 30;
-
-  let sentenceEnd;
-  if (nextEnd === Infinity) {
-    // 未找到结束标记，从句子实际开始处计算最大长度
-    sentenceEnd = Math.min(sentenceStart + MAX_SENTENCE_LENGTH, cleanedNormalizedFullText.length);
-    // console.log('[getSentenceForWord] 未找到结束标记，使用 MAX_SENTENCE_LENGTH 限制，sentenceEnd:', sentenceEnd);
-  } else {
-    // 找到了标记，结束位置是 单词偏移量 + 标记在rightText的起始位置 + 标记长度
-    sentenceEnd = offset + nextEnd + foundEndMarkerLength;
-    // 确保不超过最大长度限制 (从句子实际开始处算)
-    sentenceEnd = Math.min(sentenceEnd, sentenceStart + MAX_SENTENCE_LENGTH);
-    // console.log('[getSentenceForWord] 找到结束标记，计算出的 sentenceEnd (标记后，有长度限制):', sentenceEnd);
+  const maxSentenceEnd = Math.min(sentenceStart + MAX_SENTENCE_LENGTH, cleanedNormalizedFullText.length);
+  let sentenceEnd = maxSentenceEnd;
+  for (const b of boundaries) {
+    if (b.end > offset) {
+      sentenceEnd = Math.min(b.end, maxSentenceEnd);
+      break;
+    }
   }
   // 确保 sentenceEnd 不会小于 sentenceStart (非常边缘的情况)
   sentenceEnd = Math.max(sentenceStart, sentenceEnd);
-  // console.log('[getSentenceForWord] 计算出的 sentenceEnd (在标准化文本中的索引):', sentenceEnd);
-  // console.log('[getSentenceForWord] 句子长度:', sentenceEnd - sentenceStart);
 
   let sentenceRangeStart = sentenceStart;
   let sentenceRangeEnd = sentenceEnd;
